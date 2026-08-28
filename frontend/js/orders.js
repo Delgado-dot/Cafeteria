@@ -24,6 +24,7 @@ function renderOrders(el) {
     <div class="page">
       <div class="page-title"><h1>Mis pedidos</h1></div>
       <p class="page-sub">Sigue el estado de tus pedidos activos y consulta tu historial.</p>
+      <div class="orders-overview"><div><span class="overview-number">${active.length}</span><span>pedidos activos</span></div><div><span class="overview-number">${history.filter((o) => o.status === 'delivered').length}</span><span>entregados</span></div></div>
       <h2 class="section-title">Pedidos actuales</h2>
       <div id="currentOrders"></div>
       <h2 class="section-title">Historial</h2>
@@ -40,6 +41,7 @@ function renderOrders(el) {
   const histWrap = $('#historyOrders');
   if (!history.length) histWrap.innerHTML = emptyState('🗂️', 'Sin historial', 'No hay pedidos anteriores.');
   histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
+  $$('[data-order-detail]', histWrap).forEach((btn) => btn.onclick = () => orderDetailModal(orders.find((o) => o.id === btn.dataset.orderDetail)));
 }
 
 function orderTrackingCard(o) {
@@ -76,7 +78,7 @@ function orderTrackingCard(o) {
         <div class="order-num">#${o.id}</div>
         <div class="order-meta">${fmtDate(o.date)} · ${o.time}</div>
       </div>
-      ${statusMeta(o.status)}
+      <div class="order-status-wrap">${statusMeta(o.status)} <button class="btn btn-outline btn-sm" data-detail>Ver detalle</button></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between">
       <div>
@@ -101,6 +103,7 @@ function orderTrackingCard(o) {
   `;
 
   const cancelBtn = $('[data-cancel]', card);
+  $('[data-detail]', card).onclick = () => orderDetailModal(o);
   if (cancelBtn) {
     cancelBtn.onclick = async () => {
       const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido? Solo puedes cancelar mientras no esté en preparación.', 'Cancelar pedido', true);
@@ -130,8 +133,25 @@ function historyCard(o) {
           ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso</span>' : ''}
         </div>
         <div class="bold" style="color:var(--primary-strong)">${money(o.total)} <span class="tiny muted">· ${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'}</span></div>
+        <button class="btn btn-outline btn-sm" data-order-detail="${o.id}">Ver detalle</button>
       </div>
     </div>`;
+}
+
+function orderDetailModal(o) {
+  if (!o) return;
+  const special = o.status === 'cancelled' || o.status === 'nopickup' || o.paymentStatus === 'refunded';
+  const flowIdx = ORDER_FLOW.indexOf(o.status);
+  const ov = modal(`
+    <div class="order-detail-top"><div><div class="order-num">#${o.id}</div><div class="order-meta">${fmtDate(o.date)} · ${o.time || '—'}</div></div>${statusMeta(o.status)}</div>
+    ${o.status === 'ready' ? '<div class="order-ready-banner">✓ Tu pedido está listo para retirar.</div>' : ''}
+    ${special ? `<div class="alert ${o.status === 'cancelled' ? 'danger' : o.status === 'nopickup' ? 'warning' : 'info'}"><span class="a-ico">${o.paymentStatus === 'refunded' ? '↩️' : 'ℹ️'}</span><div>${o.paymentStatus === 'refunded' ? 'Reembolso procesado.' : o.status === 'nopickup' ? 'Pedido no retirado.' : 'Pedido cancelado.'}</div></div>` : ''}
+    <h4 class="detail-heading">Productos</h4><div class="detail-items">${o.items.map((i) => `<div><span>${esc(i.name)} <small>× ${i.qty}</small></span><b>${money(i.price * i.qty)}</b></div>`).join('')}</div>
+    <div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div>
+    <div class="detail-grid"><div><small>Entrega</small><b>${deliveryMeta(o)}</b></div><div><small>Pago</small><b>${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)}</b></div><div><small>Tiempo estimado</small><b>${o.prepMin} min</b></div></div>
+    ${!special ? `<h4 class="detail-heading">Seguimiento</h4><div class="compact-timeline">${ORDER_FLOW.map((st, i) => `<div class="${i < flowIdx ? 'done' : i === flowIdx ? 'current' : ''}"><span>${i < flowIdx ? '✓' : i === flowIdx ? '●' : i + 1}</span><small>${ORDER_FLOW_LABEL[st]}</small></div>`).join('')}</div>` : ''}
+    <div style="display:flex;justify-content:flex-end;margin-top:20px"><button class="btn btn-neutral" data-close>Cerrar</button></div>`, { title: 'Detalle del pedido' });
+  $('[data-close]', ov).onclick = () => ov.remove();
 }
 
 function saveOrders() { Store.orders = Store.orders; }
@@ -220,7 +240,7 @@ function renderProfile(el) {
 function changePasswordModal() {
   const ov = modal(`
     <h3>Cambiar contraseña</h3>
-    <p class="muted small" style="margin-bottom:14px">Cambio simulado — no se modifica nada real.</p>
+    <p class="muted small" style="margin-bottom:14px">Usa una contraseña de al menos 6 caracteres.</p>
     <div class="field"><label class="label">Contraseña actual</label><input class="input" type="password" id="cpOld"></div>
     <div class="field"><label class="label">Nueva contraseña</label><input class="input" type="password" id="cpNew"></div>
     <div class="field"><label class="label">Confirmar contraseña</label><input class="input" type="password" id="cpNew2"><div class="input-err-msg" id="cpErr"></div></div>
@@ -233,9 +253,12 @@ function changePasswordModal() {
     const a = $('#cpOld', ov).value, b = $('#cpNew', ov).value, c = $('#cpNew2', ov).value;
     const err = $('#cpErr', ov);
     if (!a || !b || !c) { err.textContent = 'Completa todos los campos.'; return; }
+    const u = currentUser();
+    if (PASSWORDS[u.email] !== a) { err.textContent = 'La contraseña actual no es correcta.'; return; }
     if (b.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
     if (b !== c) { err.textContent = 'Las contraseñas no coinciden.'; return; }
-    toast('Contraseña actualizada (simulado).', 'success');
+    PASSWORDS[u.email] = b;
+    toast('Contraseña actualizada.', 'success');
     logAudit('Cambió su contraseña', '');
     ov.remove();
   };

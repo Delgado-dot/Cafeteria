@@ -1,0 +1,29 @@
+/* Finanzas: panel del administrador desarrollador */
+.finance-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.finance-card { cursor: grab; user-select: none; }
+.finance-card.dragging { opacity: .45; transform: scale(.98); }
+.drag-handle { position: absolute; right: 14px; top: 12px; color: var(--text-3); font-size: 1.2rem; cursor: grab; }
+.finance-chart { height: 220px; display: flex; gap: 12px; align-items: flex-end; border-bottom: 1px solid var(--border); padding: 12px 4px 0; }
+.finance-col { min-width: 42px; flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 7px; color: var(--text-3); font-size: var(--fs-xs); }
+.finance-bars { height: 180px; width: 100%; display: flex; justify-content: center; align-items: flex-end; gap: 5px; }
+.finance-bar { width: 36%; border-radius: 7px 7px 0 0; min-height: 4px; transition: filter var(--t-fast), transform var(--t-fast); animation: finance-bar-enter .7s cubic-bezier(.22, 1, .36, 1) both; }
+.finance-bar:hover { filter: brightness(.88); transform: translateY(-3px); }
+.finance-col:nth-child(2) .finance-bar { animation-delay: .10s; }
+.finance-col:nth-child(3) .finance-bar { animation-delay: .20s; }
+.finance-col:nth-child(4) .finance-bar { animation-delay: .30s; }
+.finance-col:nth-child(5) .finance-bar { animation-delay: .40s; }
+.finance-col:nth-child(6) .finance-bar { animation-delay: .50s; }
+.finance-col:nth-child(7) .finance-bar { animation-delay: .60s; }
+@keyframes finance-bar-enter { from { height: 0 !important; opacity: .3; } to { opacity: 1; } }
+.finance-bar.income, .chart-key i.income { background: var(--success); }
+.finance-bar.out, .chart-key i.out { background: var(--danger); }
+.chart-key { display: flex; gap: 16px; margin-top: 14px; font-size: var(--fs-sm); color: var(--text-2); }
+.chart-key span { display: flex; align-items: center; gap: 6px; }
+.chart-key i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.finance-breakdown { display: grid; gap: 26px; padding: 20px 0; }
+.breakdown-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: var(--fs-sm); color: var(--text-2); }
+.finance-filter { width: 150px; }
+
+@media (max-width: 900px) { .finance-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .finance-cards { grid-template-columns: 1fr; } .finance-chart { gap: 6px; overflow-x: auto; } }
+@media (prefers-reduced-motion: reduce) { .finance-bar { animation: none; } }

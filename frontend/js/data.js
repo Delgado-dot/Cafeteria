@@ -69,6 +69,16 @@ const DEFAULT_AUDIT = [
   { id: 'a5', user: 'Administrador Desarrollador', action: 'Actualizó configuración', target: 'Horario de pedidos', time: '09:30' },
 ];
 
+/* Movimientos financieros administrados desde el panel del desarrollador. */
+const DEFAULT_FINANCE = [
+  { id: 'f1', date: daysAgo(0), type: 'income', category: 'Ventas del día', description: 'Cobros de pedidos', amount: 23.60 },
+  { id: 'f2', date: daysAgo(0), type: 'cost', category: 'Insumos', description: 'Pan, carnes y bebidas', amount: 8.40 },
+  { id: 'f3', date: daysAgo(1), type: 'expense', category: 'Operación', description: 'Limpieza y empaques', amount: 3.25 },
+  { id: 'f4', date: daysAgo(2), type: 'income', category: 'Ventas del día', description: 'Cobros de pedidos', amount: 18.90 },
+  { id: 'f5', date: daysAgo(2), type: 'cost', category: 'Insumos', description: 'Reposición de inventario', amount: 6.80 },
+  { id: 'f6', date: daysAgo(4), type: 'expense', category: 'Servicios', description: 'Gas y energía', amount: 4.50 },
+];
+
 function daysAgo(days) {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -139,11 +149,13 @@ const Store = {
   set config(v) { this._cache['int_config'] = v; this.save('int_config', v); },
   get audit() { return this._get('int_audit', DEFAULT_AUDIT, 'int_audit'); },
   set audit(v) { this._cache['int_audit'] = v; this.save('int_audit', v); },
+  get finance() { return this._get('int_finance', DEFAULT_FINANCE, 'int_finance'); },
+  set finance(v) { this._cache['int_finance'] = v; this.save('int_finance', v); },
   get stockHistory() { return this._get('int_stockHistory', [], 'int_stockHistory'); },
   set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
   reset() {
     this._cache = {};
-    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory'].forEach((k) => localStorage.removeItem(k));
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_finance', 'int_stockHistory'].forEach((k) => localStorage.removeItem(k));
   },
 };
 
