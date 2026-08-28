@@ -56,6 +56,7 @@ function handleRoute() {
   params.product = null;
 
   // Páginas públicas
+  if (r === 'landing') return renderLanding();
   if (r === 'login') {
     if (user) { setRoute(homeRouteFor(user.role)); return; }
     return renderLogin();
@@ -73,7 +74,9 @@ function handleRoute() {
     r = 'product';
   }
 
-  if (!user) return renderLogin();
+  // Sin sesión: el Landing público es la puerta de entrada del sistema.
+  // El login se alcanza desde el botón "ACCEDER" del Landing.
+  if (!user) return renderLanding();
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {
@@ -422,6 +425,8 @@ function userProductPage(el) {
 
 /* ---------- Inicialización ---------- */
 function syncBodyClass() {
+  // El Landing público no convive con las clases de shell internas.
+  document.body.classList.remove('is-landing');
   const u = currentUser();
   if (u && (u.role === 'adminbar' || u.role === 'admindev')) {
     document.body.classList.add('is-admin');
