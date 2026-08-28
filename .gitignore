@@ -1,0 +1,131 @@
+# ============================
+# Python / Django
+# ============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+ENV/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+backend/media/*
+!backend/media/uploads/
+!backend/media/vouchers/
+!backend/media/product_images/
+backend/staticfiles/*
+!backend/staticfiles/css/
+!backend/staticfiles/js/
+!backend/staticfiles/images/
+staticfiles_collected/
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# ============================
+# Environment variables
+# ============================
+.env
+.env.local
+.env.production
+.env.staging
+
+# ============================
+# IDEs / Editors
+# ============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.sublime-project
+*.sublime-workspace
+
+# ============================
+# OS files
+# ============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# ============================
+# Node.js (if used for tooling)
+# ============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm
+.cache/
+
+# ============================
+# Testing
+# ============================
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ============================
+# Docker
+# ============================
+docker-compose.override.yml
+
+# ============================
+# Security
+# ============================
+*.pem
+*.key
+*.crt
+*.p12
+
+# ============================
+# Project specific
+# ============================
+# Keep .gitkeep structure files, ignore everything else
+backend/media/uploads/*
+!backend/media/uploads/.gitkeep
+backend/media/vouchers/*
+!backend/media/vouchers/.gitkeep
+backend/media/product_images/*
+!backend/media/product_images/.gitkeep
+backend/staticfiles/css/*
+!backend/staticfiles/css/.gitkeep
+backend/staticfiles/js/*
+!backend/staticfiles/js/.gitkeep
+backend/staticfiles/images/*
+!backend/staticfiles/images/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.orig

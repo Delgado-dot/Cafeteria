@@ -1,0 +1,40 @@
+# ============================
+# Requisitos del proyecto
+# ============================
+# Versión de Python: 3.10+
+
+# --- Django ---
+Django==5.0.7
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
+django-filter==24.2
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.2
+
+# --- Base de datos ---
+psycopg2-binary==2.9.9
+
+# --- Autenticación / Seguridad ---
+djangorestframework-simplejwt==5.3.1
+cryptography==43.0.1
+
+# --- Utilidades ---
+python-dotenv==1.0.1
+Pillow==10.4.0
+drf-spectacular==0.27.2
+
+# --- Despliegue / Producción ---
+gunicorn==22.0.0
+whitenoise==6.7.0
+
+# --- Calidad de código / Testing ---
+pytest==8.3.2
+pytest-django==4.8.0
+pytest-cov==5.0.0
+black==24.4.2
+flake8==7.1.0
+isort==5.13.2
+
+# --- Despliegue en contenedores ---
+# (Opcional pero recomendado)
+# uwsgi==2.0.26
