@@ -55,7 +55,7 @@ function renderDevAdmin(page) {
   $('#devUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
-  $('#btnDevLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
+  $('#btnDevLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('inicio'); };
 
   const sidebar = $('.admin-sidebar', app);
   const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };

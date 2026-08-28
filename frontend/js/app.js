@@ -50,12 +50,125 @@ function homeRouteFor(role) {
 }
 window.homeRouteFor = homeRouteFor;
 
+/* ---------- Página de portada (antes del login) ---------- */
+function renderLanding() {
+  const app = $('#app');
+  const cfg = Store.config;
+  const svgCup = (w, h) => `<svg viewBox="0 0 24 24" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8.5 4.5c0-1.2.9-1.8.9-3M12 4.5c0-1.2.9-1.8.9-3M15.5 4.5c0-1.2.9-1.8.9-3"/></svg>`;
+  const svgMenu = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="10" height="6" rx="1.5"/><path d="M6.5 5h5M17 5h3M17 9h3M7 12h8M7 16h8"/></svg>`;
+  const svgCart = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2.5 3.5h2.4l2.3 11.5h9.6l2.2-8H6.2"/></svg>`;
+  const svgClock = `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>`;
+  app.innerHTML = `
+  <div class="landing">
+    <header class="landing-topbar">
+      <a class="brand" href="#" data-nav="inicio">
+        <span class="brand-mark">${svgCup(22, 22)}</span>
+        <span class="brand-name">INTESUD CAFETERÍA</span>
+      </a>
+      <button class="btn btn-primary" onclick="setRoute('login')">Acceder</button>
+    </header>
+
+    <main class="landing-main">
+      <section class="landing-hero">
+        <div class="hero-media">
+          <img src="assets/images/bar-hero.svg" alt="Interior de la cafetería INTESUD">
+          <div class="hero-overlay">
+            <h1>CAFETERÍA <span>INTESUD</span></h1>
+            <p class="hero-tag">Tu comida, antes del receso.</p>
+            <div class="hero-actions">
+              <button class="btn btn-lg btn-white" onclick="setRoute('login')">Ver menú</button>
+              <button class="btn btn-lg btn-hero-accent" onclick="setRoute('login')">Acceder</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section how">
+        <div class="landing-wrap">
+          <h2 class="landing-title">¿Cómo funciona?</h2>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">01</div>
+              <div class="step-ico">${svgMenu}</div>
+              <h3>Elige</h3>
+              <p>Explora el menú y elige tu almuerzo o snack favorito.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">02</div>
+              <div class="step-ico">${svgCart}</div>
+              <h3>Pide</h3>
+              <p>Haz tu pedido en línea, con retiro en cafetería o delivery interno.</p>
+            </div>
+            <div class="step">
+              <div class="step-num">03</div>
+              <div class="step-ico">${svgCup(30, 30)}</div>
+              <h3>Retira</h3>
+              <p>Recoge tu pedido durante el receso y disfruta tu comida.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section gallery">
+        <div class="landing-wrap">
+          <h2 class="landing-title">Conoce nuestra cafetería</h2>
+          <p class="landing-sub">Un espacio pensado para tu descanso, con atención rápida en el corazón del instituto.</p>
+          <div class="gallery-grid">
+            <figure class="g-card">
+              <img src="assets/images/galeria-1.svg" alt="Barra de atención de la cafetería">
+              <figcaption>Barra de atención</figcaption>
+            </figure>
+            <figure class="g-card">
+              <img src="assets/images/galeria-2.svg" alt="Espacio para disfrutar en la cafetería">
+              <figcaption>Espacio para disfrutar</figcaption>
+            </figure>
+            <figure class="g-card">
+              <img src="assets/images/galeria-3.svg" alt="Café y snacks de la cafetería">
+              <figcaption>Café y snacks</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section hours">
+        <div class="landing-wrap">
+          <h2 class="landing-title">Horario de atención</h2>
+          <div class="hours-grid">
+            <div class="hour-card">
+              <span class="hour-ico">${svgClock}</span>
+              <div><div class="hour-label">Pedidos</div><div class="hour-value">${esc(cfg.orderOpen)} – ${esc(cfg.orderClose)}</div></div>
+            </div>
+            <div class="hour-card">
+              <span class="hour-ico">${svgCup(26, 26)}</span>
+              <div><div class="hour-label">Receso</div><div class="hour-value">${esc(cfg.breakStart)} – ${esc(cfg.breakEnd)}</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="foot-brand">
+        <span class="brand-mark">${svgCup(22, 22)}</span>
+        <div class="foot-brand-text"><div class="foot-name">INTESUD</div><div class="foot-sub">Cafetería INTESUD</div></div>
+      </div>
+      <p>© ${new Date().getFullYear()} Cafetería INTESUD · Todos los derechos reservados</p>
+    </footer>
+  </div>`;
+
+  $$('[data-nav]', app).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav); });
+}
+
 function handleRoute() {
   const user = Auth.current();
-  let r = (window.location.hash || '#home').replace('#', '');
+  let r = (window.location.hash || '#inicio').replace('#', '');
   params.product = null;
 
   // Páginas públicas
+  if (r === 'inicio') {
+    if (user) { setRoute(homeRouteFor(user.role)); return; }
+    return renderLanding();
+  }
   if (r === 'login') {
     if (user) { setRoute(homeRouteFor(user.role)); return; }
     return renderLogin();
@@ -73,7 +186,7 @@ function handleRoute() {
     r = 'product';
   }
 
-  if (!user) return renderLogin();
+  if (!user) { setRoute('inicio'); return; }
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {

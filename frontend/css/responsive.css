@@ -9,8 +9,6 @@
 @media (max-width: 1080px) {
   .cart-layout { grid-template-columns: 1fr; }
   .summary-card { position: static; }
-  .login-screen { grid-template-columns: 1fr 1fr; }
-  .login-brand { padding: var(--sp-6); }
 }
 
 /* ============================================================
@@ -27,9 +25,7 @@
   .user-nav { display: none; }
   .header-search { display: none; }
 
-  /* Login: pila */
-  .login-screen { grid-template-columns: 1fr; }
-  .login-brand { display: none; }
+  .hero-media { height: 480px; }
 
   /* Menú → filtros en horizontal */
   .menu-layout { grid-template-columns: 1fr; }
@@ -61,6 +57,14 @@
   .user-chip .chip-info { display: none; }
   .user-chip { padding: 4px; }
   .header-icon-btn { width: 38px; height: 38px; }
+
+  /* Landing en móvil */
+  .landing-topbar { padding: 0 var(--sp-3); }
+  .landing-topbar .brand-name { font-size: var(--fs-md); }
+  .hero-media { height: 440px; }
+  .landing-section { padding: var(--sp-6) var(--sp-4); }
+  .g-card img { height: 190px; }
+  .hours-grid { grid-template-columns: 1fr; }
 
   /* Bottom navigation, excluir admin */
   body.has-bottom-nav .app { padding-bottom: 74px; }
@@ -101,6 +105,6 @@
 
 /* Altura máxima para login en pantallas pequeñas */
 @media (max-height: 680px) {
-  .login-brand h1 { font-size: var(--fs-2xl); }
-  .login-brand p { font-size: var(--fs-md); }
+  .hero-media { height: 460px; }
+  .landing-section { padding-top: var(--sp-6); padding-bottom: var(--sp-6); }
 }

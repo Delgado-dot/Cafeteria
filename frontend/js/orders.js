@@ -186,7 +186,7 @@ function renderProfile(el) {
   $('#btnLogout').onclick = () => {
     Auth.logout();
     toast('Sesión cerrada.', 'info');
-    route('login');
+    route('inicio');
   };
 
   $('#btnEditProfile').onclick = () => {
@@ -266,7 +266,7 @@ function renderProfileModal() {
       <button class="btn btn-danger-outline" id="pmLogout">Cerrar sesión</button>
     </div>`, { title: 'Mi perfil' });
   $('#pmChangePass', ov).onclick = () => changePasswordModal();
-  $('#pmLogout', ov).onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
+  $('#pmLogout', ov).onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'inicio'; handleRoute(); };
 }
 window.renderProfileModal = renderProfileModal;
 

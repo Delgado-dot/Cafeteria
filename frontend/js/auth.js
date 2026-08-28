@@ -29,16 +29,6 @@ function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
   <div class="login-screen">
-    <div class="login-brand">
-      <div class="brand-logo-badge">☕</div>
-      <h1>Cafetería INTESUD</h1>
-      <p>Instituto Tecnológico Superior Sudamericano — Pedidos en línea para el receso, con delivery interno y gestión de la cafetería.</p>
-      <div class="brand-tags">
-        <span>📱 Pedidos en línea</span>
-        <span>🛵 Delivery interno</span>
-        <span>👨‍🏫 Roles y permisos</span>
-      </div>
-    </div>
     <div class="login-section">
       <div class="login-card">
         <div class="login-head">
@@ -50,9 +40,11 @@ function renderLogin() {
           <div class="field">
             <label class="label" for="li_email">Usuario o correo</label>
             <div class="input-wrap">
-              <span class="leading-ico">👤</span>
+              <span class="leading-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+              </span>
               <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar">✕</button>
+              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
             </div>
             <div class="input-err-msg" id="li_emailErr"></div>
           </div>
@@ -60,7 +52,9 @@ function renderLogin() {
             <label class="label" for="li_pass">Contraseña</label>
             <div class="input-group">
               <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar">👁</button>
+              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
             </div>
             <div class="input-err-msg" id="li_passErr"></div>
           </div>
@@ -139,7 +133,9 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge">🔐</div>
+      <div class="brand-logo-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </div>
       <h1>Recuperar contraseña</h1>
       <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
     </div>
@@ -241,7 +237,9 @@ function recoverStep(step, ctx = { email: '' }) {
     title.textContent = '¡Contraseña actualizada!';
     sub.textContent = 'Tu contraseña ha sido restablecida correctamente.';
     body.innerHTML = `
-      <div class="empty-state" style="padding:20px 0"><div class="icon">✅</div></div>
+      <div class="empty-state" style="padding:20px 0"><div class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.8 2.8L16 9.5"/></svg>
+      </div></div>
       <button class="btn btn-primary btn-block" id="rvDone">Ir a iniciar sesión</button>`;
     $('#rvDone').onclick = () => route('login');
   }
