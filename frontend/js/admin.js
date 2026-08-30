@@ -58,6 +58,23 @@ function ensureSalesPresentationStyles() {
   document.head.appendChild(style);
 }
 
+function animateSalesMetrics(el) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const duration = 800;
+  $$('[data-sales-count]', el).forEach((metric) => {
+    const target = Number(metric.dataset.salesCount);
+    const format = metric.dataset.salesFormat;
+    const start = performance.now();
+    const update = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const value = target * (1 - Math.pow(1 - progress, 3));
+      metric.textContent = format === 'money' ? money(value) : String(Math.round(value));
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  });
+}
+
 function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
@@ -708,10 +725,10 @@ function barSalesDashboard(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
     <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
-      <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
-      <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
-      <div class="stat-card sales-summary-card"><div class="st-label">Número de ventas</div><div class="st-value primary">${countToday}</div></div>
-      <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value">${money(salesMonth)}</div></div>
+      <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Número de ventas</div><div class="st-value primary" data-sales-count="${countToday}" data-sales-format="number">0</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
 
     <div class="card" style="margin-bottom:24px">
@@ -730,6 +747,7 @@ function barSalesDashboard(el) {
         </ul>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
     </div>
   `;
+  animateSalesMetrics(el);
 }
 
 /* ============================================================
