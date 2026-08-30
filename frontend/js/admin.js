@@ -9,15 +9,15 @@ const BAR_SECTIONS = {
   stock: { label: 'Stock', icon: '📦' },
   payments: { label: 'Pagos', icon: '💳' },
   'sales-dashboard': { label: 'Ventas', icon: '📈' },
-  'sales-history': { label: 'Historial de ventas', icon: '📈' },
   delivery: { label: 'Delivery', icon: '🛵' },
-  'config-hours': { label: 'Horarios', icon: '⚙️' },
-  'config-status': { label: 'Estado cafetería', icon: '⚙️' },
+  'config-hours': { label: 'Configuración', icon: '⚙️' },
 };
 
 const BAR_PAGES = {
   ...BAR_SECTIONS,
   'payment-detail': { label: 'Detalle de pago', icon: '💳' },
+  'sales-history': { label: 'Historial de ventas', icon: '📈' },
+  'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
 };
 
 // Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
@@ -39,6 +39,7 @@ function renderBarAdmin(page, params) {
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
   const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
   const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
+  const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
   syncBodyClass();
 
   const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
@@ -51,7 +52,7 @@ function renderBarAdmin(page, params) {
         <div class="sb-brand"><span style="font-size:1.3rem">☕</span> Cafetería INTESUD</div>
         <nav class="sb-nav">
           ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-bar="${k}">
+            <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
               <span class="ico">${v.icon}</span>${v.label}
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
             </a>`).join('')}
@@ -114,11 +115,11 @@ function renderBarAdmin(page, params) {
     stock: barStock,
     payments: barPayments,
     'payment-detail': barPaymentDetail,
-    'sales-dashboard': barSalesDashboard,
-    'sales-history': barSalesHistory,
+    'sales-dashboard': (target) => barSalesTabs(target, 'summary'),
+    'sales-history': (target) => barSalesTabs(target, 'history'),
     delivery: barDelivery,
-    'config-hours': barConfigHours,
-    'config-status': barConfigStatus,
+    'config-hours': (target) => barConfigTabs(target, 'hours'),
+    'config-status': (target) => barConfigTabs(target, 'status'),
   };
   renderers[sec](content, params);
 }
@@ -126,6 +127,40 @@ function renderBarAdmin(page, params) {
 function renderCafePill(el) {
   const cfg = Store.config;
   el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}">${cfg.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span>`;
+}
+
+function renderAdminTabs(el, tabs, initialTab) {
+  let activeTab = initialTab;
+  el.innerHTML = `
+    <div class="adv-tabs">
+      ${tabs.map((tab) => `<button class="category-chip${tab.id === activeTab ? ' active' : ''}" data-admin-tab="${tab.id}">${tab.label}</button>`).join('')}
+    </div>
+    <div id="adminTabContent"></div>`;
+
+  const renderTab = () => {
+    const tab = tabs.find((item) => item.id === activeTab);
+    tab.render($('#adminTabContent', el));
+  };
+  $$('[data-admin-tab]', el).forEach((button) => button.onclick = () => {
+    activeTab = button.dataset.adminTab;
+    $$('[data-admin-tab]', el).forEach((item) => item.classList.toggle('active', item === button));
+    renderTab();
+  });
+  renderTab();
+}
+
+function barSalesTabs(el, initialTab) {
+  renderAdminTabs(el, [
+    { id: 'summary', label: 'Resumen', render: barSalesDashboard },
+    { id: 'history', label: 'Historial', render: barSalesHistory },
+  ], initialTab);
+}
+
+function barConfigTabs(el, initialTab) {
+  renderAdminTabs(el, [
+    { id: 'hours', label: 'Horarios', render: barConfigHours },
+    { id: 'status', label: 'Estado de cafetería', render: barConfigStatus },
+  ], initialTab);
 }
 
 /* ============================================================
@@ -773,8 +808,7 @@ function barConfigHours(el) {
         <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}"></div>
       </div>
       <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px">
-        <button class="btn" onclick="setRoute('adminbar/config-status')">Ir al estado</button>
+      <div style="margin-top:20px;display:flex;justify-content:flex-end">
         <button class="btn btn-primary" onclick="saveConfigHours()">Guardar cambios</button>
       </div>
     </div>
