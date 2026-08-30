@@ -30,6 +30,9 @@ const paymentStatusLabels = {
   refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
 };
 
+// Track last visited payment order ID for highlight-on-return
+let lastVisitedPaymentId = null;
+
 function isValidSale(order) {
   return ['approved', 'paid'].includes(order.paymentStatus);
 }
@@ -701,8 +704,9 @@ function barPayments(el) {
     $('#paymentRows', el).innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
         const sInfo = paymentStatusLabels[o.paymentStatus];
         const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
+        const isVisited = lastVisitedPaymentId === o.id;
         return `
-        <tr>
+        <tr class="${isVisited ? 'visited-row' : ''}" data-order-id="${o.id}">
           <td class="bold">#${o.id}</td>
           <td>${esc(o.userName)}</td>
           <td><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
@@ -721,6 +725,15 @@ function barPayments(el) {
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+    
+    // Trigger highlight animation for visited row
+    if (lastVisitedPaymentId) {
+      const visitedRow = $('#paymentRows', el).querySelector('.visited-row');
+      if (visitedRow) {
+        visitedRow.classList.add('highlight');
+        setTimeout(() => visitedRow.classList.remove('highlight'), 1500);
+      }
+    }
   };
 
   // Show skeleton first, then real data
@@ -738,6 +751,7 @@ function barPayments(el) {
 function showVoucherModal(orderId) {
   const order = Store.orders.find((o) => o.id === orderId);
   if (!order) return;
+  lastVisitedPaymentId = orderId;
   const status = paymentStatusLabels[order.paymentStatus];
   const overlay = modal(`
     <div style="text-align:center">
@@ -781,6 +795,7 @@ function barPaymentDetail(el, id) {
     el.innerHTML = emptyState('💳', 'Pago no encontrado', 'El pedido solicitado no existe.');
     return;
   }
+  lastVisitedPaymentId = id;
   const status = paymentStatusLabels[order.paymentStatus];
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">🧾</span> Detalle de pago</h1></div>
