@@ -387,7 +387,7 @@
 
 /* Stat cards (st-label / st-value / st-sub) */
 .stat-card .st-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
-.stat-card .st-value { font-size: 2rem; font-weight: var(--fw-extrabold); color: var(--text); margin-top: 4px; line-height: 1.1; }
+.stat-card .st-value { font-size: 2rem; font-weight: var(--fw-extrabold); color: var(--text); margin-top: 4px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .stat-card .st-value.primary { color: var(--primary); }
 .stat-card .st-value.warning { color: var(--warning-strong); }
 .stat-card .st-value.danger { color: var(--danger); }

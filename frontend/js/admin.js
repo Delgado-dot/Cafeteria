@@ -706,7 +706,7 @@ function barPayments(el) {
           <td class="bold">#${o.id}</td>
           <td>${esc(o.userName)}</td>
           <td><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
-          <td class="bold">${money(o.total)}</td>
+          <td class="bold tabular-nums">${money(o.total)}</td>
           <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
           <td class="small muted">${o.date} ${o.time || '—'}</td>
           <td>
@@ -1040,7 +1040,7 @@ function barSalesHistory(el) {
     if (!tbodyEl) return;
     const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
     tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
-      <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
+      <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold tabular-nums">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
   };
 
   renderSkeletonRows();

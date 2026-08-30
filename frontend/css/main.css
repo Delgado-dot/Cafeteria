@@ -137,6 +137,7 @@ h4 { font-size: var(--fs-md); }
 .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
 
 /* ---------- Buttons ---------- */
 .btn {
