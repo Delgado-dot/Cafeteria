@@ -697,23 +697,63 @@ function barPayments(el) {
           <td>
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
-            ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-v="${o.id}">Ver comprobante</button>` : ''}
+            ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-voucher="${o.id}">Ver comprobante</button>` : ''}
             ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
           </td>
         </tr>
         `;
       }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay pagos en este estado.</td></tr>';
-    $$('[data-v]', el).forEach((b) => b.onclick = () => setRoute(`adminbar/payment-detail/${b.dataset.v}`));
+$$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
   };
 
-  $$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
+$$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
     selectedFilter = button.dataset.paymentFilter;
     $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item === button));
     renderRows();
   });
   renderRows();
+}
+
+function showVoucherModal(orderId) {
+  const order = Store.orders.find((o) => o.id === orderId);
+  if (!order) return;
+  const status = paymentStatusLabels[order.paymentStatus];
+  const overlay = modal(`
+    <div style="text-align:center">
+      <div style="font-size:3rem">🧾</div>
+      <div class="tiny muted">Comprobante de transferencia simulado</div>
+      <div class="bold" style="margin-top:8px">${money(order.total)}</div>
+      <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;text-align:left">
+        <div><span class="bold">Pedido:</span> #${order.id}</div>
+        <div><span class="bold">Usuario:</span> ${esc(order.userName)}</div>
+        <div><span class="bold">Fecha:</span> ${order.date} ${order.time || '—'}</div>
+        <div><span class="bold">Método:</span> ${paymentMethodLabel(order.payment)}</div>
+        <div><span class="bold">Estado:</span> <span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
+        ${order.paymentStatus === 'review' ? `<div class="alert warning" style="margin-top:12px"><span class="a-ico">⚠️</span><div>Este pago está en revisión. Verifica el comprobante antes de aprobar.</div></div>` : ''}
+      </div>
+    </div>
+    <div class="modal-footer" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" data-mclose>Cerrar</button>
+    </div>`, { wide: true, title: 'Comprobante de pago', sub: `Pedido #${order.id} · ${esc(order.userName)}` });
+  
+  // Handle Escape key
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+  
+  // Clean up on close
+  const originalClose = overlay.remove.bind(overlay);
+  overlay.remove = () => {
+    document.removeEventListener('keydown', handleEscape);
+    originalClose();
+  };
 }
 
 function barPaymentDetail(el, id) {
