@@ -762,7 +762,7 @@ function barSalesDashboard(el) {
   const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
   const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
 
-  const days = [];
+const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const date = d.toISOString().slice(0, 10);
@@ -771,13 +771,28 @@ function barSalesDashboard(el) {
   }
   const maxDay = Math.max(...days.map((d) => d.total), 1);
 
+  // Month-over-month comparison
+  const currentMonthStart = new Date(today.slice(0, 7) + '-01');
+  const prevMonthEnd = new Date(currentMonthStart);
+  prevMonthEnd.setDate(0);
+  const prevMonthStr = prevMonthEnd.toISOString().slice(0, 7);
+  const salesPrevMonth = validSales.filter((o) => o.date.startsWith(prevMonthStr)).reduce((s, o) => s + o.total, 0);
+  const momChange = salesPrevMonth > 0 ? ((salesMonth - salesPrevMonth) / salesPrevMonth) * 100 : (salesMonth > 0 ? 100 : 0);
+  const momPositive = momChange >= 0;
+  const momAbsChange = Math.abs(momChange);
+
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
-    <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
+<div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
       <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Número de ventas</div><div class="st-value primary" data-sales-count="${countToday}" data-sales-format="number">0</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
+    </div>
+
+    <div class="card mom-performance-card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Rendimiento vs. mes anterior</h3>
+      <div id="momDonutChart" class="mom-donut-chart"></div>
     </div>
 
 <div class="card" style="margin-bottom:24px">
@@ -796,6 +811,7 @@ function barSalesDashboard(el) {
   `;
 animateSalesMetrics(el);
   renderSalesLineChart(el, days);
+  renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth);
 }
 
 function renderSalesLineChart(el, days) {
@@ -880,6 +896,51 @@ function renderSalesLineChart(el, days) {
       if (tooltip) tooltip.style.opacity = '0';
       if (point) point.setAttribute('r', '5');
     });
+  });
+}
+ 
+function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth) {
+  const container = $('#momDonutChart', el);
+  if (!container) return;
+  const size = 140;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(momAbsChange, 200) / 200;
+  const dashOffset = circumference * (1 - progress);
+  const color = momPositive ? '#22a06b' : '#e09a16';
+  const arrow = momPositive ? '▲' : '▼';
+  const arrowColor = momPositive ? 'var(--success)' : 'var(--warning)';
+  const sign = momPositive ? '+' : '';
+  const prevMonthLabel = salesPrevMonth > 0 ? money(salesPrevMonth) : '—';
+
+  container.innerHTML = `
+    <div class="mom-donut-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="mom-donut-svg" role="img" aria-label="Rendimiento versus mes anterior">
+        <defs>
+          <linearGradient id="momGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="${color}"/>
+            <stop offset="100%" stop-color="${momPositive ? '#178a5a' : '#c07d08'}"/>
+          </linearGradient>
+        </defs>
+        <!-- Background track -->
+        <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="var(--surface-3)" stroke-width="${strokeWidth}"/>
+        <!-- Progress ring -->
+        <circle class="mom-ring" cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="url(#momGrad)" stroke-width="${strokeWidth}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})" style="stroke-dasharray:${circumference}; stroke-dashoffset:${circumference};"/>
+      </svg>
+      <div class="mom-donut-center" style="text-align:center">
+        <div style="font-size:2.2rem;font-weight:var(--fw-extrabold);color:${arrowColor};line-height:1.1">${arrow}<span style="font-size:1.6rem">${sign}${momAbsChange.toFixed(1)}%</span></div>
+        <div class="tiny muted" style="margin-top:4px">vs. mes anterior</div>
+        <div class="tiny muted" style="margin-top:2px">${prevMonthLabel} → ${money(salesMonth)}</div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    const ring = container.querySelector('.mom-ring');
+    if (ring) {
+      ring.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1)';
+      ring.style.strokeDashoffset = String(dashOffset);
+    }
   });
 }
 
