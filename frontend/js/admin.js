@@ -1213,7 +1213,7 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
       <div class="mom-donut-center" style="text-align:center">
         <div style="font-size:2.2rem;font-weight:var(--fw-extrabold);color:${arrowColor};line-height:1.1"><span style="font-size:1.6rem">${sign}${momAbsChange.toFixed(1)}%</span></div>
         <div class="tiny muted" style="margin-top:4px">Rendimiento del mes</div>
-        <div class="tiny muted" style="margin-top:2px">${prevMonthLabel} → ${money(salesMonth)}</div>
+        <div class="tiny muted" style="margin-top:2px">${money(salesMonth)} este mes</div>
       </div>
     </div>`;
 
