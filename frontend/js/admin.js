@@ -18,10 +18,6 @@ const BAR_SECTIONS = {
 const BAR_PAGES = {
   ...BAR_SECTIONS,
   'payment-detail': { label: 'Detalle de pago', icon: '💳' },
-  'sales-dashboard': { label: 'Ventas', icon: '📈' },
-  'sales-history': { label: 'Historial de ventas', icon: '📈' },
-  'config-hours': { label: 'Horarios', icon: '⚙️' },
-  'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
 };
 
 // Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
@@ -533,16 +529,36 @@ function nowTime() {
    ============================================================ */
 function barPayments(el) {
   const orders = Store.orders;
-  const payOrders = orders.filter((o) => o.payment !== 'efectivo' || o.paymentStatus !== 'paid');
-  const pending = payOrders.filter((o) => o.paymentStatus === 'pending');
-  const review = payOrders.filter((o) => o.paymentStatus === 'review');
+  const review = orders.filter((o) => o.paymentStatus === 'review');
+  const filters = [
+    ['all', 'Todos'], ['pending', 'Pendientes'], ['review', 'En revisión'],
+    ['approved', 'Aprobados'], ['paid', 'Pagados'], ['rejected', 'Rechazados'], ['refunded', 'Reembolsados'],
+  ];
+  let selectedFilter = 'all';
 
   el.innerHTML = `
     <div class="page-title"><h1>Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+    <div class="adv-tabs">
+      ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
+    </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
-      <tbody>${orders.map((o) => {
+      <tbody id="paymentRows"></tbody>
+    </table></div>`;
+
+  const setPay = (id, status) => {
+    const order = orders.find((o) => o.id === id);
+    order.paymentStatus = status;
+    saveOrders();
+    logAudit('Actualizó pago', `${order.id} → ${status}`);
+    toast('Pago #' + order.id + ' ' + (status === 'approved' ? 'aprobado.' : 'rechazado.'), status === 'approved' ? 'success' : 'error');
+    renderBarAdmin('payments');
+  };
+
+  const renderRows = () => {
+    const visibleOrders = selectedFilter === 'all' ? orders : orders.filter((o) => o.paymentStatus === selectedFilter);
+    $('#paymentRows', el).innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
         const sInfo = paymentStatusLabels[o.paymentStatus];
         const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
         return `
@@ -561,20 +577,18 @@ function barPayments(el) {
           </td>
         </tr>
         `;
-      }).join('')}</tbody></table></div>`;
-
-  $$('[data-v]', el).forEach((b) => b.onclick = () => setRoute(`adminbar/payment-detail/${b.dataset.v}`));
-
-  const setPay = (id, status) => {
-    const o = orders.find((x) => x.id === id);
-    o.paymentStatus = status;
-    saveOrders();
-    logAudit('Actualizó pago', `${o.id} → ${status}`);
-    toast('Pago #' + o.id + ' ' + (status === 'approved' ? 'aprobado.' : 'rechazado.'), status === 'approved' ? 'success' : 'error');
-    renderBarAdmin('payments');
+      }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay pagos en este estado.</td></tr>';
+    $$('[data-v]', el).forEach((b) => b.onclick = () => setRoute(`adminbar/payment-detail/${b.dataset.v}`));
+    $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
+    $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
   };
-  $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
-  $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+
+  $$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
+    selectedFilter = button.dataset.paymentFilter;
+    $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item === button));
+    renderRows();
+  });
+  renderRows();
 }
 
 function barPaymentDetail(el, id) {
