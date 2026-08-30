@@ -894,7 +894,7 @@ function barPayments(el) {
         <tr class="${isVisited ? 'visited-row' : ''}" data-order-id="${o.id}">
           <td class="bold" data-label="Pedido">#${o.id}</td>
           <td data-label="Usuario">${esc(o.userName)}</td>
-          <td data-label="Método"><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
+          <td data-label="Método"><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
           <td class="bold tabular-nums" data-label="Total">${money(o.total)}</td>
           <td data-label="Estado"><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
           <td class="small muted" data-label="Fecha">${o.date} ${o.time || '—'}</td>
