@@ -709,7 +709,7 @@ function barStock(el) {
     ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     <div class="grid grid-3" style="margin-bottom:20px">
       <div class="stat-card success-card"><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
-      <div class="stat-card alert"><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
+      <div class="stat-card warning-card"><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
       <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div></div>
     </div>
     <div class="table-wrap"><table class="admin-table">

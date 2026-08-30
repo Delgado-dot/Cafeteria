@@ -400,8 +400,8 @@
 .stat-card .st-value.success { color: var(--success); }
 .stat-card .st-sub { font-size: var(--fs-sm); color: var(--text-3); margin-top: 4px; }
 .stat-card.success-card { border-top: 4px solid var(--success); }
+.stat-card.warning-card { border-top: 4px solid var(--warning); }
 .stat-card.danger-card { border-top: 4px solid var(--danger); }
-.stat-card.alert { border-top: 4px solid var(--warning); }
 
 /* Tabs admin (adv-tabs / category-chip) */
 .adv-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; }
