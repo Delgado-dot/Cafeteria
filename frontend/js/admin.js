@@ -536,8 +536,8 @@ function barProducts(el) {
         <td data-label="Prep">${p.prepMin} min</td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
-          <button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button>
-          <button class="btn btn-neutral btn-sm" data-toggle="${p.id}">${p.available ? 'Desactivar' : 'Activar'}</button>
+          <button class="btn btn-outline btn-sm" data-edit="${p.id}" style="min-width: 80px">Editar</button>
+          <button class="btn btn-neutral btn-sm" data-toggle="${p.id}" style="min-width: 80px">${p.available ? 'Desactivar' : 'Activar'}</button>
         </td>
       </tr>
     `).join('');
