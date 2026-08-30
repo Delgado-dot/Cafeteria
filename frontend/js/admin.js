@@ -13,6 +13,15 @@ const BAR_SECTIONS = {
   config: { label: 'Configuración', icon: '⚙️' },
 };
 
+// Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
+const paymentStatusLabels = {
+  pending: { label: 'Pendiente', cls: 'badge-warning' },
+  review: { label: 'En revisión', cls: 'badge-info' },
+  approved: { label: 'Aprobado', cls: 'badge-success' },
+  paid: { label: 'Pagado', cls: 'badge-success' },
+  refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
+};
+
 function renderBarAdmin(page) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
@@ -92,6 +101,8 @@ function renderBarAdmin(page) {
     stock: barStock,
     payments: barPayments,
     sales: barSales,
+    salesDashboard: barSalesDashboard,
+    salesHistory: barSalesHistory,
     delivery: barDelivery,
     config: barConfig,
   };
@@ -513,21 +524,26 @@ function barPayments(el) {
     ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
     <div class="table-wrap"><table>
       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
-      <tbody>${orders.map((o) => `
+      <tbody>${orders.map((o) => {
+        const sInfo = paymentStatusLabels[o.paymentStatus];
+        const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
+        return `
         <tr>
           <td class="bold">#${o.id}</td>
           <td>${esc(o.userName)}</td>
           <td><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
           <td class="bold">${money(o.total)}</td>
-          <td>${paymentMeta(o.paymentStatus)}</td>
-          <td class="small muted">${o.date} ${o.time}</td>
+          <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
+          <td class="small muted">${o.date} ${o.time || '—'}</td>
           <td>
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
             ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-v="${o.id}">Ver comprobante</button>` : ''}
             ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
           </td>
-        </tr>`).join('')}</tbody></table></div>`;
+        </tr>
+        `;
+      }).join('')}</tbody></table></div>`;
 
   $$('[data-v]', el).forEach((b) => b.onclick = () => {
     const o = orders.find((x) => x.id === b.dataset.v);
@@ -610,8 +626,60 @@ function barSales(el) {
 }
 
 /* ============================================================
-   DELIVERY
+   DASHBOARD DE VENTAS
    ============================================================ */
+function barSalesDashboard(el) {
+  const orders = Store.orders;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((o) => o.date === today && ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status));
+  const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
+  const countToday = todayOrders.length;
+
+  // Product sales calculation
+  const prodSales = {};
+  orders.filter((o) => o.status === 'delivered' || o.status === 'ready').forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
+  let best = null, worst = null;
+  Object.entries(prodSales).forEach(([id, qty]) => {
+    if (!best || qty > best.qty) best = { id, qty };
+    if (!worst || qty < worst.qty) worst = { id, qty };
+  });
+  const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
+  const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
+
+  el.innerHTML = `
+    <div class="page-title"><h1>Ventas</h1></div>
+    <div class="grid grid-4" style="margin-bottom:24px">
+      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
+      <div class="stat-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
+      <div class="stat-card"><div class="st-label">Número de ventas</div><div class="st-value primary">${countToday}</div></div>
+      <div class="stat-card"><div class="st-label">Total del mes</div><div class="st-value">${money(orders.filter((o) => o.date === today).reduce((s, o) => s + o.total, 0))}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Productos más vendidos</h3>
+      ${bestProduct || worstProduct ? `
+        <ul style="margin:0;padding:0 20px 0 16px;line-height:1.8">
+          ${bestProduct ? `<li><span class="badge badge-success" style="font-size:var(--fs-xs)">${bestProduct.name}</span> — ${best.qty} unidades vendidas</li>` : ''}
+          ${worstProduct && bestProduct?.id !== worstProduct.id ? `<li><span class="badge badge-neutral" style="font-size:var(--fs-xs)">${worstProduct.name}</span> — ${worst.qty} unidades vendidas</li>` : ''}
+        </ul>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
+    </div>
+  `;
+}
+
+/* ============================================================
+   HISTORIAL DE VENTAS
+   ============================================================ */
+function barSalesHistory(el) {
+  const orders = Store.orders;
+  el.innerHTML = `
+    <div class="page-title"><h1>Historial de ventas</h1></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
+      <tbody>${orders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
+        <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}</tbody></table></div>
+`;
+}
+ 
 function barDelivery(el) {
   const cfg = Store.config;
   const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

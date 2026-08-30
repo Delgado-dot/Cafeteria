@@ -1,0 +1,20 @@
+<tbody>${orders.map((o) => {
+        const sInfo = paymentStatusLabels[o.paymentStatus];
+        const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
+        return `
+        <tr>
+          <td class="bold">#${o.id}</td>
+          <td>${esc(o.userName)}</td>
+          <td><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
+          <td class="bold">${money(o.total)}</td>
+          <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
+          <td class="small muted">${o.date} ${o.time || '—'}</td>
+          <td>
+            ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
+            ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
+            ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-v="${o.id}">Ver comprobante</button>` : ''}
+            ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
+          </td>
+        </tr>`).join('')}</tbody></table></div>`;
+
+  $$('[data-v]

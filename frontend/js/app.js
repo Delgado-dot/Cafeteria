@@ -81,7 +81,20 @@ function handleRoute() {
     return;
   }
 
-  if (r.startsWith('adminbar')) return renderBarAdmin(r.split('/')[1] || 'dashboard');
+  if (r.startsWith('adminbar')) {
+    const section = r.split('/')[1];
+    if (section === 'payment-detail') {
+      const id = r.split('/')[2];
+      return renderBarAdmin('payment-detail', id);
+    }
+    if (section === 'sales-dashboard') {
+      return renderBarAdmin('sales-dashboard');
+    }
+    if (section === 'sales-history') {
+      return renderBarAdmin('sales-history');
+    }
+    return renderBarAdmin(section || 'dashboard');
+  }
   if (r.startsWith('admindev')) return renderDevAdmin(r.split('/')[1] || 'dashboard');
 
   renderUserShell(r);

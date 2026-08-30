@@ -1,0 +1,31 @@
+520:   el.innerHTML = `
+521:     <div class="page-title"><h1>Pagos</h1></div>
+522:     ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+523:     <div class="table-wrap"><table>
+524:       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
+525:       <tbody>${orders.map((o) => {
+526:         const sInfo = paymentStatusLabels[o.paymentStatus];
+527:         const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
+528:         return `
+529:         <tr>
+530:           <td class="bold">#${o.id}</td>
+531:           <td>${esc(o.userName)}</td>
+532:           <td><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
+533:           <td class="bold">${money(o.total)}</td>
+534:           <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
+535:           <td class="small muted">${o.date} ${o.time || '—'}</td>
+536:           <td>
+537:             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
+538:             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
+539:             ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-v="${o.id}">Ver comprobante</button>` : ''}
+540:             ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
+541:           </td>
+542:         </tr>`).join('')}</tbody></table></div>`;
+543: 
+544:   $$('[data-v]', el).forEach((b) => b.onclick = () => {
+545:     const o = orders.find((x) => x.id === b.dataset.v);
+546:     modal(`<h3>Comprobante de transferencia</h3>
+547:       <div class="card" style="background:var(--primary-soft);text-align:center;padding:30px;margin-top:12px">
+548:         <div style="font-size:3rem">🧾</div>
+549:         <div class="tiny muted">Comprobante simulado</div>
+550:         <div class="bold" style="margin-top:8px">#${o.id} · ${money(o.total)}</div>
