@@ -38,21 +38,70 @@ function paymentMethodIcon(method) {
   return ({ deuna: '📲', transferencia: '🏦', efectivo: '💵' }[method] || '💳');
 }
 
-function ensureSalesPresentationStyles() {
-  if (document.getElementById('adminbar-sales-presentation')) return;
+function ensureAdminbarPresentationStyles() {
+  if (document.getElementById('adminbar-presentation')) return;
   const style = document.createElement('style');
-  style.id = 'adminbar-sales-presentation';
+  style.id = 'adminbar-presentation';
   style.textContent = `
-    @keyframes adminbarSalesCardEnter {
+    @keyframes adminbarEnter {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .sales-summary-grid .sales-summary-card { animation: adminbarSalesCardEnter var(--t-slow) both; }
+    @keyframes adminbarBadgePop {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes adminbarModalIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Cards (existing sales summary) */
+    .sales-summary-grid .sales-summary-card { animation: adminbarEnter var(--t-slow) both; }
     .sales-summary-grid .sales-summary-card:nth-child(2) { animation-delay: 70ms; }
     .sales-summary-grid .sales-summary-card:nth-child(3) { animation-delay: 140ms; }
     .sales-summary-grid .sales-summary-card:nth-child(4) { animation-delay: 210ms; }
+
+    /* Table rows - staggered fade-in */
+    .admin-table tbody tr { animation: adminbarEnter var(--t-med) both; }
+    .admin-table tbody tr:nth-child(1)  { animation-delay: 10ms; }
+    .admin-table tbody tr:nth-child(2)  { animation-delay: 25ms; }
+    .admin-table tbody tr:nth-child(3)  { animation-delay: 40ms; }
+    .admin-table tbody tr:nth-child(4)  { animation-delay: 55ms; }
+    .admin-table tbody tr:nth-child(5)  { animation-delay: 70ms; }
+    .admin-table tbody tr:nth-child(6)  { animation-delay: 85ms; }
+    .admin-table tbody tr:nth-child(7)  { animation-delay: 100ms; }
+    .admin-table tbody tr:nth-child(8)  { animation-delay: 115ms; }
+    .admin-table tbody tr:nth-child(9)  { animation-delay: 130ms; }
+    .admin-table tbody tr:nth-child(10) { animation-delay: 145ms; }
+    .admin-table tbody tr:nth-child(11) { animation-delay: 160ms; }
+    .admin-table tbody tr:nth-child(12) { animation-delay: 175ms; }
+    .admin-table tbody tr:nth-child(13) { animation-delay: 190ms; }
+    .admin-table tbody tr:nth-child(14) { animation-delay: 205ms; }
+    .admin-table tbody tr:nth-child(15) { animation-delay: 220ms; }
+    .admin-table tbody tr:nth-child(16) { animation-delay: 235ms; }
+    .admin-table tbody tr:nth-child(17) { animation-delay: 250ms; }
+    .admin-table tbody tr:nth-child(18) { animation-delay: 265ms; }
+    .admin-table tbody tr:nth-child(19) { animation-delay: 280ms; }
+    .admin-table tbody tr:nth-child(20) { animation-delay: 295ms; }
+
+    /* Badges - pop in */
+    .admin-table .badge,
+    .sales-summary-grid .badge,
+    .queue-order .badge,
+    .stat-card .badge { animation: adminbarBadgePop var(--t-fast) both; }
+
+    /* Modals - fade + scale */
+    .modal-overlay .modal { animation: adminbarModalIn var(--t-med) both; }
+
     @media (prefers-reduced-motion: reduce) {
-      .sales-summary-grid .sales-summary-card { animation: none; }
+      .sales-summary-grid .sales-summary-card,
+      .admin-table tbody tr,
+      .admin-table .badge,
+      .sales-summary-grid .badge,
+      .queue-order .badge,
+      .stat-card .badge,
+      .modal-overlay .modal { animation: none; }
     }
   `;
   document.head.appendChild(style);
@@ -618,7 +667,7 @@ function barPayments(el) {
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
     </div>
-    <div class="table-wrap"><table>
+<div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
       <tbody id="paymentRows"></tbody>
     </table></div>`;
@@ -693,7 +742,7 @@ function barPaymentDetail(el, id) {
    DASHBOARD DE VENTAS
    ============================================================ */
 function barSalesDashboard(el) {
-  ensureSalesPresentationStyles();
+  ensureAdminbarPresentationStyles();
   const orders = Store.orders;
   const today = new Date().toISOString().slice(0, 10);
   const validSales = orders.filter(isValidSale);
@@ -755,9 +804,9 @@ function barSalesDashboard(el) {
    ============================================================ */
 function barSalesHistory(el) {
   const orders = Store.orders;
-  el.innerHTML = `
+el.innerHTML = `
     <div class="page-title"><h1><span class="ico">🕓</span> Historial de ventas</h1></div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
       <tbody>${orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
         <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}</tbody></table></div>
