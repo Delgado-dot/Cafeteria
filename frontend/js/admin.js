@@ -30,6 +30,7 @@ const paymentStatusLabels = {
   review: { label: 'En revisión', cls: 'badge-info' },
   approved: { label: 'Aprobado', cls: 'badge-success' },
   paid: { label: 'Pagado', cls: 'badge-success' },
+  rejected: { label: 'Rechazado', cls: 'badge-danger' },
   refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
 };
 
