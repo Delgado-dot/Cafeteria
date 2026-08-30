@@ -38,6 +38,26 @@ function paymentMethodIcon(method) {
   return ({ deuna: '📲', transferencia: '🏦', efectivo: '💵' }[method] || '💳');
 }
 
+function ensureSalesPresentationStyles() {
+  if (document.getElementById('adminbar-sales-presentation')) return;
+  const style = document.createElement('style');
+  style.id = 'adminbar-sales-presentation';
+  style.textContent = `
+    @keyframes adminbarSalesCardEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .sales-summary-grid .sales-summary-card { animation: adminbarSalesCardEnter var(--t-slow) both; }
+    .sales-summary-grid .sales-summary-card:nth-child(2) { animation-delay: 70ms; }
+    .sales-summary-grid .sales-summary-card:nth-child(3) { animation-delay: 140ms; }
+    .sales-summary-grid .sales-summary-card:nth-child(4) { animation-delay: 210ms; }
+    @media (prefers-reduced-motion: reduce) {
+      .sales-summary-grid .sales-summary-card { animation: none; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
@@ -656,6 +676,7 @@ function barPaymentDetail(el, id) {
    DASHBOARD DE VENTAS
    ============================================================ */
 function barSalesDashboard(el) {
+  ensureSalesPresentationStyles();
   const orders = Store.orders;
   const today = new Date().toISOString().slice(0, 10);
   const validSales = orders.filter(isValidSale);
@@ -686,11 +707,11 @@ function barSalesDashboard(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
-    <div class="grid grid-4" style="margin-bottom:24px">
-      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
-      <div class="stat-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
-      <div class="stat-card"><div class="st-label">Número de ventas</div><div class="st-value primary">${countToday}</div></div>
-      <div class="stat-card"><div class="st-label">Total del mes</div><div class="st-value">${money(salesMonth)}</div></div>
+    <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
+      <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Número de ventas</div><div class="st-value primary">${countToday}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value">${money(salesMonth)}</div></div>
     </div>
 
     <div class="card" style="margin-bottom:24px">
