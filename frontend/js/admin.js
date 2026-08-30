@@ -780,11 +780,9 @@ function barSalesDashboard(el) {
       <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
 
-    <div class="card" style="margin-bottom:24px">
+<div class="card" style="margin-bottom:24px">
       <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
-      <div class="bar-chart">
-        ${days.map((d, index) => `<div class="bc-col"><div class="bc-bar${index === days.length - 1 ? ' hl' : ''}" style="height:${Math.max(3, (d.total / maxDay) * 100)}%"></div><div class="bc-label">${d.label}</div><div class="bc-label bold">${money(d.total)}</div></div>`).join('')}
-      </div>
+      <div id="salesLineChart" class="sales-line-chart"></div>
     </div>
 
     <div class="card" style="margin-bottom:24px">
@@ -796,7 +794,93 @@ function barSalesDashboard(el) {
         </ul>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
     </div>
   `;
-  animateSalesMetrics(el);
+animateSalesMetrics(el);
+  renderSalesLineChart(el, days);
+}
+
+function renderSalesLineChart(el, days) {
+  const container = $('#salesLineChart', el);
+  if (!container) return;
+  const totals = days.map((d) => d.total);
+  const maxVal = Math.max(...totals, 1);
+  const minVal = Math.min(...totals, 0);
+  const range = maxVal - minVal || 1;
+  const padding = { top: 24, right: 16, bottom: 36, left: 56 };
+  const width = container.clientWidth || 600;
+  const height = 220;
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const x = (i) => padding.left + (i / (days.length - 1)) * innerW;
+  const y = (val) => padding.top + innerH * (1 - (val - minVal) / range);
+
+  const points = days.map((d, i) => `${x(i)},${y(d.total)}`).join(' ');
+  const areaPoints = `${padding.left},${padding.top + innerH} ${points} ${padding.left + innerW},${padding.top + innerH}`;
+
+  const pathLen = 1000;
+
+  container.innerHTML = `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="sales-chart-svg" role="img" aria-label="Gráfico de ventas de los últimos 7 días">
+      <defs>
+        <linearGradient id="salesAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#40807E" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#40807E" stop-opacity="0.02"/>
+        </linearGradient>
+        <linearGradient id="salesLineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#40807E"/>
+          <stop offset="100%" stop-color="#2f605e"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      <g class="chart-grid" stroke="var(--border)" stroke-width="0.5">
+        ${[0, 0.25, 0.5, 0.75, 1].map((f) => {
+          const gy = padding.top + innerH * f;
+          const gv = maxVal - range * f;
+          return `<line x1="${padding.left}" y1="${gy}" x2="${padding.left + innerW}" y2="${gy}"/><text x="${padding.left - 8}" y="${gy + 4}" text-anchor="end" font-size="10" fill="var(--text-3)">${money(gv)}</text>`;
+        }).join('')}
+      </g>
+      <!-- Area -->
+      <polygon class="sales-area" points="${areaPoints}" fill="url(#salesAreaGrad)"/>
+      <!-- Line -->
+      <polyline class="sales-line" points="${points}" fill="none" stroke="url(#salesLineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:${pathLen}; stroke-dashoffset:${pathLen};"/>
+      <!-- Points -->
+      <g class="sales-points">
+        ${days.map((d, i) => `
+          <g class="sales-point-group" data-index="${i}" style="cursor:pointer">
+            <circle class="sales-point" cx="${x(i)}" cy="${y(d.total)}" r="5" fill="var(--surface)" stroke="#40807E" stroke-width="2.5"/>
+            <title>${d.label}: ${money(d.total)}</title>
+            <text class="sales-tooltip" x="${x(i)}" y="${y(d.total) - 18}" text-anchor="middle" font-size="11" fill="var(--text)" opacity="0" pointer-events="none" style="white-space:nowrap">${money(d.total)}</text>
+          </g>
+        `).join('')}
+      </g>
+      <!-- X-axis labels -->
+      <g class="chart-x-labels" font-size="11" fill="var(--text-3)" text-anchor="middle">
+        ${days.map((d, i) => `<text x="${x(i)}" y="${height - 6}">${d.label}</text>`).join('')}
+      </g>
+    </svg>`;
+
+  requestAnimationFrame(() => {
+    const line = container.querySelector('.sales-line');
+    if (line) {
+      line.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+      line.style.strokeDashoffset = '0';
+    }
+  });
+
+  container.querySelectorAll('.sales-point-group').forEach((g) => {
+    g.addEventListener('mouseenter', () => {
+      const tooltip = g.querySelector('.sales-tooltip');
+      const point = g.querySelector('.sales-point');
+      if (tooltip) tooltip.style.opacity = '1';
+      if (point) point.setAttribute('r', '7');
+    });
+    g.addEventListener('mouseleave', () => {
+      const tooltip = g.querySelector('.sales-tooltip');
+      const point = g.querySelector('.sales-point');
+      if (tooltip) tooltip.style.opacity = '0';
+      if (point) point.setAttribute('r', '5');
+    });
+  });
 }
 
 /* ============================================================
