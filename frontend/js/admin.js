@@ -1242,65 +1242,79 @@ function barSalesHistory(el) {
 }
  
 function barDelivery(el) {
+  ensureAdminbarPresentationStyles();
   const cfg = Store.config;
   const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const floors = ['Piso 1', 'Piso 2', 'Piso 3'];
+  const zones = ['Zona A', 'Zona B', 'Zona C'];
+  
+  // Initialize delivery zones/floors in config if not present
+  if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
+  if (!cfg.deliveryZones) cfg.deliveryZones = zones;
+
   el.innerHTML = `
-    <div class="page-title"><h1>Delivery interno</h1></div>
-    <div class="grid grid-2">
-      <div class="card">
-        <h3 style="margin-bottom:14px">Configuración del delivery</h3>
-        <div class="field"><label class="checkbox-row"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label><div class="tiny muted" style="margin-left:26px">Cobertura exclusiva dentro del edificio INTESUD (Piso 1 - 3).</div></div>
-        <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-          <label class="label">Días de entrega</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
-            ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
-          </div>
-        </div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}"></div>
-          <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}"></div>
-        </div>
-        <div class="field"><label class="label">Capacidad máxima de delivery</label><input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}"><div class="tiny muted">Pedidos de delivery que pueden atenderse simultáneamente.</div></div>
-        <button class="btn" id="dlSave">Guardar configuración</button>
+    <div class="page-title"><h1><span class="ico">🛵</span> Delivery</h1></div>
+    <div class="card">
+      <h3 style="margin-bottom:16px">Configuración del delivery</h3>
+      <div class="field">
+        <label class="checkbox-row">
+          <input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}>
+          <b>Habilitar delivery interno</b>
+        </label>
+        <div class="tiny muted" style="margin-left:26px">Cobertura exclusiva dentro del edificio INTESUD.</div>
       </div>
-      <div>
-        <div class="capacity-card" style="margin-bottom:16px">
-          <div class="capacity-header"><h3>Capacidad de delivery</h3><span class="badge ${cfg.deliveryEnabled ? 'badge-success' : 'badge-danger'}">${cfg.deliveryEnabled ? 'Disponible' : parseInt(cfg.deliveryCurrent) >= parseInt(cfg.deliveryMax) ? 'Capacidad llena' : 'Activo'}</span></div>
-          <div class="bar-track"><div class="bar-fill ${cfg.deliveryEnabled && cfg.deliveryCurrent >= cfg.deliveryMax ? 'danger' : ''}" style="width:${Math.min(100, (cfg.deliveryCurrent / cfg.deliveryMax) * 100)}%"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:8px"><span class="muted small">${cfg.deliveryCurrent} / ${cfg.deliveryMax} pedidos de delivery</span></div>
+      <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+        <label class="label">Días de entrega</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
+          ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
         </div>
-        <div class="card">
-          <h3 style="margin-bottom:10px">Pedidos de delivery</h3>
-          <div id="dlOrders"></div>
+      </div>
+      <div class="field" id="dlFloorsField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+        <label class="label">Pisos habilitados</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlFloors">
+          ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
         </div>
+      </div>
+      <div class="field" id="dlZonesField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+        <label class="label">Zonas habilitadas</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlZones">
+          ${zones.map((z) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-zone="${z}" ${cfg.deliveryZones.includes(z) ? 'checked' : ''} style="margin-right:4px">${z}</label>`).join('')}
+        </div>
+      </div>
+      <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+        <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}"></div>
+        <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}"></div>
+      </div>
+      <div class="field" id="dlMaxField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+        <label class="label">Capacidad máxima simultánea</label>
+        <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}"><div class="tiny muted">Pedidos de delivery que pueden atenderse simultáneamente.</div>
+      </div>
+      <div style="margin-top:20px;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" id="dlSave">Guardar configuración</button>
       </div>
     </div>`;
 
-  if (!cfg.deliveryEnabled) {
-    el.querySelector('#dlOrders').innerHTML = `<div class="status-banner danger" style="margin:0"><span class="ico">🚫</span><div><b>Delivery no disponible</b><br>Habilita el servicio para recibir pedidos de delivery.</div></div>`;
-    el.querySelector('.capacity-card .capacity-header .badge').textContent = 'No disponible';
-  } else {
-    const dlOrders = Store.orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-    $('#dlOrders').innerHTML = dlOrders.length ? dlOrders.map((o) => `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);align-items:center">
-        <div><div class="bold small">#${o.id} · P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</div><div class="tiny muted">${esc(o.userName)} · ${money(o.total)}</div></div>
-        ${statusMeta(o.status)}
-      </div>`).join('') : emptyState('🛵', 'Sin pedidos de delivery', 'Por ahora no hay pedidos de delivery.');
-  }
-
-  $('#dlEnabled').onchange = () => {
-    cfg.deliveryEnabled = $('#dlEnabled').checked;
-    const field = $('#dlDaysField');
-    field.style.opacity = cfg.deliveryEnabled ? '' : '.5';
-    field.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none';
+  const fieldsToToggle = ['dlDaysField', 'dlFloorsField', 'dlZonesField', 'dlTimeFields', 'dlMaxField'];
+  
+  $('#dlEnabled', el).onchange = () => {
+    cfg.deliveryEnabled = $('#dlEnabled', el).checked;
+    fieldsToToggle.forEach(id => {
+      const field = $('#' + id, el);
+      if (field) {
+        field.style.opacity = cfg.deliveryEnabled ? '' : '.5';
+        field.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none';
+      }
+    });
   };
 
-  $('#dlSave').onclick = () => {
-    cfg.orderOpen = $('#dlStart').value || cfg.orderOpen;
-    cfg.orderClose = $('#dlEnd').value || cfg.orderClose;
-    cfg.deliveryMax = parseInt($('#dlMax').value) || cfg.deliveryMax;
+  $('#dlSave', el).onclick = () => {
+    cfg.orderOpen = $('#dlStart', el).value || cfg.orderOpen;
+    cfg.orderClose = $('#dlEnd', el).value || cfg.orderClose;
+    cfg.deliveryMax = parseInt($('#dlMax', el).value) || cfg.deliveryMax;
     cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
-    const enabled = $('#dlEnabled').checked;
+    cfg.deliveryFloors = floors.filter((f) => $(`[data-floor="${f}"]`, el)?.checked);
+    cfg.deliveryZones = zones.filter((z) => $(`[data-zone="${z}"]`, el)?.checked);
+    const enabled = $('#dlEnabled', el).checked;
     cfg.deliveryEnabled = enabled;
     Store.config = cfg;
     logAudit('Actualizó configuración de delivery', enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
