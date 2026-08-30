@@ -688,37 +688,52 @@ function stockBadge(p) {
    STOCK
    ============================================================ */
 function barStock(el) {
+  ensureAdminbarPresentationStyles();
   const products = Store.products;
   const history = Store.stockHistory;
+
+  const outOfStock = products.filter((p) => p.stock === 0);
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+
   el.innerHTML = `
-    <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${products.filter((p) => p.stock === 0).length} agotados</span></div>
+    <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${outOfStock.length} agotados</span></div>
+    ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     <div class="grid grid-3" style="margin-bottom:20px">
       <div class="stat-card success-card"><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
-      <div class="stat-card alert"><div class="st-label">Stock bajo</div><div class="st-value warning">${products.filter((p) => p.stock > 0 && p.stock <= p.minStock).length}</div></div>
-      <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${products.filter((p) => p.stock === 0).length}</div></div>
+      <div class="stat-card alert"><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
+      <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div></div>
     </div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th>Última actualización</th><th></th></tr></thead>
-      <tbody>${products.map((p) => {
-        const h = history.find((x) => x.productId === p.id);
-        const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
-        const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
-        return `<tr>
-          <td><div class="bold">${esc(p.name)}</div></td>
-          <td><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
-          <td>${p.minStock}</td>
-          <td>${stockBadge(p)}</td>
-          <td>${h ? `${h.time} ${h.date}` : '—'}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" data-inc="${p.id}">+ Aumentar</button>
-            <button class="btn btn-neutral btn-sm" data-dec="${p.id}">− Disminuir</button>
-          </td>
-        </tr>`;
-      }).join('')}</tbody></table></div>
+      <tbody id="stockRows"></tbody>
+    </table></div>
     <div style="margin-top:24px">
       <h3 class="section-title">Historial de cambios</h3>
       <div class="card" id="stockHist"></div>
     </div>`;
+
+  const renderRows = () => {
+    const tbody = $('#stockRows', el);
+    tbody.innerHTML = products.map((p) => {
+      const h = history.find((x) => x.productId === p.id);
+      const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+      const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
+      return `<tr>
+        <td data-label="Producto"><div class="bold">${esc(p.name)}</div></td>
+        <td data-label="Stock actual"><div class="stock-line"><b class="tabular-nums">${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
+        <td data-label="Stock mínimo" class="tabular-nums">${p.minStock}</td>
+        <td data-label="Estado">${stockBadge(p)}</td>
+        <td data-label="Última actualización">${h ? `${h.time} ${h.date}` : '—'}</td>
+        <td data-label="Acciones">
+          <button class="btn btn-outline btn-sm" data-inc="${p.id}">+ Aumentar</button>
+          <button class="btn btn-neutral btn-sm" data-dec="${p.id}">− Disminuir</button>
+        </td>
+      </tr>`;
+    }).join('');
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+  };
 
   const histWrap = $('#stockHist');
   if (!history.length) histWrap.innerHTML = emptyState('📋', 'Sin cambios registrados', 'Modifica el stock para ver el historial.');
@@ -736,8 +751,19 @@ function barStock(el) {
     renderBarAdmin('stock');
   };
 
-  $$('[data-inc]', el).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
-  $$('[data-dec]', el).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+  // Skeleton + render
+  const tbody = $('#stockRows', el);
+  tbody.innerHTML = Array.from({ length: 5 }, () => `
+    <tr>
+      <td><div class="skeleton" style="width:120px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+      <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:28px;border-radius:var(--r-sm)"></div></td>
+    </tr>
+  `).join('');
+  setTimeout(renderRows, 350);
 
   histWrap.innerHTML = history.slice(0, 15).map((h) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
