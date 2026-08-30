@@ -1086,23 +1086,37 @@ function barConfigHours(el) {
       </div>
       <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
       <div style="margin-top:20px;display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" onclick="saveConfigHours()">Guardar cambios</button>
+        <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
       </div>
     </div>
-`;
+  `;
+  $('#btnSaveConfigHours', el).onclick = () => saveConfigHours($('#btnSaveConfigHours', el));
 }
 
-function saveConfigHours() {
-  const cfg = Store.config;
-  cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
-  cfg.orderClose = $('#ohClose').value || cfg.orderClose;
-  cfg.breakStart = $('#brStart').value || cfg.breakStart;
-  cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
-  cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
-  Store.config = cfg;
-  logAudit('Actualizó horarios', 'Horario de pedidos y receso');
-  toast('Horarios guardados.', 'success');
-  renderBarAdmin('config-hours');
+function saveConfigHours(btn) {
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
+  
+  setTimeout(() => {
+    const cfg = Store.config;
+    cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
+    cfg.orderClose = $('#ohClose').value || cfg.orderClose;
+    cfg.breakStart = $('#brStart').value || cfg.breakStart;
+    cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
+    cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
+    Store.config = cfg;
+    logAudit('Actualizó horarios', 'Horario de pedidos y receso');
+    toast('Horarios guardados.', 'success');
+    
+    btn.innerHTML = '<span style="margin-right:6px">✓</span>Guardado';
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-primary');
+    
+    setTimeout(() => {
+      renderBarAdmin('config-hours');
+    }, 600);
+  }, 500);
 }
 
 /* ============================================================
@@ -1118,7 +1132,7 @@ function barConfigStatus(el) {
         <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
       </div>
       <div style="text-align:center">
-        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" style="width:100%;padding:12px;font-size:var(--fs-lg)" onclick="confirmToggleState(!${isOpen})">
+        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
           ${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}
         </button>
       </div>
@@ -1126,20 +1140,39 @@ function barConfigStatus(el) {
         <b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.
       </div>
     </div>
-`;
+  `;
+  $('#btnToggleCafeStatus', el).onclick = () => confirmToggleState(!isOpen, $('#btnToggleCafeStatus', el));
 }
 
 // Helper for config-status toggle - defined globally for onclick handlers
-function confirmToggleState(toOpen) {
+function confirmToggleState(toOpen, btn) {
   const msg = toOpen ? '¿Seguro que quieres abrir la cafetería?' : '¿Seguro que quieres cerrar la cafetería?';
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Procesando...';
+  
   confirmDialog(msg, msg, 'Confirmar', false).then((ok) => {
-    if (!ok) return;
-    const cfg = Store.config;
-    cfg.cafeOpen = toOpen;
-    Store.config = cfg;
-    logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
-    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + '.', toOpen ? 'success' : 'warning');
-    renderBarAdmin('config-status');
+    if (!ok) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+    
+    setTimeout(() => {
+      const cfg = Store.config;
+      cfg.cafeOpen = toOpen;
+      Store.config = cfg;
+      logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
+      toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + '.', toOpen ? 'success' : 'warning');
+      
+      btn.innerHTML = '<span style="margin-right:6px">✓</span>' + (toOpen ? 'Abierta' : 'Cerrada');
+      btn.classList.add('btn-success');
+      btn.classList.remove('btn-primary', 'btn-secondary');
+      
+      setTimeout(() => {
+        renderBarAdmin('config-status');
+      }, 600);
+    }, 500);
   });
 }
 window.confirmToggleState = confirmToggleState;
