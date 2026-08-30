@@ -3,20 +3,20 @@
    ============================================================ */
 
 const BAR_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: '📊' },
   orders: { label: 'Pedidos', icon: '🧾' },
   products: { label: 'Productos', icon: '🍔' },
   stock: { label: 'Stock', icon: '📦' },
+  delivery: { label: 'Delivery', icon: '🛵' },
+  dashboard: { label: 'Resumen', icon: '📊' },
   payments: { label: 'Pagos', icon: '💳' },
   sales: { label: 'Ventas', icon: '📈' },
-  delivery: { label: 'Delivery', icon: '🛵' },
   config: { label: 'Configuración', icon: '⚙️' },
 };
 
 function renderBarAdmin(page) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
-  const sec = BAR_SECTIONS[page] ? page : 'dashboard';
+  const sec = BAR_SECTIONS[page] ? page : 'orders';
   syncBodyClass();
 
   const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
@@ -327,7 +327,7 @@ function barProducts(el) {
   let cat = 'Todas';
 
   el.innerHTML = `
-    <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
+    <div class="page-title"><div><h1>Productos</h1><p class="page-sub">Activa, edita o crea productos sin salir de esta lista.</p></div><button class="btn btn-lg" id="addProduct">＋ Crear producto</button></div>
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
       ${cats.map((c) => `<button class="category-chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
@@ -342,15 +342,17 @@ function barProducts(el) {
       <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
       <tbody>${list.map((p) => `
         <tr>
-          <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
+          <td><div style="display:flex;align-items:center;gap:12px"><div class="admin-product-icon">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
           <td>${esc(p.category)}</td>
           <td class="bold">${money(p.price)}</td>
           <td>${stockBadge(p)}</td>
           <td>${p.prepMin} min</td>
-          <td>${p.available ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
+          <td><span class="badge ${p.available ? 'badge-success' : 'badge-neutral'}">${p.available ? '● Activo' : '○ Inactivo'}</span></td>
           <td>
-            <button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button>
-            <button class="btn btn-neutral btn-sm" data-toggle="${p.id}">${p.available ? 'Desactivar' : 'Activar'}</button>
+            <div class="admin-row-actions">
+              <button class="btn btn-outline btn-icon" title="Editar ${esc(p.name)}" aria-label="Editar ${esc(p.name)}" data-edit="${p.id}">✏️</button>
+              <label class="switch" title="${p.available ? 'Desactivar' : 'Activar'} ${esc(p.name)}"><input type="checkbox" data-toggle="${p.id}" ${p.available ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label>
+            </div>
           </td>
         </tr>`).join('')}
       </tbody></table></div>`;
@@ -452,14 +454,13 @@ function barStock(el) {
         const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
         const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
         return `<tr>
-          <td><div class="bold">${esc(p.name)}</div></td>
+          <td><div style="display:flex;align-items:center;gap:10px"><div class="admin-product-icon sm">${productIcon(p)}</div><div class="bold">${esc(p.name)}</div></div></td>
           <td><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
           <td>${p.minStock}</td>
           <td>${stockBadge(p)}</td>
           <td>${h ? `${h.time} ${h.date}` : '—'}</td>
           <td>
-            <button class="btn btn-outline btn-sm" data-inc="${p.id}">+ Aumentar</button>
-            <button class="btn btn-neutral btn-sm" data-dec="${p.id}">− Disminuir</button>
+            <div class="admin-row-actions"><button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}">＋</button><button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}">−</button></div>
           </td>
         </tr>`;
       }).join('')}</tbody></table></div>
@@ -614,25 +615,29 @@ function barSales(el) {
    ============================================================ */
 function barDelivery(el) {
   const cfg = Store.config;
-  const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const floors = ['1', '2', '3'];
+  const zones = ['Aulas', 'Biblioteca', 'Sala de docentes'];
+  // Compatibilidad con configuraciones guardadas antes de añadir zonas.
+  const activeFloors = cfg.deliveryFloors || floors;
+  const activeZones = cfg.deliveryZones || zones;
   el.innerHTML = `
-    <div class="page-title"><h1>Delivery interno</h1></div>
+    <div class="page-title"><div><h1>Delivery interno</h1><p class="page-sub">Configura en pocos pasos dónde se pueden entregar los pedidos.</p></div></div>
     <div class="grid grid-2">
       <div class="card">
-        <h3 style="margin-bottom:14px">Configuración del delivery</h3>
-        <div class="field"><label class="checkbox-row"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label><div class="tiny muted" style="margin-left:26px">Cobertura exclusiva dentro del edificio INTESUD (Piso 1 - 3).</div></div>
-        <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-          <label class="label">Días de entrega</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
-            ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
-          </div>
+        <div class="delivery-hero">
+          <div class="delivery-hero-icon">🛵</div>
+          <div><h3>Servicio de delivery</h3><p class="muted small">Solo dentro de las instalaciones de INTESUD.</p></div>
+          <label class="switch" style="margin-left:auto"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label>
         </div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}"></div>
-          <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}"></div>
+        <div id="dlSettings" style="${cfg.deliveryEnabled ? '' : 'opacity:.45;pointer-events:none'}">
+          <div class="field"><label class="label">Pisos habilitados</label><div class="delivery-option-grid">
+            ${floors.map((floor) => `<div class="delivery-option"><span class="delivery-option-icon">${floor}º</span><span><b>Piso ${floor}</b><small>Habilitado</small></span><label class="switch"><input type="checkbox" data-floor="${floor}" ${activeFloors.includes(floor) ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label></div>`).join('')}
+          </div></div>
+          <div class="field"><label class="label">Zonas habilitadas</label><div class="delivery-option-grid compact">
+            ${zones.map((zone) => `<div class="delivery-option"><span class="delivery-option-icon">${zone === 'Aulas' ? '🚪' : zone === 'Biblioteca' ? '📚' : '👩‍🏫'}</span><span><b>${zone}</b><small>Permitir entrega</small></span><label class="switch"><input type="checkbox" data-zone="${zone}" ${activeZones.includes(zone) ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label></div>`).join('')}
+          </div></div>
         </div>
-        <div class="field"><label class="label">Capacidad máxima de delivery</label><input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}"><div class="tiny muted">Pedidos de delivery que pueden atenderse simultáneamente.</div></div>
-        <button class="btn" id="dlSave">Guardar configuración</button>
+        <button class="btn btn-lg" id="dlSave">Guardar delivery</button>
       </div>
       <div>
         <div class="capacity-card" style="margin-bottom:16px">
@@ -661,20 +666,18 @@ function barDelivery(el) {
 
   $('#dlEnabled').onchange = () => {
     cfg.deliveryEnabled = $('#dlEnabled').checked;
-    const field = $('#dlDaysField');
+    const field = $('#dlSettings');
     field.style.opacity = cfg.deliveryEnabled ? '' : '.5';
     field.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none';
   };
 
   $('#dlSave').onclick = () => {
-    cfg.orderOpen = $('#dlStart').value || cfg.orderOpen;
-    cfg.orderClose = $('#dlEnd').value || cfg.orderClose;
-    cfg.deliveryMax = parseInt($('#dlMax').value) || cfg.deliveryMax;
-    cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
     const enabled = $('#dlEnabled').checked;
     cfg.deliveryEnabled = enabled;
+    cfg.deliveryFloors = floors.filter((floor) => $(`[data-floor="${floor}"]`, el)?.checked);
+    cfg.deliveryZones = zones.filter((zone) => $(`[data-zone="${zone}"]`, el)?.checked);
     Store.config = cfg;
-    logAudit('Actualizó configuración de delivery', enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
+    logAudit('Actualizó configuración de delivery', enabled ? `${cfg.deliveryFloors.length} pisos habilitados` : 'Delivery deshabilitado');
     toast('Configuración de delivery guardada.', 'success');
     renderBarAdmin('delivery');
   };

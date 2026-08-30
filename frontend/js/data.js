@@ -55,6 +55,8 @@ const DEFAULT_CONFIG = {
   currentCapacity: 8,
   cafeOpen: true,
   deliveryEnabled: true,
+  deliveryFloors: ['1', '2', '3'],
+  deliveryZones: ['Aulas', 'Biblioteca', 'Sala de docentes'],
   deliveryDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
   deliveryMax: 4,
   deliveryCurrent: 2,

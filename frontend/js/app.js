@@ -27,7 +27,7 @@ window.setRoute = setRoute;
 function resolveAlias(r) {
   if (r === 'usuario') return 'home';
   if (r.startsWith('usuario/')) return r.slice('usuario/'.length) || 'home';
-  if (r === 'bar') return 'adminbar/dashboard';
+  if (r === 'bar') return 'adminbar/orders';
   if (r.startsWith('bar/')) return 'adminbar/' + r.slice('bar/'.length);
   if (r === 'developer') return 'admindev/dashboard';
   if (r.startsWith('developer/')) return 'admindev/' + r.slice('developer/'.length);
@@ -44,7 +44,8 @@ function routeTargetRole(r) {
 
 // Ruta de aterrizaje por defecto de cada rol (inicio de su propia interfaz).
 function homeRouteFor(role) {
-  if (role === 'adminbar') return 'adminbar/dashboard';
+  // La operación empieza por la cola: es la primera pantalla para la cafetería.
+  if (role === 'adminbar') return 'adminbar/orders';
   if (role === 'admindev') return 'admindev/dashboard';
   return 'home';
 }
@@ -81,7 +82,7 @@ function handleRoute() {
     return;
   }
 
-  if (r.startsWith('adminbar')) return renderBarAdmin(r.split('/')[1] || 'dashboard');
+  if (r.startsWith('adminbar')) return renderBarAdmin(r.split('/')[1] || 'orders');
   if (r.startsWith('admindev')) return renderDevAdmin(r.split('/')[1] || 'dashboard');
 
   renderUserShell(r);

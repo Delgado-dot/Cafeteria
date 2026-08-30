@@ -117,7 +117,7 @@ function renderLogin() {
       if (res.ok) {
         toast('¡Bienvenido, ' + res.user.name + '!', 'success');
         // Redirección por rol: cada perfil aterriza en su propia interfaz.
-        const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
+        const dest = res.user.role === 'adminbar' ? 'adminbar/orders'
           : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
         setTimeout(() => route(dest), 400);
       } else {
