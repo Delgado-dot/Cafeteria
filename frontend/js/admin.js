@@ -557,6 +557,19 @@ function barProducts(el) {
 function productFormModal(p) {
   const isEdit = !!p;
   const cats = CATEGORIES;
+  const originalValues = isEdit ? {
+    name: p.name,
+    category: p.category,
+    price: p.price,
+    stock: p.stock,
+    prepMin: p.prepMin,
+    minStock: p.minStock,
+    desc: p.desc,
+    available: p.available,
+    allowExtras: p.allowExtras || false
+  } : null;
+  let hasUnsavedChanges = false;
+  
   const ov = modal(`
     <h3>${isEdit ? 'Editar' : 'Nuevo'} producto</h3>
     <div class="field"><label class="label">Nombre</label><input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}"><div class="input-err-msg" id="pfNameErr"></div></div>
@@ -570,13 +583,57 @@ function productFormModal(p) {
       <div class="field"><label class="label">Stock mínimo</label><input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}"><div class="input-err-msg" id="pfMinErr"></div></div>
     </div>
     <div class="field"><label class="label">Descripción</label><textarea class="input" id="pfDesc">${isEdit ? esc(p.desc) : ''}</textarea></div>
-    <div style="display:flex;justify-content:flex-end;gap:10px">
+    <div class="field">
+      <label class="checkbox-row"><input type="checkbox" id="pfExtras" ${isEdit && p.allowExtras ? 'checked' : ''}> <b>Permitir adicionales/observaciones</b></label>
+      <div class="tiny muted" style="margin-left:26px">El cliente podrá agregar notas o extras al producto.</div>
+    </div>
+    ${isEdit ? `
+    <div class="field">
+      <label class="checkbox-row"><input type="checkbox" id="pfActive" ${p.available ? 'checked' : ''}> <b>Producto activo</b></label>
+      <div class="tiny muted" style="margin-left:26px">Desactiva para ocultar del menú sin eliminarlo.</div>
+    </div>
+    ` : ''}
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
-      <button class="btn" data-save>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
+      <button class="btn btn-primary" id="btnSaveProduct" ${isEdit && !hasUnsavedChanges ? 'disabled style="opacity:0.6"' : ''}>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
     </div>`, { wide: true });
 
+  const btnSave = $('#btnSaveProduct', ov);
+  const fields = ['pfName', 'pfCat', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin', 'pfDesc', 'pfExtras'];
+  if (isEdit) fields.push('pfActive');
+  
+  const checkChanges = () => {
+    if (!isEdit || !originalValues) return;
+    const currentValues = {
+      name: $('#pfName', ov).value.trim(),
+      category: $('#pfCat', ov).value,
+      price: parseFloat($('#pfPrice', ov).value),
+      stock: parseInt($('#pfStock', ov).value),
+      prepMin: parseInt($('#pfPrep', ov).value),
+      minStock: parseInt($('#pfMin', ov).value),
+      desc: $('#pfDesc', ov).value,
+      available: $('#pfActive', ov)?.checked ?? true,
+      allowExtras: $('#pfExtras', ov).checked
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => {
+      if (key === 'price') return currentValues[key] !== originalValues[key];
+      if (key === 'stock' || key === 'prepMin' || key === 'minStock') return currentValues[key] !== originalValues[key];
+      return currentValues[key] !== originalValues[key];
+    });
+    btnSave.disabled = !hasUnsavedChanges;
+    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
+  };
+  
+  fields.forEach(id => {
+    const field = $('#' + id, ov);
+    if (field) {
+      field.addEventListener('input', checkChanges);
+      field.addEventListener('change', checkChanges);
+    }
+  });
+
   $('[data-cancel]', ov).onclick = () => ov.remove();
-  $('[data-save]', ov).onclick = () => {
+  btnSave.onclick = () => {
     const name = $('#pfName', ov).value.trim();
     const price = parseFloat($('#pfPrice', ov).value);
     const stock = parseInt($('#pfStock', ov).value);
@@ -589,19 +646,35 @@ function productFormModal(p) {
     if (isNaN(prep) || prep <= 0) { $('#pfPrepErr', ov).textContent = 'Tiempo inválido.'; ok = false; }
     if (isNaN(mn) || mn < 0) { $('#pfMinErr', ov).textContent = 'Stock mínimo inválido.'; ok = false; }
     if (!ok) return;
-    const products = Store.products;
-    if (isEdit) {
-      Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available: p.stock > 0 ? p.available : false });
-      logAudit('Editó producto', name);
-      toast('Producto actualizado.', 'success');
-    } else {
-      products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available: stock > 0, desc: $('#pfDesc', ov).value, emoji: '' });
-      logAudit('Creó producto', name);
-      toast('Producto creado.', 'success');
-    }
-    Store.products = products;
-    ov.remove();
-    renderBarAdmin('products');
+    
+    const originalText = btnSave.innerHTML;
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
+    
+    setTimeout(() => {
+      const products = Store.products;
+      const allowExtras = $('#pfExtras', ov).checked;
+      const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
+      if (isEdit) {
+        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras });
+        logAudit('Editó producto', name);
+        toast('Producto actualizado.', 'success');
+      } else {
+        products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available, desc: $('#pfDesc', ov).value, emoji: '', allowExtras });
+        logAudit('Creó producto', name);
+        toast('Producto creado.', 'success');
+      }
+      Store.products = products;
+      
+      btnSave.innerHTML = '<span style="margin-right:6px">✓</span>' + (isEdit ? 'Guardado' : 'Creado');
+      btnSave.classList.add('btn-success');
+      btnSave.classList.remove('btn-primary');
+      
+      setTimeout(() => {
+        ov.remove();
+        renderBarAdmin('products');
+      }, 600);
+    }, 500);
   };
 }
 
