@@ -275,7 +275,7 @@ function barDashboard(el) {
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const cap = capacityInfo();
-  const payPending = orders.filter((o) => ['pending', 'review'].includes(o.paymentStatus) && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status)).length;
+  const payPending = orders.filter((o) => o.paymentStatus === 'pending' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status)).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
 
