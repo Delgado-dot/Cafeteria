@@ -93,6 +93,12 @@ function handleRoute() {
     if (section === 'sales-history') {
       return renderBarAdmin('sales-history');
     }
+    if (section === 'config-hours') {
+      return renderBarAdmin('config-hours');
+    }
+    if (section === 'config-status') {
+      return renderBarAdmin('config-status');
+    }
     return renderBarAdmin(section || 'dashboard');
   }
   if (r.startsWith('admindev')) return renderDevAdmin(r.split('/')[1] || 'dashboard');

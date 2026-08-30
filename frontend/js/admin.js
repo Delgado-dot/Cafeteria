@@ -13,6 +13,15 @@ const BAR_SECTIONS = {
   config: { label: 'Configuración', icon: '⚙️' },
 };
 
+const BAR_PAGES = {
+  ...BAR_SECTIONS,
+  'payment-detail': { label: 'Detalle de pago', icon: '💳' },
+  'sales-dashboard': { label: 'Ventas', icon: '📈' },
+  'sales-history': { label: 'Historial de ventas', icon: '📈' },
+  'config-hours': { label: 'Horarios', icon: '⚙️' },
+  'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
+};
+
 // Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
 const paymentStatusLabels = {
   pending: { label: 'Pendiente', cls: 'badge-warning' },
@@ -22,10 +31,10 @@ const paymentStatusLabels = {
   refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
 };
 
-function renderBarAdmin(page) {
+function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
-  const sec = BAR_SECTIONS[page] ? page : 'dashboard';
+  const sec = BAR_PAGES[page] ? page : 'dashboard';
   syncBodyClass();
 
   const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
@@ -51,8 +60,8 @@ function renderBarAdmin(page) {
       <div class="admin-main">
         <div class="admin-topbar">
           <button class="hamburger" id="barHamburger" title="Menú">☰</button>
-          <span style="font-size:1.3rem">${BAR_SECTIONS[sec].icon}</span>
-          <span class="page-name">${BAR_SECTIONS[sec].label}</span>
+          <span style="font-size:1.3rem">${BAR_PAGES[sec].icon}</span>
+          <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <span id="cafePill"></span>
             <div class="profile-chip" id="barUserMenu">
@@ -100,13 +109,16 @@ function renderBarAdmin(page) {
     products: barProducts,
     stock: barStock,
     payments: barPayments,
+    'payment-detail': barPaymentDetail,
     sales: barSales,
-    salesDashboard: barSalesDashboard,
-    salesHistory: barSalesHistory,
+    'sales-dashboard': barSalesDashboard,
+    'sales-history': barSalesHistory,
     delivery: barDelivery,
     config: barConfig,
+    'config-hours': barConfigHours,
+    'config-status': barConfigStatus,
   };
-  renderers[sec](content);
+  renderers[sec](content, params);
 }
 
 function renderCafePill(el) {
@@ -545,20 +557,7 @@ function barPayments(el) {
         `;
       }).join('')}</tbody></table></div>`;
 
-  $$('[data-v]', el).forEach((b) => b.onclick = () => {
-    const o = orders.find((x) => x.id === b.dataset.v);
-    modal(`<h3>Comprobante de transferencia</h3>
-      <div class="card" style="background:var(--primary-soft);text-align:center;padding:30px;margin-top:12px">
-        <div style="font-size:3rem">🧾</div>
-        <div class="tiny muted">Comprobante simulado</div>
-        <div class="bold" style="margin-top:8px">#${o.id} · ${money(o.total)}</div>
-        <div class="muted small">${o.userName} · ${o.date}</div>
-      </div>
-      <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
-      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn" data-c>Cerrar</button></div>`);
-    const m = $('.modal-overlay');
-    $('[data-c]', m).onclick = () => m.remove();
-  });
+  $$('[data-v]', el).forEach((b) => b.onclick = () => setRoute(`adminbar/payment-detail/${b.dataset.v}`));
 
   const setPay = (id, status) => {
     const o = orders.find((x) => x.id === id);
@@ -570,6 +569,28 @@ function barPayments(el) {
   };
   $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
   $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+}
+
+function barPaymentDetail(el, id) {
+  const order = Store.orders.find((o) => o.id === id);
+  if (!order) {
+    el.innerHTML = emptyState('💳', 'Pago no encontrado', 'El pedido solicitado no existe.');
+    return;
+  }
+  const status = paymentStatusLabels[order.paymentStatus];
+  el.innerHTML = `
+    <div class="page-title"><h1>Detalle de pago</h1></div>
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Pedido #${order.id}</div><div class="card-sub">${esc(order.userName)} · ${order.date} ${order.time || ''}</div></div><span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
+      <div class="card-body" style="text-align:center">
+        <div style="font-size:3rem">🧾</div>
+        <div class="tiny muted">Comprobante de transferencia simulado</div>
+        <div class="bold" style="margin-top:8px">${money(order.total)}</div>
+        <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
+        <button class="btn btn-outline" style="margin-top:20px" id="backToPayments">Volver a pagos</button>
+      </div>
+    </div>`;
+  $('#backToPayments', el).onclick = () => setRoute('adminbar/payments');
 }
 
 /* ============================================================
@@ -799,3 +820,82 @@ function barConfig(el) {
     renderBarAdmin('config');
   };
 }
+
+/* ============================================================
+   CONFIGURACIÓN - HORARIOS
+   ============================================================ */
+function barConfigHours(el) {
+  const cfg = Store.config;
+  el.innerHTML = `
+    <div class="page-title"><h1>Configuración - Horarios</h1></div>
+    <div class="card">
+      <h3 style="margin-bottom:14px">Horario de pedidos</h3>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}"></div>
+        <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}"></div>
+      </div>
+      <h3 style="margin:20px 0 14px">Horario de receso</h3>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}"></div>
+        <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}"></div>
+      </div>
+      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
+      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px">
+        <button class="btn" onclick="setRoute('adminbar/config')">Volver</button>
+        <button class="btn btn-primary" onclick="saveConfigHours()">Guardar cambios</button>
+      </div>
+    </div>
+`;
+}
+
+function saveConfigHours() {
+  const cfg = Store.config;
+  cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
+  cfg.orderClose = $('#ohClose').value || cfg.orderClose;
+  cfg.breakStart = $('#brStart').value || cfg.breakStart;
+  cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
+  cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
+  Store.config = cfg;
+  logAudit('Actualizó horarios', 'Horario de pedidos y receso');
+  toast('Horarios guardados.', 'success');
+  renderBarAdmin('config-hours');
+}
+
+/* ============================================================
+   CONFIGURACIÓN - ESTADO ABIERTO/CERRADO
+   ============================================================ */
+function barConfigStatus(el) {
+  const cfg = Store.config;
+  const isOpen = cfg.cafeOpen;
+  el.innerHTML = `
+    <div class="page-title"><h1>Configuración - Estado</h1></div>
+    <div class="card">
+      <div style="text-align:center;margin-bottom:24px">
+        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px">${isOpen ? '● ABIERTA' : '● CERRADA'}</span>
+      </div>
+      <div style="text-align:center">
+        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" style="width:100%;padding:12px;font-size:var(--fs-lg)" onclick="confirmToggleState(!${isOpen})">
+          ${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}
+        </button>
+      </div>
+      <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)">
+        <b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.
+      </div>
+    </div>
+`;
+}
+
+// Helper for config-status toggle - defined globally for onclick handlers
+function confirmToggleState(toOpen) {
+  const msg = toOpen ? '¿Seguro que quieres abrir la cafetería?' : '¿Seguro que quieres cerrar la cafetería?';
+  confirmDialog(msg, msg, 'Confirmar', false).then((ok) => {
+    if (!ok) return;
+    const cfg = Store.config;
+    cfg.cafeOpen = toOpen;
+    Store.config = cfg;
+    logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
+    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + '.', toOpen ? 'success' : 'warning');
+    renderBarAdmin('config-status');
+  });
+}
+window.confirmToggleState = confirmToggleState;
