@@ -34,6 +34,10 @@ const paymentStatusLabels = {
   refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
 };
 
+function isValidSale(order) {
+  return ['approved', 'paid'].includes(order.paymentStatus);
+}
+
 function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
@@ -141,7 +145,7 @@ function barDashboard(el) {
   const cap = capacityInfo();
   const payPending = orders.filter((o) => ['pending', 'review'].includes(o.paymentStatus) && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status)).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-  const salesToday = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).reduce((s, o) => s + o.total, 0);
+  const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
 
   const lowStock = Store.products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
   const outStock = Store.products.filter((p) => p.stock === 0);
@@ -601,13 +605,15 @@ function barPaymentDetail(el, id) {
 function barSalesDashboard(el) {
   const orders = Store.orders;
   const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((o) => o.date === today && ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status));
+  const validSales = orders.filter(isValidSale);
+  const todayOrders = validSales.filter((o) => o.date === today);
   const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
   const countToday = todayOrders.length;
+  const currentMonth = today.slice(0, 7);
+  const salesMonth = validSales.filter((o) => o.date.startsWith(currentMonth)).reduce((s, o) => s + o.total, 0);
 
-  // Product sales calculation
   const prodSales = {};
-  orders.filter((o) => o.status === 'delivered' || o.status === 'ready').forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
+  validSales.forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
   let best = null, worst = null;
   Object.entries(prodSales).forEach(([id, qty]) => {
     if (!best || qty > best.qty) best = { id, qty };
@@ -616,13 +622,29 @@ function barSalesDashboard(el) {
   const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
   const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
 
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    const total = validSales.filter((o) => o.date === date).reduce((sum, o) => sum + o.total, 0);
+    days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total });
+  }
+  const maxDay = Math.max(...days.map((d) => d.total), 1);
+
   el.innerHTML = `
     <div class="page-title"><h1>Ventas</h1></div>
     <div class="grid grid-4" style="margin-bottom:24px">
       <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
       <div class="stat-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
       <div class="stat-card"><div class="st-label">Número de ventas</div><div class="st-value primary">${countToday}</div></div>
-      <div class="stat-card"><div class="st-label">Total del mes</div><div class="st-value">${money(orders.filter((o) => o.date === today).reduce((s, o) => s + o.total, 0))}</div></div>
+      <div class="stat-card"><div class="st-label">Total del mes</div><div class="st-value">${money(salesMonth)}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
+      <div class="bar-chart">
+        ${days.map((d, index) => `<div class="bc-col"><div class="bc-bar${index === days.length - 1 ? ' hl' : ''}" style="height:${Math.max(3, (d.total / maxDay) * 100)}%"></div><div class="bc-label">${d.label}</div><div class="bc-label bold">${money(d.total)}</div></div>`).join('')}
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:24px">
@@ -645,7 +667,7 @@ function barSalesHistory(el) {
     <div class="page-title"><h1>Historial de ventas</h1></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
-      <tbody>${orders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
+      <tbody>${orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
         <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}</tbody></table></div>
 `;
 }
