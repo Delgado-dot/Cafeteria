@@ -1258,11 +1258,9 @@ function barDelivery(el) {
   const cfg = Store.config;
   const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const floors = ['Piso 1', 'Piso 2', 'Piso 3'];
-  const zones = ['Zona A', 'Zona B', 'Zona C'];
   
-  // Initialize delivery zones/floors in config if not present
+  // Initialize delivery floors in config if not present
   if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
-  if (!cfg.deliveryZones) cfg.deliveryZones = zones;
 
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">🛵</span> Delivery</h1></div>
@@ -1287,12 +1285,6 @@ function barDelivery(el) {
           ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
         </div>
       </div>
-      <div class="field" id="dlZonesField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-        <label class="label">Zonas habilitadas</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlZones">
-          ${zones.map((z) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-zone="${z}" ${cfg.deliveryZones.includes(z) ? 'checked' : ''} style="margin-right:4px">${z}</label>`).join('')}
-        </div>
-      </div>
       <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
         <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}"></div>
         <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}"></div>
@@ -1306,7 +1298,7 @@ function barDelivery(el) {
       </div>
     </div>`;
 
-  const fieldsToToggle = ['dlDaysField', 'dlFloorsField', 'dlZonesField', 'dlTimeFields', 'dlMaxField'];
+  const fieldsToToggle = ['dlDaysField', 'dlFloorsField', 'dlTimeFields', 'dlMaxField'];
   
   $('#dlEnabled', el).onchange = () => {
     cfg.deliveryEnabled = $('#dlEnabled', el).checked;
@@ -1325,7 +1317,6 @@ function barDelivery(el) {
     cfg.deliveryMax = parseInt($('#dlMax', el).value) || cfg.deliveryMax;
     cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
     cfg.deliveryFloors = floors.filter((f) => $(`[data-floor="${f}"]`, el)?.checked);
-    cfg.deliveryZones = zones.filter((z) => $(`[data-zone="${z}"]`, el)?.checked);
     const enabled = $('#dlEnabled', el).checked;
     cfg.deliveryEnabled = enabled;
     Store.config = cfg;
