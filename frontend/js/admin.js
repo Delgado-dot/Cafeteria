@@ -707,13 +707,13 @@ function barPayments(el) {
         const isVisited = lastVisitedPaymentId === o.id;
         return `
         <tr class="${isVisited ? 'visited-row' : ''}" data-order-id="${o.id}">
-          <td class="bold">#${o.id}</td>
-          <td>${esc(o.userName)}</td>
-          <td><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
-          <td class="bold tabular-nums">${money(o.total)}</td>
-          <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
-          <td class="small muted">${o.date} ${o.time || '—'}</td>
-          <td>
+          <td class="bold" data-label="Pedido">#${o.id}</td>
+          <td data-label="Usuario">${esc(o.userName)}</td>
+          <td data-label="Método"><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
+          <td class="bold tabular-nums" data-label="Total">${money(o.total)}</td>
+          <td data-label="Estado"><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
+          <td class="small muted" data-label="Fecha">${o.date} ${o.time || '—'}</td>
+          <td data-label="Acciones">
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
             ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-voucher="${o.id}">Ver comprobante</button>` : ''}
@@ -1055,7 +1055,7 @@ function barSalesHistory(el) {
     if (!tbodyEl) return;
     const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
     tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
-      <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold tabular-nums">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
+      <tr><td class="small" data-label="Fecha/hora">${o.date} ${o.time || '—'}</td><td class="bold" data-label="Pedido">#${o.id}</td><td class="bold tabular-nums" data-label="Monto">${money(o.total)}</td><td data-label="Método pago">${paymentMethodLabel(o.payment)}</td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
   };
 
   renderSkeletonRows();

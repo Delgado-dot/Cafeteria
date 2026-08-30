@@ -90,6 +90,41 @@
   /* Tablas scroll horizontal (ya manejado con .table-wrap) */
   .admin-topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
   .admin-content { padding: var(--sp-3); }
+
+  /* Admin tables → cards on narrow screens */
+  .admin-table thead { display: none; }
+  .admin-table tbody { display: block; }
+  .admin-table tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-3);
+    box-shadow: var(--shadow-xs), var(--shadow-sm);
+  }
+  .admin-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-sm);
+  }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-table td:first-child { padding-top: 0; }
+  .admin-table td:last-child { padding-bottom: 0; }
+  .admin-table td::before {
+    content: attr(data-label);
+    font-weight: var(--fw-semibold);
+    color: var(--text-2);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .admin-table td:has(button)::before { content: 'Acciones'; }
+  .admin-table .badge { margin-left: var(--sp-2); }
+  .admin-table .cell-actions { justify-content: flex-end; }
 }
 
 /* ============================================================
