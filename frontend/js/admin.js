@@ -948,8 +948,11 @@ function showVoucherModal(orderId) {
       </div>
     </div>
     <div class="modal-footer" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-      <button class="btn btn-primary" data-mclose>Cerrar</button>
+      <button class="btn btn-primary" id="voucherCloseBtn">Cerrar</button>
     </div>`, { wide: true, title: 'Comprobante de pago', sub: `Pedido #${order.id} · ${esc(order.userName)}` });
+  
+  // Attach close handler to footer button (modal() only binds the header × button)
+  $('#voucherCloseBtn', overlay).onclick = () => overlay.remove();
   
   // Handle Escape key
   const handleEscape = (e) => {
