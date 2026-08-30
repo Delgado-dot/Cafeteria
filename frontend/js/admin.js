@@ -66,6 +66,11 @@ function ensureAdminbarPresentationStyles() {
     .sales-summary-grid .sales-summary-card:nth-child(3) { animation-delay: 140ms; }
     .sales-summary-grid .sales-summary-card:nth-child(4) { animation-delay: 210ms; }
 
+    /* Stock summary cards (grid-3) - same staggered entrance */
+    .grid-3 .stat-card { animation: adminbarEnter var(--t-slow) both; }
+    .grid-3 .stat-card:nth-child(2) { animation-delay: 70ms; }
+    .grid-3 .stat-card:nth-child(3) { animation-delay: 140ms; }
+
     /* Table rows - staggered fade-in */
     .admin-table tbody tr { animation: adminbarEnter var(--t-med) both; }
     .admin-table tbody tr:nth-child(1)  { animation-delay: 10ms; }
@@ -100,6 +105,7 @@ function ensureAdminbarPresentationStyles() {
 
     @media (prefers-reduced-motion: reduce) {
       .sales-summary-grid .sales-summary-card,
+      .grid-3 .stat-card,
       .admin-table tbody tr,
       .admin-table .badge,
       .sales-summary-grid .badge,
