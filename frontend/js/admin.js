@@ -1008,15 +1008,13 @@ function barSalesDashboard(el) {
   const currentMonth = today.slice(0, 7);
   const salesMonth = validSales.filter((o) => o.date.startsWith(currentMonth)).reduce((s, o) => s + o.total, 0);
 
-  const prodSales = {};
+const prodSales = {};
   validSales.forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
-  let best = null, worst = null;
-  Object.entries(prodSales).forEach(([id, qty]) => {
-    if (!best || qty > best.qty) best = { id, qty };
-    if (!worst || qty < worst.qty) worst = { id, qty };
-  });
-  const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
-  const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
+  const topProducts = Object.entries(prodSales)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, qty]) => ({ product: Store.products.find((p) => p.id === id), qty }))
+    .filter((p) => p.product);
 
 const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -1058,11 +1056,17 @@ const days = [];
 
     <div class="card" style="margin-bottom:24px">
       <h3 style="margin-bottom:16px">Productos más vendidos</h3>
-      ${bestProduct || worstProduct ? `
-        <ul style="margin:0;padding:0 20px 0 16px;line-height:1.8">
-          ${bestProduct ? `<li><span class="badge badge-success" style="font-size:var(--fs-xs)">${bestProduct.name}</span> — ${best.qty} unidades vendidas</li>` : ''}
-          ${worstProduct && bestProduct?.id !== worstProduct.id ? `<li><span class="badge badge-neutral" style="font-size:var(--fs-xs)">${worstProduct.name}</span> — ${worst.qty} unidades vendidas</li>` : ''}
-        </ul>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
+      ${topProducts.length ? `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+          ${topProducts.map(({ product, qty }) => `
+            <div class="stat-card" style="padding:16px;text-align:center">
+              <div style="font-size:2.5rem;margin-bottom:8px">${product.emoji || productIcon(product)}</div>
+              <div class="bold" style="font-size:var(--fs-sm);margin-bottom:4px">${esc(product.name)}</div>
+              <div class="stat-value primary tabular-nums" style="font-size:1.5rem">${qty}</div>
+              <div class="tiny muted">unidades</div>
+            </div>
+          `).join('')}
+        </div>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
     </div>
   `;
 animateSalesMetrics(el);
