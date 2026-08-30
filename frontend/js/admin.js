@@ -17,6 +17,7 @@ const BAR_PAGES = {
   ...BAR_SECTIONS,
   'payment-detail': { label: 'Detalle de pago', icon: '💳' },
   'sales-history': { label: 'Historial de ventas', icon: '🕓' },
+  'stock-history': { label: 'Historial de stock', icon: '📋' },
   'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
 };
 
@@ -201,11 +202,12 @@ function renderBarAdmin(page, params) {
   $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
 
   const content = $('#barContent');
-  const renderers = {
+const renderers = {
     dashboard: barDashboard,
     orders: barOrders,
     products: barProducts,
     stock: barStock,
+    'stock-history': barStockHistory,
     payments: barPayments,
     'payment-detail': barPaymentDetail,
     'sales-dashboard': (target) => barSalesTabs(target, 'summary'),
@@ -775,6 +777,58 @@ function barStock(el) {
 function nowTime() {
   const d = new Date();
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+/* ============================================================
+   HISTORIAL DE STOCK
+   ============================================================ */
+function barStockHistory(el) {
+  ensureAdminbarPresentationStyles();
+  const history = Store.stockHistory;
+  const products = Store.products;
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico">📋</span> Historial de stock</h1></div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
+      <tbody id="stockHistoryRows"></tbody></table></div>
+  `;
+
+  const renderRows = () => {
+    const tbody = $('#stockHistoryRows', el);
+    if (!history.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay cambios de stock registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = history.map((h) => {
+      const product = products.find((p) => p.id === h.productId);
+      const type = h.delta > 0 ? 'entrada' : 'salida';
+      const typeBadge = h.delta > 0 ? 'badge-success' : 'badge-danger';
+      const typeIcon = h.delta > 0 ? '➕' : '➖';
+      return `
+        <tr>
+          <td data-label="Fecha/hora" class="small">${h.time} ${h.date}</td>
+          <td data-label="Producto">${esc(h.name)}</td>
+          <td data-label="Tipo"><span class="badge ${typeBadge}">${typeIcon} ${type}</span></td>
+          <td data-label="Cantidad" class="bold tabular-nums">${h.delta > 0 ? '+' : ''}${h.delta}</td>
+          <td data-label="Stock resultante" class="tabular-nums">${h.newVal}</td>
+        </tr>
+      `;
+    }).join('');
+  };
+
+  // Skeleton + render
+  const tbody = $('#stockHistoryRows', el);
+  tbody.innerHTML = Array.from({ length: 5 }, () => `
+    <tr>
+      <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+      <td><div class="skeleton" style="width:120px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+    </tr>
+  `).join('');
+  setTimeout(renderRows, 350);
 }
 
 /* ============================================================
