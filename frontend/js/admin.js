@@ -1165,14 +1165,13 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
   const progress = Math.min(momAbsChange, 200) / 200;
   const dashOffset = circumference * (1 - progress);
   const color = momPositive ? '#22a06b' : '#e09a16';
-  const arrow = momPositive ? '▲' : '▼';
   const arrowColor = momPositive ? 'var(--success)' : 'var(--warning)';
   const sign = momPositive ? '+' : '';
   const prevMonthLabel = salesPrevMonth > 0 ? money(salesPrevMonth) : '—';
 
   container.innerHTML = `
     <div class="mom-donut-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px">
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="mom-donut-svg" role="img" aria-label="Rendimiento versus mes anterior">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="mom-donut-svg" role="img" aria-label="Rendimiento del mes">
         <defs>
           <linearGradient id="momGrad" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="${color}"/>
@@ -1185,8 +1184,8 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
         <circle class="mom-ring" cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="url(#momGrad)" stroke-width="${strokeWidth}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})" style="stroke-dasharray:${circumference}; stroke-dashoffset:${circumference};"/>
       </svg>
       <div class="mom-donut-center" style="text-align:center">
-        <div style="font-size:2.2rem;font-weight:var(--fw-extrabold);color:${arrowColor};line-height:1.1">${arrow}<span style="font-size:1.6rem">${sign}${momAbsChange.toFixed(1)}%</span></div>
-        <div class="tiny muted" style="margin-top:4px">vs. mes anterior</div>
+        <div style="font-size:2.2rem;font-weight:var(--fw-extrabold);color:${arrowColor};line-height:1.1"><span style="font-size:1.6rem">${sign}${momAbsChange.toFixed(1)}%</span></div>
+        <div class="tiny muted" style="margin-top:4px">Rendimiento del mes</div>
         <div class="tiny muted" style="margin-top:2px">${prevMonthLabel} → ${money(salesMonth)}</div>
       </div>
     </div>`;
