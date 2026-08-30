@@ -510,3 +510,9 @@
 
 /* Rellenos varios */
 .stock-bar .fill, .bar-fill { transition: width var(--t-med); }
+
+/* Stock history improvements */
+.stock-history-date-header { background: var(--surface-2); }
+.stock-history-date-header td { font-weight: var(--fw-semibold); color: var(--text); padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.stock-delta-positive { color: var(--success); }
+.stock-delta-negative { color: var(--danger); }

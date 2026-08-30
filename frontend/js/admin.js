@@ -812,21 +812,37 @@ function barStockHistory(el) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay cambios de stock registrados.</td></tr>';
       return;
     }
-    tbody.innerHTML = history.map((h) => {
-      const product = products.find((p) => p.id === h.productId);
-      const type = h.delta > 0 ? 'entrada' : 'salida';
-      const typeBadge = h.delta > 0 ? 'badge-success' : 'badge-danger';
-      const typeIcon = h.delta > 0 ? '➕' : '➖';
-      return `
-        <tr>
-          <td data-label="Fecha/hora" class="small">${h.time} ${h.date}</td>
-          <td data-label="Producto">${esc(h.name)}</td>
-          <td data-label="Tipo"><span class="badge ${typeBadge}">${typeIcon} ${type}</span></td>
-          <td data-label="Cantidad" class="bold tabular-nums">${h.delta > 0 ? '+' : ''}${h.delta}</td>
-          <td data-label="Stock resultante" class="tabular-nums">${h.newVal}</td>
-        </tr>
-      `;
-    }).join('');
+    
+    // Group by date
+    const byDate = history.reduce((acc, h) => {
+      const date = h.date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(h);
+      return acc;
+    }, {});
+    
+    tbody.innerHTML = Object.entries(byDate).map(([date, entries]) => `
+      <tr class="stock-history-date-header">
+        <td colspan="5" style="background:var(--surface-2); font-weight:var(--fw-semibold); padding:8px 16px; border-bottom:1px solid var(--border);">
+          ${date}
+        </td>
+      </tr>
+      ${entries.map((h) => {
+        const type = h.delta > 0 ? 'entrada' : 'salida';
+        const typeBadge = h.delta > 0 ? 'badge-success' : 'badge-danger';
+        const typeIcon = h.delta > 0 ? '⬆️' : '⬇️';
+        const deltaClass = h.delta > 0 ? 'stock-delta-positive' : 'stock-delta-negative';
+        return `
+          <tr>
+            <td data-label="Fecha/hora" class="small" style="text-align:right; white-space:nowrap;">${h.time}</td>
+            <td data-label="Producto">${esc(h.name)}</td>
+            <td data-label="Tipo"><span class="badge ${typeBadge}">${typeIcon} ${type}</span></td>
+            <td data-label="Cantidad" class="bold tabular-nums ${deltaClass}">${h.delta > 0 ? '+' : ''}${h.delta}</td>
+            <td data-label="Stock resultante" class="tabular-nums">${h.newVal}</td>
+          </tr>
+        `;
+      }).join('')}
+    `).join('');
   };
 
   // Skeleton + render
