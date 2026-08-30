@@ -8,9 +8,11 @@ const BAR_SECTIONS = {
   products: { label: 'Productos', icon: '🍔' },
   stock: { label: 'Stock', icon: '📦' },
   payments: { label: 'Pagos', icon: '💳' },
-  sales: { label: 'Ventas', icon: '📈' },
+  'sales-dashboard': { label: 'Ventas', icon: '📈' },
+  'sales-history': { label: 'Historial de ventas', icon: '📈' },
   delivery: { label: 'Delivery', icon: '🛵' },
-  config: { label: 'Configuración', icon: '⚙️' },
+  'config-hours': { label: 'Horarios', icon: '⚙️' },
+  'config-status': { label: 'Estado cafetería', icon: '⚙️' },
 };
 
 const BAR_PAGES = {
@@ -34,7 +36,8 @@ const paymentStatusLabels = {
 function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
-  const sec = BAR_PAGES[page] ? page : 'dashboard';
+  const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
+  const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
   syncBodyClass();
 
   const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
@@ -110,11 +113,9 @@ function renderBarAdmin(page, params) {
     stock: barStock,
     payments: barPayments,
     'payment-detail': barPaymentDetail,
-    sales: barSales,
     'sales-dashboard': barSalesDashboard,
     'sales-history': barSalesHistory,
     delivery: barDelivery,
-    config: barConfig,
     'config-hours': barConfigHours,
     'config-status': barConfigStatus,
   };
@@ -191,7 +192,7 @@ function barDashboard(el) {
     <div class="grid grid-4">
       <div class="stat-card alert"><div class="st-label">Pagos pendientes</div><div class="st-value warning">${payPending}</div><div class="st-sub"><a href="#" data-goto="adminbar/payments">Revisar</a></div></div>
       <div class="stat-card"><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
-      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales">Detalle</a></div></div>
+      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
       <div class="stat-card"><div class="st-label">Productos agotados</div><div class="st-value ${outStock.length ? 'danger' : ''}">${outStock.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/stock">Ir a stock</a></div></div>
     </div>
 
@@ -594,59 +595,6 @@ function barPaymentDetail(el, id) {
 }
 
 /* ============================================================
-   VENTAS
-   ============================================================ */
-function barSales(el) {
-  const orders = Store.orders;
-  const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((o) => o.date === today && ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status));
-  const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
-  const countToday = todayOrders.length;
-
-  // product sales
-  const prodSales = {};
-  orders.filter((o) => o.status === 'delivered' || o.status === 'ready').forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
-  let best = null, worst = null;
-  Object.entries(prodSales).forEach(([id, qty]) => {
-    if (!best || qty > best.qty) best = { id, qty };
-    if (!worst || qty < worst.qty) worst = { id, qty };
-  });
-  const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
-  const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
-
-  // last 7 days chart
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0, 10);
-    const s = orders.filter((o) => o.date === ds).reduce((ss, o) => ss + o.total, 0);
-    days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total: s });
-  }
-  const maxDay = Math.max(...days.map((d) => d.total), 1);
-
-  el.innerHTML = `
-    <div class="page-title"><h1>Ventas</h1></div>
-    <div class="grid grid-4" style="margin-bottom:20px">
-      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
-      <div class="stat-card"><div class="st-label">Pedidos del día</div><div class="st-value primary">${countToday}</div></div>
-      <div class="stat-card"><div class="st-label">Más vendido</div><div class="st-value" style="font-size:1rem">${bestProduct ? esc(bestProduct.name) : '—'}</div><div class="st-sub">${best?.qty || 0} unidades</div></div>
-      <div class="stat-card"><div class="st-label">Menos vendido</div><div class="st-value" style="font-size:1rem">${worstProduct ? esc(worstProduct.name) : '—'}</div><div class="st-sub">${worst?.qty || 0} unidades</div></div>
-    </div>
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
-      <div class="bar-chart">
-        ${days.map((d) => `<div class="bc-col"><div class="bc-bar${d === days[days.length - 1] ? ' hl' : ''}" style="height:${Math.max(3, (d.total / maxDay) * 100)}%"></div><div class="bc-label">${d.label}</div><div class="bc-label bold">${money(d.total)}</div></div>`).join('')}
-      </div>
-    </div>
-    <h3 class="section-title">Historial de ventas</h3>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Total</th><th>Estado</th></tr></thead>
-      <tbody>${orders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
-        <tr><td class="bold">#${o.id}</td><td class="small">${o.date} ${o.time}</td><td>${esc(o.userName)}</td><td>${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'}</td><td>${paymentMethodLabel(o.payment)}</td><td class="bold">${money(o.total)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}
-      </tbody></table></div>`;
-}
-
-/* ============================================================
    DASHBOARD DE VENTAS
    ============================================================ */
 function barSalesDashboard(el) {
@@ -770,58 +718,6 @@ function barDelivery(el) {
 }
 
 /* ============================================================
-   CONFIGURACIÓN DE CAFETERÍA
-   ============================================================ */
-function barConfig(el) {
-  const cfg = Store.config;
-  el.innerHTML = `
-    <div class="page-title"><h1>Configuración de la cafetería</h1></div>
-    <div class="grid grid-2">
-      <div class="card">
-        <h3 style="margin-bottom:14px">Estado de la cafetería</h3>
-        <div class="capacity-card" style="text-align:center">
-          <div><span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1rem">${cfg.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span></div>
-          <button class="btn btn-outline" style="margin-top:14px" id="toggleCafe">${cfg.cafeOpen ? 'Cambiar a cerrada' : 'Cambiar a abierta'}</button>
-          <div class="tiny muted" style="margin-top:10px">Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin-bottom:14px">Horario de pedidos</h3>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}"></div>
-          <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}"></div>
-        </div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}"></div>
-          <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}"></div>
-        </div>
-        <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-        <button class="btn" id="ohSave">Guardar horario y capacidad</button>
-      </div>
-    </div>`;
-
-  $('#toggleCafe').onclick = () => {
-    cfg.cafeOpen = !cfg.cafeOpen;
-    Store.config = cfg;
-    logAudit('Cambió estado de la cafetería', cfg.cafeOpen ? 'Abierta' : 'Cerrada');
-    toast('La cafetería está ' + (cfg.cafeOpen ? 'ABIERTA' : 'CERRADA') + '.', cfg.cafeOpen ? 'success' : 'warning');
-    renderBarAdmin('config');
-  };
-
-  $('#ohSave').onclick = () => {
-    cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
-    cfg.orderClose = $('#ohClose').value || cfg.orderClose;
-    cfg.breakStart = $('#brStart').value || cfg.breakStart;
-    cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
-    cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
-    Store.config = cfg;
-    logAudit('Actualizó horario', 'Horario de pedidos');
-    toast('Configuración guardada.', 'success');
-    renderBarAdmin('config');
-  };
-}
-
-/* ============================================================
    CONFIGURACIÓN - HORARIOS
    ============================================================ */
 function barConfigHours(el) {
@@ -841,7 +737,7 @@ function barConfigHours(el) {
       </div>
       <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
       <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px">
-        <button class="btn" onclick="setRoute('adminbar/config')">Volver</button>
+        <button class="btn" onclick="setRoute('adminbar/config-status')">Ir al estado</button>
         <button class="btn btn-primary" onclick="saveConfigHours()">Guardar cambios</button>
       </div>
     </div>
