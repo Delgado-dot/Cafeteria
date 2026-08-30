@@ -16,7 +16,7 @@ const BAR_SECTIONS = {
 const BAR_PAGES = {
   ...BAR_SECTIONS,
   'payment-detail': { label: 'Detalle de pago', icon: '💳' },
-  'sales-history': { label: 'Historial de ventas', icon: '📈' },
+  'sales-history': { label: 'Historial de ventas', icon: '🕓' },
   'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
 };
 
@@ -32,6 +32,10 @@ const paymentStatusLabels = {
 
 function isValidSale(order) {
   return ['approved', 'paid'].includes(order.paymentStatus);
+}
+
+function paymentMethodIcon(method) {
+  return ({ deuna: '📲', transferencia: '🏦', efectivo: '💵' }[method] || '💳');
 }
 
 function renderBarAdmin(page, params) {
@@ -126,7 +130,7 @@ function renderBarAdmin(page, params) {
 
 function renderCafePill(el) {
   const cfg = Store.config;
-  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}">${cfg.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span>`;
+  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${cfg.cafeOpen ? '🟢' : '🔴'}</span> ${cfg.cafeOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
 }
 
 function renderAdminTabs(el, tabs, initialTab) {
@@ -572,7 +576,7 @@ function barPayments(el) {
   let selectedFilter = 'all';
 
   el.innerHTML = `
-    <div class="page-title"><h1>Pagos</h1></div>
+    <div class="page-title"><h1><span class="ico">💳</span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
@@ -600,7 +604,7 @@ function barPayments(el) {
         <tr>
           <td class="bold">#${o.id}</td>
           <td>${esc(o.userName)}</td>
-          <td><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
+          <td><span class="badge badge-primary"><span class="ico">${paymentMethodIcon(o.payment)}</span> ${paymentMethodLabel(o.payment)}</span></td>
           <td class="bold">${money(o.total)}</td>
           <td><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
           <td class="small muted">${o.date} ${o.time || '—'}</td>
@@ -634,7 +638,7 @@ function barPaymentDetail(el, id) {
   }
   const status = paymentStatusLabels[order.paymentStatus];
   el.innerHTML = `
-    <div class="page-title"><h1>Detalle de pago</h1></div>
+    <div class="page-title"><h1><span class="ico">🧾</span> Detalle de pago</h1></div>
     <div class="card">
       <div class="card-header"><div><div class="card-title">Pedido #${order.id}</div><div class="card-sub">${esc(order.userName)} · ${order.date} ${order.time || ''}</div></div><span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
       <div class="card-body" style="text-align:center">
@@ -681,7 +685,7 @@ function barSalesDashboard(el) {
   const maxDay = Math.max(...days.map((d) => d.total), 1);
 
   el.innerHTML = `
-    <div class="page-title"><h1>Ventas</h1></div>
+    <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
     <div class="grid grid-4" style="margin-bottom:24px">
       <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
       <div class="stat-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)">${countToday > 0 ? money(salesToday / countToday) : '—'}</div></div>
@@ -713,7 +717,7 @@ function barSalesDashboard(el) {
 function barSalesHistory(el) {
   const orders = Store.orders;
   el.innerHTML = `
-    <div class="page-title"><h1>Historial de ventas</h1></div>
+    <div class="page-title"><h1><span class="ico">🕓</span> Historial de ventas</h1></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
       <tbody>${orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
@@ -795,7 +799,7 @@ function barDelivery(el) {
 function barConfigHours(el) {
   const cfg = Store.config;
   el.innerHTML = `
-    <div class="page-title"><h1>Configuración - Horarios</h1></div>
+    <div class="page-title"><h1><span class="ico">⏰</span> Configuración - Horarios</h1></div>
     <div class="card">
       <h3 style="margin-bottom:14px">Horario de pedidos</h3>
       <div class="grid grid-2">
@@ -835,10 +839,10 @@ function barConfigStatus(el) {
   const cfg = Store.config;
   const isOpen = cfg.cafeOpen;
   el.innerHTML = `
-    <div class="page-title"><h1>Configuración - Estado</h1></div>
+    <div class="page-title"><h1><span class="ico">⚙️</span> Configuración - Estado</h1></div>
     <div class="card">
       <div style="text-align:center;margin-bottom:24px">
-        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px">${isOpen ? '● ABIERTA' : '● CERRADA'}</span>
+        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
       </div>
       <div style="text-align:center">
         <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" style="width:100%;padding:12px;font-size:var(--fs-lg)" onclick="confirmToggleState(!${isOpen})">
