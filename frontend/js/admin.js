@@ -1051,7 +1051,7 @@ const days = [];
     </div>
 
     <div class="card mom-performance-card" style="margin-bottom:24px">
-      <h3 style="margin-bottom:16px">Rendimiento vs. mes anterior</h3>
+      <h3 style="margin-bottom:16px">Rendimiento del mes</h3>
       <div id="momDonutChart" class="mom-donut-chart"></div>
     </div>
 
