@@ -333,11 +333,6 @@ function barDashboard(el) {
       <div class="stat-card"><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
       <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
       <div class="stat-card"><div class="st-label">Productos agotados</div><div class="st-value ${outStock.length ? 'danger' : ''}">${outStock.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/stock">Ir a stock</a></div></div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
-      ${[['adminbar/orders', '🧾', 'Pedidos'], ['adminbar/products', '🍔', 'Productos'], ['adminbar/stock', '📦', 'Stock'], ['adminbar/payments', '💳', 'Pagos'], ['adminbar/sales', '📈', 'Ventas'], ['adminbar/delivery', '🛵', 'Delivery']].map(([r, ic, l]) =>
-        `<a href="#" class="btn btn-outline" data-goto="${r}">${ic} ${l}</a>`).join('')}
     </div>`;
 
   renderCapacityCard(el.querySelector('#dashCap'));
