@@ -667,7 +667,7 @@ function barPayments(el) {
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
     </div>
-<div class="table-wrap"><table class="admin-table">
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
       <tbody id="paymentRows"></tbody>
     </table></div>`;
@@ -679,6 +679,21 @@ function barPayments(el) {
     logAudit('Actualizó pago', `${order.id} → ${status}`);
     toast('Pago #' + order.id + ' ' + (status === 'approved' ? 'aprobado.' : 'rechazado.'), status === 'approved' ? 'success' : 'error');
     renderBarAdmin('payments');
+  };
+
+  const renderSkeletonRows = (count = 5) => {
+    const tbody = $('#paymentRows', el);
+    tbody.innerHTML = Array.from({ length: count }, () => `
+      <tr>
+        <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:100px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        <td><div class="skeleton" style="width:70px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+        <td><div class="skeleton" style="width:60px;height:28px;border-radius:var(--r-sm)"></div></td>
+      </tr>
+    `).join('');
   };
 
   const renderRows = () => {
@@ -703,17 +718,21 @@ function barPayments(el) {
         </tr>
         `;
       }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay pagos en este estado.</td></tr>';
-$$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
+    $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
   };
 
-$$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
+  // Show skeleton first, then real data
+  renderSkeletonRows();
+  setTimeout(renderRows, 350);
+
+  $$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
     selectedFilter = button.dataset.paymentFilter;
     $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item === button));
-    renderRows();
+    renderSkeletonRows();
+    setTimeout(renderRows, 350);
   });
-  renderRows();
 }
 
 function showVoucherModal(orderId) {
@@ -989,13 +1008,43 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
    ============================================================ */
 function barSalesHistory(el) {
   const orders = Store.orders;
-el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">🕓</span> Historial de ventas</h1></div>
-    <div class="table-wrap"><table class="admin-table">
-      <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
-      <tbody>${orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
-        <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}</tbody></table></div>
-`;
+  const tbody = $('#salesHistoryRows');
+  if (!tbody) {
+    el.innerHTML = `
+      <div class="page-title"><h1><span class="ico">🕓</span> Historial de ventas</h1></div>
+      <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
+        <tbody id="salesHistoryRows"></tbody></table></div>
+    `;
+  } else {
+    tbody.innerHTML = '';
+  }
+
+  const renderSkeletonRows = (count = 5) => {
+    const tbodyEl = $('#salesHistoryRows', el);
+    if (tbodyEl) {
+      tbodyEl.innerHTML = Array.from({ length: count }, () => `
+        <tr>
+          <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+          <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:70px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        </tr>
+      `).join('');
+    }
+  };
+
+  const renderRows = () => {
+    const tbodyEl = $('#salesHistoryRows', el);
+    if (!tbodyEl) return;
+    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+    tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
+      <tr><td class="small">${o.date} ${o.time || '—'}</td><td class="bold">#${o.id}</td><td class="bold">${money(o.total)}</td><td>${paymentMethodLabel(o.payment)}</td><td>${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
+  };
+
+  renderSkeletonRows();
+  setTimeout(renderRows, 350);
 }
  
 function barDelivery(el) {
