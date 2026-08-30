@@ -383,13 +383,18 @@
    ============================================================ */
 
 /* Banners de estado (status-banner ? alert) */
-.status-banner { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-md); font-size: var(--fs-md); line-height: 1.45; border: 1px solid transparent; margin-bottom: 18px; }
+.status-banner { display: inline-flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-md); font-size: var(--fs-md); line-height: 1.45; border: 1px solid transparent; margin-bottom: 18px; }
 .status-banner .ico { font-size: 1.2rem; line-height: 1.3; }
 .status-banner.success { background: var(--success-soft); color: var(--success-strong); border-color: #cdeeda; }
 .status-banner.warning { background: var(--warning-soft); color: var(--warning-strong); border-color: #f0dfb0; }
 .status-banner.danger { background: var(--danger-soft); color: var(--danger-strong); border-color: #f3cfcf; }
 .status-banner.info { background: var(--info-soft); color: var(--info); border-color: #cfe0f7; }
 .status-banner.neutral { background: var(--neutral-soft); color: var(--neutral); border-color: var(--border); }
+
+/* Contenedor de banners - 2 columnas cuando hay 2 */
+.status-banners-wrap { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.status-banners-wrap:has(.status-banner:nth-child(2)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.status-banners-wrap .status-banner { margin-bottom: 0; }
 
 /* Stat cards (st-label / st-value / st-sub) */
 .stat-card .st-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }

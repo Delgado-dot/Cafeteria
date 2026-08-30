@@ -303,8 +303,10 @@ function barDashboard(el) {
     <div class="page-title"><h1>Panel de la cafetería</h1><span class="muted small">${today}</span></div>
     <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
 
-    ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    <div class="status-banners-wrap">
+      ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    </div>
 
     <div class="grid grid-4" style="margin-bottom:20px">
       <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
@@ -494,8 +496,10 @@ function barProducts(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
-    ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    <div class="status-banners-wrap">
+      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    </div>
     <div class="field" style="margin-bottom:16px">
       <label class="label">Buscar</label>
       <div class="input-wrap">
@@ -705,8 +709,10 @@ function barStock(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${outOfStock.length} agotados</span></div>
-    ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    <div class="status-banners-wrap">
+      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    </div>
     <div class="grid grid-3" style="margin-bottom:20px">
       <div class="stat-card success-card"><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
       <div class="stat-card warning-card"><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
