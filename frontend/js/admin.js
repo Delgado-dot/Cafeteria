@@ -1135,6 +1135,20 @@ function barDelivery(el) {
    ============================================================ */
 function barConfigHours(el) {
   const cfg = Store.config;
+  // Store original values to detect changes
+  const originalValues = {
+    orderOpen: cfg.orderOpen,
+    orderClose: cfg.orderClose,
+    breakStart: cfg.breakStart,
+    breakEnd: cfg.breakEnd,
+    capacity: String(cfg.capacity)
+  };
+  let hasUnsavedChanges = false;
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.id = 'btnSaveConfigHours';
+  btn.innerHTML = 'Guardar cambios';
+  
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico">⏰</span> Configuración - Horarios</h1></div>
     <div class="card">
@@ -1149,15 +1163,45 @@ function barConfigHours(el) {
         <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}"></div>
       </div>
       <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-      <div style="margin-top:20px;display:flex;justify-content:flex-end">
+      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
+          <span class="pulse-dot"></span>
+        </span>
         <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
       </div>
     </div>
   `;
-  $('#btnSaveConfigHours', el).onclick = () => saveConfigHours($('#btnSaveConfigHours', el));
+  
+  const btnSave = $('#btnSaveConfigHours', el);
+  const indicator = $('#unsavedIndicator', el);
+  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
+  
+  const checkChanges = () => {
+    const currentValues = {
+      orderOpen: $('#ohOpen', el).value,
+      orderClose: $('#ohClose', el).value,
+      breakStart: $('#brStart', el).value,
+      breakEnd: $('#brEnd', el).value,
+      capacity: $('#cpCap', el).value
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
+    indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
+    btnSave.disabled = !hasUnsavedChanges;
+    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
+  };
+  
+  fields.forEach(id => {
+    const field = $('#' + id, el);
+    if (field) {
+      field.addEventListener('input', checkChanges);
+      field.addEventListener('change', checkChanges);
+    }
+  });
+  
+  btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
 }
 
-function saveConfigHours(btn) {
+function saveConfigHours(btn, indicator, originalValues) {
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
@@ -1176,6 +1220,7 @@ function saveConfigHours(btn) {
     btn.innerHTML = '<span style="margin-right:6px">✓</span>Guardado';
     btn.classList.add('btn-success');
     btn.classList.remove('btn-primary');
+    if (indicator) indicator.style.display = 'none';
     
     setTimeout(() => {
       renderBarAdmin('config-hours');
