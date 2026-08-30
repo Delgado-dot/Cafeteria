@@ -475,41 +475,62 @@ function bindQueueActions(area) {
    PRODUCTOS
    ============================================================ */
 function barProducts(el) {
+  ensureAdminbarPresentationStyles();
   const products = Store.products;
   const cats = [...new Set(products.map((p) => p.category))];
   let cat = 'Todas';
+  let searchTerm = '';
+
+  const outOfStock = products.filter((p) => p.stock === 0 && p.available);
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock && p.available);
 
   el.innerHTML = `
     <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
+    ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    <div class="field" style="margin-bottom:16px">
+      <label class="label">Buscar</label>
+      <div class="input-wrap">
+        <span class="leading-ico">🔍</span>
+        <input class="input" type="search" id="productSearch" placeholder="Nombre, categoría..." style="padding-left:38px">
+      </div>
+    </div>
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
       ${cats.map((c) => `<button class="category-chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
     </div>
-    <div id="prodArea"></div>`;
-
-  const render = () => {
-    const area = $('#prodArea');
-    const list = cat === 'Todas' ? products : products.filter((p) => p.category === cat);
-    if (!list.length) { area.innerHTML = emptyState('🍔', 'Sin productos', 'No hay productos en esta categoría.'); return; }
-    area.innerHTML = `<div class="table-wrap"><table>
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody>${list.map((p) => `
-        <tr>
-          <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
-          <td>${esc(p.category)}</td>
-          <td class="bold">${money(p.price)}</td>
-          <td>${stockBadge(p)}</td>
-          <td>${p.prepMin} min</td>
-          <td>${p.available ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button>
-            <button class="btn btn-neutral btn-sm" data-toggle="${p.id}">${p.available ? 'Desactivar' : 'Activar'}</button>
-          </td>
-        </tr>`).join('')}
-      </tbody></table></div>`;
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
 
-    $$('[data-edit]', area).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === b.dataset.edit)));
-    $$('[data-toggle]', area).forEach((b) => b.onclick = () => {
+  const renderRows = () => {
+    let list = cat === 'Todas' ? products : products.filter((p) => p.category === cat);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
+    }
+    const tbody = $('#prodRows', el);
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay productos que coincidan.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map((p) => `
+      <tr>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
+        <td data-label="Categoría">${esc(p.category)}</td>
+        <td class="bold tabular-nums" data-label="Precio">${money(p.price)}</td>
+        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.minStock ? '· bajo' : ''}</span></td>
+        <td data-label="Prep">${p.prepMin} min</td>
+        <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
+        <td data-label="Acciones">
+          <button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button>
+          <button class="btn btn-neutral btn-sm" data-toggle="${p.id}">${p.available ? 'Desactivar' : 'Activar'}</button>
+        </td>
+      </tr>
+    `).join('');
+    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === b.dataset.edit)));
+    $$('[data-toggle]', tbody).forEach((b) => b.onclick = () => {
       const p = products.find((x) => x.id === b.dataset.toggle);
       p.available = !p.available;
       Store.products = products;
@@ -519,13 +540,18 @@ function barProducts(el) {
     });
   };
 
-  $$('[data-cat]', el).forEach((t) => t.onclick = () => {
-    $$('[data-cat]', el).forEach((x) => x.classList.remove('active'));
-    t.classList.add('active'); cat = t.dataset.cat; render();
+  $('#productSearch', el).addEventListener('input', (e) => {
+    searchTerm = e.target.value.trim();
+    renderRows();
   });
 
-  $('#addProduct').onclick = () => productFormModal(null);
-  render();
+  $$('[data-cat]', el).forEach((t) => t.onclick = () => {
+    $$('[data-cat]', el).forEach((x) => x.classList.remove('active'));
+    t.classList.add('active'); cat = t.dataset.cat; renderRows();
+  });
+
+  $('#addProduct', el).onclick = () => productFormModal(null);
+  renderRows();
 }
 
 function productFormModal(p) {
