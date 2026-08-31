@@ -506,7 +506,7 @@ function barProducts(el) {
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock && p.available);
 
   el.innerHTML = `
-    <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
+    <div class="page-title"><h1>Productos</h1><button class="btn btn-primary" id="addProduct">+ Nuevo producto</button></div>
     <div class="status-banners-wrap">
       ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
       ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
