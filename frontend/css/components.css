@@ -267,29 +267,12 @@
   transition: width var(--t-med), padding var(--t-med);
 }
 .admin-sidebar.collapsed {
-  width: 72px;
-}
-.admin-sidebar.collapsed .sb-brand {
-  justify-content: center;
-  padding: var(--sp-4);
-}
-.admin-sidebar.collapsed .sb-brand .brand-name,
-.admin-sidebar.collapsed .sb-brand .brand-sub,
-.admin-sidebar.collapsed .sb-link .sb-label,
-.admin-sidebar.collapsed .sb-group,
-.admin-sidebar.collapsed .sb-footer {
-  display: none;
-}
-.admin-sidebar.collapsed .sb-link {
-  justify-content: center;
-  padding: 10px;
-  gap: 0;
-}
-.admin-sidebar.collapsed .sb-link .sb-badge {
-  display: none;
-}
-.admin-sidebar.collapsed .sb-footer {
-  display: none;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-right: none;
+  padding: 0;
+  opacity: 0;
 }
 .sb-brand { display: flex; align-items: center; gap: 11px; padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid rgba(255,255,255,0.15); height: var(--header-h); flex-shrink: 0; color: #fff; }
 .sb-brand .brand-name { font-weight: var(--fw-bold); color: #fff; font-size: var(--fs-md); line-height: 1.1; }

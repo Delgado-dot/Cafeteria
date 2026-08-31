@@ -196,7 +196,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   renderCafePill($('#cafePill'));
 
   const sidebar = $('.admin-sidebar', app);
-  if (localStorage.getItem('int_sidebar_collapsed') === 'true') sidebar?.classList.add('collapsed');
+  if (localStorage.getItem('int_sidebar_collapsed') === 'true' && window.innerWidth > 900) sidebar?.classList.add('collapsed');
   const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
   $('#barHamburger')?.addEventListener('click', () => {
     if (window.innerWidth <= 900) {
