@@ -1110,12 +1110,12 @@ const days = [];
       <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
 
-<div class="grid grid-2" style="margin-bottom:24px">
-      <div class="card mom-performance-card"><h3 style="margin-bottom:16px">Rendimiento del mes</h3><div id="momDonutChart" class="mom-donut-chart"></div></div>
+<div class="grid grid-2" style="margin-bottom:24px;align-items:stretch">
+      <div class="card mom-performance-card" style="display:flex;flex-direction:column;min-height:360px"><h3 style="margin-bottom:16px">Rendimiento del mes</h3><div id="momDonutChart" class="mom-donut-chart" style="flex:1;display:flex;align-items:center;justify-content:center"></div></div>
 
-  <div class="card" style="margin-bottom:24px">
+  <div class="card" style="display:flex;flex-direction:column;min-height:360px">
     <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
-    <div id="salesLineChart" class="sales-line-chart"></div>
+    <div id="salesLineChart" class="sales-line-chart" style="flex:1;display:flex;align-items:center;justify-content:center"></div>
   </div>
 </div>
 
