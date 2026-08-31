@@ -269,9 +269,13 @@
 .admin-sidebar.collapsed {
   width: 72px;
 }
+.admin-sidebar.collapsed .sb-brand {
+  justify-content: center;
+  padding: var(--sp-4);
+}
 .admin-sidebar.collapsed .sb-brand .brand-name,
 .admin-sidebar.collapsed .sb-brand .brand-sub,
-.admin-sidebar.collapsed .sb-link span:not(.sb-ico),
+.admin-sidebar.collapsed .sb-link .sb-label,
 .admin-sidebar.collapsed .sb-group,
 .admin-sidebar.collapsed .sb-footer {
   display: none;
@@ -279,6 +283,7 @@
 .admin-sidebar.collapsed .sb-link {
   justify-content: center;
   padding: 10px;
+  gap: 0;
 }
 .admin-sidebar.collapsed .sb-link .sb-badge {
   display: none;

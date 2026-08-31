@@ -157,11 +157,11 @@ function renderBarAdmin(page, params) {
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-coffee-togo"></i></span> Cafetería INTESUD</div>
+        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span></div>
         <nav class="sb-nav">
 ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
-              <span class="ico bx ${v.icon}"></span>${v.label}
+              <span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span>
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
             </a>`).join('')}
         </nav>
