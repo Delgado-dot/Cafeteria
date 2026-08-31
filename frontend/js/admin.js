@@ -1066,7 +1066,7 @@ const days = [];
     <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
 <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
       <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
-      <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" style="font-size:var(--fs-md)" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
+      <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Número de ventas</div><div class="st-value primary" data-sales-count="${countToday}" data-sales-format="number">0</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
