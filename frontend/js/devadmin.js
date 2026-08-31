@@ -3,12 +3,13 @@
    ============================================================ */
 
 const DEV_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: '🏠' },
-  users: { label: 'Usuarios', icon: '👥' },
-  roles: { label: 'Roles y permisos', icon: '🔐' },
-  cafe: { label: 'Información de cafetería', icon: '🏪' },
-  config: { label: 'Configuración general', icon: '⚙️' },
-  audit: { label: 'Auditoría', icon: '📜' },
+  dashboard: { label: 'Dashboard', icon: 'grid' },
+  users: { label: 'Usuarios', icon: 'user' },
+  roles: { label: 'Roles y permisos', icon: 'orders' },
+  cafe: { label: 'Información de cafetería', icon: 'coffee' },
+  config: { label: 'Configuración general', icon: 'menu' },
+  audit: { label: 'Auditoría', icon: 'orders' },
+  design: { label: 'Design System', icon: 'grid' },
 };
 
 function renderDevAdmin(page) {
@@ -18,12 +19,12 @@ function renderDevAdmin(page) {
   syncBodyClass();
 
   app.innerHTML = `
-    <div class="admin-layout">
+    <div class="admin-layout dev-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.3rem">⚙️</span> Sistema INTESUD</div>
+        <div class="sb-brand"><span style="color:var(--text)">${svgIcon('menu')}</span> Sistema INTESUD</div>
         <nav class="sb-nav">
           ${Object.entries(DEV_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="ico">${v.icon}</span>${v.label}</a>`).join('')}
+            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="sb-ico">${svgIcon(v.icon)}</span>${v.label}</a>`).join('')}
         </nav>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
@@ -33,7 +34,7 @@ function renderDevAdmin(page) {
       <div class="admin-main">
         <div class="admin-topbar">
           <button class="hamburger" id="devHamburger" title="Menú">☰</button>
-          <span style="font-size:1.3rem">${DEV_SECTIONS[sec].icon}</span>
+          <span class="topbar-ico">${svgIcon(DEV_SECTIONS[sec].icon)}</span>
           <span class="page-name">${DEV_SECTIONS[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <div class="profile-chip" id="devUserMenu">
@@ -78,6 +79,7 @@ function renderDevAdmin(page) {
     cafe: devCafe,
     config: devConfig,
     audit: devAudit,
+    design: devDesign,
   };
   renderers[sec](content);
 }
@@ -119,7 +121,7 @@ function devDashboard(el) {
           <div class="kv"><dt>Receso</dt><dd class="bold small">${cfg.breakStart} - ${cfg.breakEnd}</dd></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-          ${[['users', '👥', 'Usuarios'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría']].map(([k, ic, l]) =>
+          ${[['users', '👥', 'Usuarios'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría'], ['design', '🎨', 'Design System']].map(([k, ic, l]) =>
             `<a href="#" class="btn btn-outline" data-goto="${k}">${ic} ${l}</a>`).join('')}
         </div>
       </div>
@@ -348,4 +350,123 @@ function devAudit(el) {
   $('#audSearch').addEventListener('input', (e) => renderList(e.target.value));
   $('#audReset').onclick = () => { $('#audSearch').value = ''; renderList(); };
   renderList();
+}
+
+/* ============================================================
+   DESIGN SYSTEM — Componentes reutilizables
+   ============================================================ */
+function devDesign(el) {
+  el.innerHTML = `
+    <div class="page-title"><h1>Design System</h1><span class="badge badge-primary">INTESUD · #40807E</span></div>
+    <p class="page-sub">Componentes reutilizables, tokens y estados. Todo el sistema usa los mismos fundamentos.</p>
+
+    <div class="card" style="margin-bottom:20px">
+      <h3 style="margin-bottom:12px">🎨 Colores</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px;background:var(--primary);color:#fff;border-radius:10px;padding:16px;text-align:center"><b>#40807E</b><br><span class="tiny">Primary</span></div>
+        <div style="flex:1;min-width:140px;background:var(--success);color:#fff;border-radius:10px;padding:16px;text-align:center"><b>#22a06b</b><br><span class="tiny">Success</span></div>
+        <div style="flex:1;min-width:140px;background:var(--warning);color:#fff;border-radius:10px;padding:16px;text-align:center"><b>#e09a16</b><br><span class="tiny">Warning</span></div>
+        <div style="flex:1;min-width:140px;background:var(--danger);color:#fff;border-radius:10px;padding:16px;text-align:center"><b>#d94b4b</b><br><span class="tiny">Danger</span></div>
+        <div style="flex:1;min-width:140px;background:var(--info);color:#fff;border-radius:10px;padding:16px;text-align:center"><b>#3b7cc3</b><br><span class="tiny">Info</span></div>
+      </div>
+      <div class="tiny muted" style="margin-top:10px">Fondo principal blanco, textos #16201f / #5c6b69 / #8a9795, bordes #e3e9e8.</div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3 style="margin-bottom:12px">Tipografía & Espaciado</h3>
+        <div style="display:grid;gap:8px">
+          <div style="font-size:var(--fs-3xl);font-weight:800">3xl · 36px · Extrabold</div>
+          <div style="font-size:var(--fs-2xl);font-weight:700">2xl · 28px · Bold</div>
+          <div style="font-size:var(--fs-xl);font-weight:700">xl · 22px</div>
+          <div style="font-size:var(--fs-lg)">lg · 18px</div>
+          <div style="font-size:var(--fs-md)">md · 15px · base</div>
+          <div style="font-size:var(--fs-sm)">sm · 13px</div>
+          <div style="font-size:var(--fs-xs)">xs · 12px</div>
+        </div>
+        <div class="divider"></div>
+        <div class="tiny muted">Espaciados: 4/8/12/16/24/32/48/64 · Radios: 6/9/12/16/22/999</div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">Botones</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn btn-primary">Primary</button>
+          <button class="btn btn-outline">Outline</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-danger">Danger</button>
+          <button class="btn btn-success">Success</button>
+          <button class="btn btn-warning">Warning</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+        <div class="divider"></div>
+        <div class="tiny muted">Estados: hover, active, focus-visible, disabled.</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3 style="margin-bottom:12px">Inputs & Form</h3>
+        <div class="field"><label class="label">Input normal</label><input class="input" placeholder="Placeholder"></div>
+        <div class="field"><label class="label">Input con error</label><input class="input err" value="valor inválido"><div class="input-err-msg">Mensaje de error</div></div>
+        <div class="field"><label class="label">Textarea</label><textarea class="input" placeholder="Observaciones..."></textarea></div>
+        <label class="checkbox-row"><input type="checkbox" checked> Checkbox activo</label>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">Badges & States</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <span class="badge badge-primary">Primary</span>
+          <span class="badge badge-success">Success</span>
+          <span class="badge badge-warning">Warning</span>
+          <span class="badge badge-danger">Danger</span>
+          <span class="badge badge-info">Info</span>
+          <span class="badge badge-neutral">Neutral</span>
+          <span class="badge badge-outline">Outline</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <span class="badge badge-success"><span class="dot"></span> Listo</span>
+          <span class="badge badge-warning"><span class="dot"></span> En preparación</span>
+          <span class="badge badge-danger"><span class="dot"></span> Urgente</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="priority-tag urgent">🔴 URGENTE</span>
+          <span class="priority-tag priority">🟠 ALTA</span>
+          <span class="priority-tag normal">🟡 NORMAL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h3 style="margin-bottom:12px">Cards & Alerts</h3>
+        <div class="card" style="padding:14px;margin-bottom:10px"><div class="bold">Card base</div><div class="tiny muted">Borde #e3e9e8, sombra soft, radius 16</div></div>
+        <div class="alert success" style="margin-bottom:8px"><span class="a-ico">✅</span><div><b>Success</b> · Operación correcta</div></div>
+        <div class="alert warning" style="margin-bottom:8px"><span class="a-ico">⚠️</span><div><b>Warning</b> · Atención</div></div>
+        <div class="alert danger" style="margin-bottom:8px"><span class="a-ico">⛔</span><div><b>Error</b> · Algo falló</div></div>
+        <div class="alert info"><span class="a-ico">ℹ️</span><div><b>Info</b> · Dato informativo</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px">Empty / Loading</h3>
+        <div style="border:1px dashed var(--border);border-radius:10px;padding:18px;text-align:center;margin-bottom:10px">
+          <div style="font-size:1.6rem">📭</div><div class="tiny muted">Empty state · Sin datos</div>
+        </div>
+        <div style="border:1px dashed var(--border);border-radius:10px;padding:18px;text-align:center">
+          <div class="spinner" style="width:28px;height:28px;margin:0 auto 8px"></div><div class="tiny muted">Loading · Cargando...</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-outline btn-sm" onclick="toast('Toast success','success')">Toast success</button>
+          <button class="btn btn-outline btn-sm" onclick="toast('Toast error','error')">Toast error</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">Responsive</h3>
+      <p class="small muted">Breakpoints: 1080px (tablet), 900px (tablet pequeña), 560px (móvil). Grids colapsan a 1 col, sidebar a drawer, tablas con scroll horizontal.</p>
+      <div class="tiny muted" style="margin-top:8px">Probar redimensionando la ventana o en DevTools.</div>
+    </div>
+  `;
 }
