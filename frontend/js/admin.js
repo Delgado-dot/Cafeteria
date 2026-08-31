@@ -149,7 +149,7 @@ function renderBarAdmin(page, params) {
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.3rem">☕</span> Cafetería INTESUD</div>
+        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-coffee-togo"></i></span> Cafetería INTESUD</div>
         <nav class="sb-nav">
 ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
