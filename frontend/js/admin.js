@@ -504,13 +504,13 @@ function barProducts(el) {
   el.innerHTML = `
     <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
     <div class="status-banners-wrap">
-      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     </div>
     <div class="field" style="margin-bottom:16px">
       <label class="label">Buscar</label>
       <div class="input-wrap">
-        <span class="leading-ico">🔍</span>
+        <span class="leading-ico"><i class="bx bx-search"></i></span>
         <input class="input" type="search" id="productSearch" placeholder="Nombre, categoría..." style="padding-left:38px">
       </div>
     </div>
@@ -709,7 +709,7 @@ fields.forEach(id => {
       }
       Store.products = products;
       
-      btnSave.innerHTML = '<span style="margin-right:6px">✓</span>' + (isEdit ? 'Guardado' : 'Creado');
+      btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
       btnSave.classList.add('btn-success');
       btnSave.classList.remove('btn-primary');
       
@@ -741,8 +741,8 @@ function barStock(el) {
   el.innerHTML = `
     <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${outOfStock.length} agotados</span></div>
     <div class="status-banners-wrap">
-      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     </div>
     <div class="grid grid-3" style="margin-bottom:20px">
       <div class="stat-card success-card"><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
@@ -788,7 +788,7 @@ function barStock(el) {
   };
 
   const histWrap = $('#stockHist');
-  if (!history.length) histWrap.innerHTML = emptyState('📋', 'Sin cambios registrados', 'Modifica el stock para ver el historial.');
+  if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Sin cambios registrados', 'Modifica el stock para ver el historial.');
 
   const adjust = (p, delta) => {
     const newVal = p.stock + delta;
@@ -838,7 +838,7 @@ function barStockHistory(el) {
   const products = Store.products;
 
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">📋</span> Historial de stock</h1></div>
+    <div class="page-title"><h1><span class="ico bx bx-history"></span> Historial de stock</h1></div>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
       <tbody id="stockHistoryRows"></tbody></table></div>
@@ -911,7 +911,7 @@ function barPayments(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
-    ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+    ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
     </div>
@@ -1000,7 +1000,7 @@ function showVoucherModal(orderId) {
   const status = paymentStatusLabels[order.paymentStatus];
   const overlay = modal(`
     <div style="text-align:center">
-      <div style="font-size:3rem">🧾</div>
+      <div style="font-size:3rem"><i class="bx bx-receipt"></i></div>
       <div class="tiny muted">Comprobante de transferencia simulado</div>
       <div class="bold" style="margin-top:8px">${money(order.total)}</div>
       <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
@@ -1010,7 +1010,7 @@ function showVoucherModal(orderId) {
         <div><span class="bold">Fecha:</span> ${order.date} ${order.time || '—'}</div>
         <div><span class="bold">Método:</span> ${paymentMethodLabel(order.payment)}</div>
         <div><span class="bold">Estado:</span> <span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
-        ${order.paymentStatus === 'review' ? `<div class="alert warning" style="margin-top:12px"><span class="a-ico">⚠️</span><div>Este pago está en revisión. Verifica el comprobante antes de aprobar.</div></div>` : ''}
+        ${order.paymentStatus === 'review' ? `<div class="alert warning" style="margin-top:12px"><span class="a-ico"><i class="bx bx-error"></i></span><div>Este pago está en revisión. Verifica el comprobante antes de aprobar.</div></div>` : ''}
       </div>
     </div>
     <div class="modal-footer" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
@@ -1040,17 +1040,17 @@ function showVoucherModal(orderId) {
 function barPaymentDetail(el, id) {
   const order = Store.orders.find((o) => o.id === id);
   if (!order) {
-    el.innerHTML = emptyState('💳', 'Pago no encontrado', 'El pedido solicitado no existe.');
+    el.innerHTML = emptyState('<i class="bx bx-credit-card"></i>', 'Pago no encontrado', 'El pedido solicitado no existe.');
     return;
   }
   lastVisitedPaymentId = id;
   const status = paymentStatusLabels[order.paymentStatus];
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">🧾</span> Detalle de pago</h1></div>
+    <div class="page-title"><h1><span class="ico bx bx-receipt"></span> Detalle de pago</h1></div>
     <div class="card">
       <div class="card-header"><div><div class="card-title">Pedido #${order.id}</div><div class="card-sub">${esc(order.userName)} · ${order.date} ${order.time || ''}</div></div><span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
       <div class="card-body" style="text-align:center">
-        <div style="font-size:3rem">🧾</div>
+        <div style="font-size:3rem"><i class="bx bx-receipt"></i></div>
         <div class="tiny muted">Comprobante de transferencia simulado</div>
         <div class="bold" style="margin-top:8px">${money(order.total)}</div>
         <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
@@ -1276,7 +1276,7 @@ function barSalesHistory(el) {
   const tbody = $('#salesHistoryRows');
   if (!tbody) {
     el.innerHTML = `
-      <div class="page-title"><h1><span class="ico">🕓</span> Historial de ventas</h1></div>
+      <div class="page-title"><h1><span class="ico bx bx-history"></span> Historial de ventas</h1></div>
       <div class="table-wrap"><table class="admin-table">
         <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
         <tbody id="salesHistoryRows"></tbody></table></div>
@@ -1322,7 +1322,7 @@ function barDelivery(el) {
   if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
 
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">🛵</span> Delivery</h1></div>
+    <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery</h1></div>
     <div class="card">
       <h3 style="margin-bottom:16px">Configuración del delivery</h3>
       <div class="field">
@@ -1405,7 +1405,7 @@ function barConfigHours(el) {
   btn.innerHTML = 'Guardar cambios';
   
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">⏰</span> Configuración - Horarios</h1></div>
+    <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
     <div class="card">
       <h3 style="margin-bottom:14px">Horario de pedidos</h3>
       <div class="grid grid-2">
@@ -1472,7 +1472,7 @@ function saveConfigHours(btn, indicator, originalValues) {
     logAudit('Actualizó horarios', 'Horario de pedidos y receso');
     toast('Horarios guardados.', 'success');
     
-    btn.innerHTML = '<span style="margin-right:6px">✓</span>Guardado';
+    btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
     btn.classList.add('btn-success');
     btn.classList.remove('btn-primary');
     if (indicator) indicator.style.display = 'none';
@@ -1529,7 +1529,7 @@ function confirmToggleState(toOpen, btn) {
       logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
       toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + '.', toOpen ? 'success' : 'warning');
       
-      btn.innerHTML = '<span style="margin-right:6px">✓</span>' + (toOpen ? 'Abierta' : 'Cerrada');
+      btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
       btn.classList.add('btn-success');
       btn.classList.remove('btn-primary', 'btn-secondary');
       
