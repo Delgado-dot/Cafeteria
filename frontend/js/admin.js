@@ -5,20 +5,20 @@
 const BAR_SECTIONS = {
   dashboard: { label: 'Dashboard', icon: '📊' },
   orders: { label: 'Pedidos', icon: '🧾' },
-  products: { label: 'Productos', icon: '🍔' },
-  stock: { label: 'Stock', icon: '📦' },
-  payments: { label: 'Pagos', icon: '💳' },
-  'sales-dashboard': { label: 'Ventas', icon: '📈' },
-  delivery: { label: 'Delivery', icon: '🛵' },
-  'config-hours': { label: 'Configuración', icon: '⚙️' },
+  products: { label: 'Productos', icon: 'bx-food-menu' },
+  stock: { label: 'Stock', icon: 'bx-box' },
+  payments: { label: 'Pagos', icon: 'bx-credit-card' },
+  'sales-dashboard': { label: 'Ventas', icon: 'bx-line-chart' },
+  delivery: { label: 'Delivery', icon: 'bx-cycling' },
+  'config-hours': { label: 'Configuración', icon: 'bx-cog' },
 };
 
 const BAR_PAGES = {
   ...BAR_SECTIONS,
-  'payment-detail': { label: 'Detalle de pago', icon: '💳' },
-  'sales-history': { label: 'Historial de ventas', icon: '🕓' },
-  'stock-history': { label: 'Historial de stock', icon: '📋' },
-  'config-status': { label: 'Estado de cafetería', icon: '⚙️' },
+  'payment-detail': { label: 'Detalle de pago', icon: 'bx-credit-card' },
+  'sales-history': { label: 'Historial de ventas', icon: 'bx-history' },
+  'stock-history': { label: 'Historial de stock', icon: 'bx-history' },
+  'config-status': { label: 'Estado de cafetería', icon: 'bx-cog' },
 };
 
 // Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
@@ -39,7 +39,7 @@ function isValidSale(order) {
 }
 
 function paymentMethodIcon(method) {
-  return ({ deuna: '📲', transferencia: '🏦', efectivo: '💵' }[method] || '💳');
+  return ({ deuna: 'bx-mobile-alt', transferencia: 'bx-transfer-alt', efectivo: 'bx-money' }[method] || 'bx-credit-card');
 }
 
 function ensureAdminbarPresentationStyles() {
@@ -446,7 +446,7 @@ function queueOrderCard(o, tab) {
         ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
       </div>
       <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(o.userName)} · <b>Entrega:</b> ${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${o.prepMin} min${o.note ? ` · <b>Nota:</b> ${esc(o.note)}` : ''}</div>
-      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico">💳</span><div>Pago ${paymentMethodLabel(o.payment)}: ${o.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(o.paymentStatus)}</div></div>` : ''}
+      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico">bx-credit-card</span><div>Pago ${paymentMethodLabel(o.payment)}: ${o.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(o.paymentStatus)}</div></div>` : ''}
       <div class="queue-actions">${actionBtns}</div>
     </div>`;
 }
@@ -889,7 +889,7 @@ function barPayments(el) {
   let selectedFilter = 'all';
 
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">💳</span> Pagos</h1></div>
+    <div class="page-title"><h1><span class="ico">bx-credit-card</span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
@@ -1081,7 +1081,7 @@ const days = [];
   const momAbsChange = Math.abs(momChange);
 
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">📈</span> Ventas</h1></div>
+    <div class="page-title"><h1><span class="ico">bx-line-chart</span> Ventas</h1></div>
 <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
       <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
@@ -1469,10 +1469,10 @@ function barConfigStatus(el) {
   const cfg = Store.config;
   const isOpen = cfg.cafeOpen;
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico">⚙️</span> Configuración - Estado</h1></div>
+    <div class="page-title"><h1><span class="ico">bx-cog</span> Configuración - Estado</h1></div>
     <div class="card">
       <div style="text-align:center;margin-bottom:24px">
-        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico">${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
       </div>
       <div style="text-align:center">
         <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
