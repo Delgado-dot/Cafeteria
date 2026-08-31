@@ -264,6 +264,27 @@
 .admin-sidebar {
   width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
   flex-shrink: 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; z-index: 130;
+  transition: width var(--t-med), padding var(--t-med);
+}
+.admin-sidebar.collapsed {
+  width: 72px;
+}
+.admin-sidebar.collapsed .sb-brand .brand-name,
+.admin-sidebar.collapsed .sb-brand .brand-sub,
+.admin-sidebar.collapsed .sb-link span:not(.sb-ico),
+.admin-sidebar.collapsed .sb-group,
+.admin-sidebar.collapsed .sb-footer {
+  display: none;
+}
+.admin-sidebar.collapsed .sb-link {
+  justify-content: center;
+  padding: 10px;
+}
+.admin-sidebar.collapsed .sb-link .sb-badge {
+  display: none;
+}
+.admin-sidebar.collapsed .sb-footer {
+  display: none;
 }
 .sb-brand { display: flex; align-items: center; gap: 11px; padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border); height: var(--header-h); flex-shrink: 0; }
 .sb-brand .brand-name { font-weight: var(--fw-bold); color: var(--primary); font-size: var(--fs-md); line-height: 1.1; }

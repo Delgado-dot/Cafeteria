@@ -190,12 +190,16 @@ function renderBarAdmin(page, params) {
   const sidebar = $('.admin-sidebar', app);
   const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
   $('#barHamburger')?.addEventListener('click', () => {
-    sidebar?.classList.add('open');
-    if (!$('.sb-scrim')) {
-      const scrim = document.createElement('div');
-      scrim.className = 'sb-scrim';
-      scrim.addEventListener('click', closeSidebar);
-      document.body.appendChild(scrim);
+    if (window.innerWidth <= 900) {
+      sidebar?.classList.add('open');
+      if (!$('.sb-scrim')) {
+        const scrim = document.createElement('div');
+        scrim.className = 'sb-scrim';
+        scrim.addEventListener('click', closeSidebar);
+        document.body.appendChild(scrim);
+      }
+    } else {
+      sidebar?.classList.toggle('collapsed');
     }
   });
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
