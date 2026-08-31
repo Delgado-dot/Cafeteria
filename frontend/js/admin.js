@@ -234,7 +234,9 @@ const renderers = {
     'config-hours': (target) => barConfigTabs(target, 'hours'),
     'config-status': (target) => barConfigTabs(target, 'status'),
   };
-  renderers[sec](content, params);
+  // Skeleton loading al cambiar de pantalla (200-300ms) para transición suave
+  content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
+  setTimeout(() => renderers[sec](content, params), 260);
 }
 
 function renderCafePill(el) {
