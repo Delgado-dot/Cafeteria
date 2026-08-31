@@ -1323,7 +1323,7 @@ function barDelivery(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery</h1></div>
-    <div class="card">
+    <div class="card" style="width:100%;max-width:none;margin:0">
       <h3 style="margin-bottom:16px">Configuración del delivery</h3>
       <div class="field">
         <label class="checkbox-row">
@@ -1406,7 +1406,7 @@ function barConfigHours(el) {
   
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
-    <div class="card">
+    <div class="card" style="width:100%;max-width:none;margin:0">
       <h3 style="margin-bottom:14px">Horario de pedidos</h3>
       <div class="grid grid-2">
         <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
@@ -1491,9 +1491,9 @@ function barConfigStatus(el) {
   const isOpen = cfg.cafeOpen;
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración - Estado</h1></div>
-    <div class="card">
+    <div class="card" style="width:100%;max-width:none;margin:0">
       <div style="text-align:center;margin-bottom:24px">
-        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico">${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
       </div>
       <div style="text-align:center">
         <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
