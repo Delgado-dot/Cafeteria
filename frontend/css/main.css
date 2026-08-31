@@ -316,13 +316,11 @@ thead th {
 tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: var(--fs-md); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr { transition: background var(--t-fast); }
-tbody tr:hover { background: var(--primary-softer); }
-tbody tr.visited-row { background: transparent; }
-tbody tr.visited-row.highlight {
-  animation: rowHighlight 1.5s ease-out forwards;
-}
+tbody tr:hover { background: var(--primary-glass); }
+.tbody tr.visited-row { background: transparent; }
+.tbody tr.visited-row.highlight { animation: rowHighlight 1.5s ease-out forwards; }
 @keyframes rowHighlight {
-  0% { background: var(--primary-softer); }
+  0% { background: var(--primary-glass); }
   100% { background: transparent; }
 }
 .cell-actions { display: flex; gap: 8px; justify-content: flex-end; }
