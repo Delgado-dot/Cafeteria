@@ -31,6 +31,14 @@ const paymentStatusLabels = {
   refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
 };
 
+// Criterio único para "Por cobrar" — usado en Dashboard y Pagos para evitar desincronización
+function isPendingPayment(order) {
+  return order.paymentStatus === 'pending' && ['queue', 'confirmed', 'prep', 'ready'].includes(order.status);
+}
+function getPendingPayments(orders = Store.orders) {
+  return orders.filter(isPendingPayment);
+}
+
 // Track last visited payment order ID for highlight-on-return
 let lastVisitedPaymentId = null;
 
@@ -279,7 +287,7 @@ function barDashboard(el) {
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const cap = capacityInfo();
-  const payPending = orders.filter((o) => o.paymentStatus === 'pending' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status)).length;
+  const payPending = getPendingPayments(orders).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
 
@@ -937,7 +945,7 @@ function barPayments(el) {
   };
 
   const renderRows = () => {
-    const visibleOrders = selectedFilter === 'all' ? orders : orders.filter((o) => o.paymentStatus === selectedFilter);
+    const visibleOrders = selectedFilter === 'all' ? orders : selectedFilter === 'pending' ? getPendingPayments(orders) : orders.filter((o) => o.paymentStatus === selectedFilter);
     $('#paymentRows', el).innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
         const sInfo = paymentStatusLabels[o.paymentStatus];
         const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
