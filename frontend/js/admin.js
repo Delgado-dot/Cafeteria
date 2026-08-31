@@ -598,8 +598,11 @@ function productFormModal(p) {
   
   const ov = modal(`
     <h3>${isEdit ? 'Editar' : 'Nuevo'} producto</h3>
+    <div style="margin:16px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Información básica</div></div>
     <div class="field"><label class="label">Nombre</label><input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}"><div class="input-err-msg" id="pfNameErr"></div></div>
     <div class="field"><label class="label">Categoría</label><select class="input" id="pfCat">${cats.map((c) => `<option ${isEdit && p.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    <div class="field"><label class="label">Descripción</label><textarea class="input" id="pfDesc" rows="3">${isEdit ? esc(p.desc) : ''}</textarea></div>
+    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Precio y tiempo</div></div>
     <div class="grid grid-2">
       <div class="field"><label class="label">Precio ($)</label><input class="input" type="number" step="0.05" id="pfPrice" value="${isEdit ? p.price : ''}"><div class="input-err-msg" id="pfPriceErr"></div></div>
       <div class="field"><label class="label">Stock</label><input class="input" type="number" id="pfStock" value="${isEdit ? p.stock : ''}"><div class="input-err-msg" id="pfStockErr"></div></div>
@@ -608,17 +611,18 @@ function productFormModal(p) {
       <div class="field"><label class="label">Tiempo prep (min)</label><input class="input" type="number" id="pfPrep" value="${isEdit ? p.prepMin : ''}"><div class="input-err-msg" id="pfPrepErr"></div></div>
       <div class="field"><label class="label">Stock mínimo</label><input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}"><div class="input-err-msg" id="pfMinErr"></div></div>
     </div>
-    <div class="field"><label class="label">Descripción</label><textarea class="input" id="pfDesc">${isEdit ? esc(p.desc) : ''}</textarea></div>
-    <div class="field">
+    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Disponibilidad</div></div>
+    <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
       <label class="checkbox-row"><input type="checkbox" id="pfExtras" ${isEdit && p.allowExtras ? 'checked' : ''}> <b>Permitir adicionales/observaciones</b></label>
-      <div class="tiny muted" style="margin-left:26px">El cliente podrá agregar notas o extras al producto.</div>
+      <div class="tiny muted" style="margin-left:26px;margin-top:4px">El cliente podrá agregar notas o extras al producto.</div>
     </div>
     ${isEdit ? `
-    <div class="field">
+    <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
       <label class="checkbox-row"><input type="checkbox" id="pfActive" ${p.available ? 'checked' : ''}> <b>Producto activo</b></label>
-      <div class="tiny muted" style="margin-left:26px">Desactiva para ocultar del menú sin eliminarlo.</div>
+      <div class="tiny muted" style="margin-left:26px;margin-top:4px">Desactiva para ocultar del menú sin eliminarlo.</div>
     </div>
     ` : ''}
+    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Imagen</div></div>
     <div class="field"><label class="label">Imagen del producto</label>
       <div id="pfDropZone" style="border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:all var(--t-fast);position:relative">
         <div id="pfDropPlaceholder" style="${p.image ? 'display:none' : ''}">
@@ -631,7 +635,7 @@ function productFormModal(p) {
       </div>
       <input class="input" type="file" id="pfImage" accept="image/*" style="display:none">
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSaveProduct" ${isEdit && !hasUnsavedChanges ? 'disabled style="opacity:0.6"' : ''}>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
     </div>`, { wide: true });
@@ -1354,14 +1358,15 @@ function barDelivery(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery</h1></div>
     <div class="card" style="width:100%;max-width:none;margin:0">
-      <h3 style="margin-bottom:16px">Configuración del delivery</h3>
-      <div class="field">
+      <div style="margin:0 0 18px;padding-bottom:8px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Servicio</div></div>
+      <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
         <label class="checkbox-row">
           <input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}>
           <b>Habilitar delivery interno</b>
         </label>
-        <div class="tiny muted" style="margin-left:26px">Cobertura exclusiva dentro del edificio INTESUD.</div>
+        <div class="tiny muted" style="margin-left:26px;margin-top:4px">Cobertura exclusiva dentro del edificio INTESUD.</div>
       </div>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Cobertura</div></div>
       <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
         <label class="label">Días de entrega</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
@@ -1374,15 +1379,16 @@ function barDelivery(el) {
           ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
         </div>
       </div>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario y capacidad</div></div>
       <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
         <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}" style="max-width: 200px"></div>
         <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}" style="max-width: 200px"></div>
       </div>
       <div class="field" id="dlMaxField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
         <label class="label">Capacidad máxima simultánea</label>
-        <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}" style="max-width: 150px"><div class="tiny muted">Pedidos de delivery que pueden atenderse simultáneamente.</div>
+        <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Pedidos de delivery que pueden atenderse simultáneamente.</div>
       </div>
-      <div style="margin-top:20px;display:flex;justify-content:flex-end">
+      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
         <button class="btn btn-primary" id="dlSave">Guardar configuración</button>
       </div>
     </div>`;
@@ -1437,18 +1443,19 @@ function barConfigHours(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
     <div class="card" style="width:100%;max-width:none;margin:0">
-      <h3 style="margin-bottom:14px">Horario de pedidos</h3>
+      <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
       <div class="grid grid-2">
         <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
         <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
       </div>
-      <h3 style="margin:20px 0 14px">Horario de receso</h3>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
       <div class="grid grid-2">
         <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
         <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
       </div>
-      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;align-items:center">
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
+      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
+      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
         <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
           <span class="pulse-dot"></span>
         </span>
