@@ -165,7 +165,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       <div class="admin-main">
         <div class="admin-topbar">
           <button class="hamburger" id="barHamburger" title="Menú">☰</button>
-          <span style="font-size:1.3rem">${BAR_PAGES[sec].icon}</span>
+          <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
           <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <span id="cafePill"></span>
