@@ -1137,8 +1137,23 @@ const days = [];
   const momPositive = momChange >= 0;
   const momAbsChange = Math.abs(momChange);
 
+  // Micro-mensaje contextual dinámico (solo si hay datos suficientes, nunca muestra undefined)
+  let microMsg = '';
+  if (validSales.length >= 3 && days.length === 7) {
+    const avgWeek = days.reduce((s, d) => s + d.total, 0) / 7;
+    const bestDay = [...days].sort((a, b) => b.total - a.total)[0];
+    if (avgWeek > 0 && salesToday > avgWeek * 1.1) {
+      microMsg = `Hoy vas mejor que el promedio de la semana ✨`;
+    } else if (bestDay && bestDay.total > 0 && bestDay.total > avgWeek * 1.2) {
+      microMsg = `Tu día más fuerte esta semana fue ${esc(bestDay.label)} con ${money(bestDay.total)}`;
+    } else if (avgWeek > 0 && salesToday > 0) {
+      microMsg = `Promedio semanal: ${money(avgWeek)} — hoy llevas ${money(salesToday)}`;
+    }
+  }
+
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-line-chart"></span> Ventas</h1></div>
+    ${microMsg ? `<div class="status-banner info"><span class="ico"><i class="bx bx-trending-up"></i></span><div>${microMsg}</div></div>` : ''}
 <div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
       <div class="stat-card success-card sales-summary-card"><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
       <div class="stat-card sales-summary-card"><div class="st-label">Ticket promedio</div><div class="st-value" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
