@@ -531,7 +531,7 @@ function barProducts(el) {
     }
     const tbody = $('#prodRows', el);
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay productos que coincidan.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></td></tr>';
       return;
     }
     tbody.innerHTML = list.map((p) => `
@@ -822,7 +822,7 @@ function barStock(el) {
   };
 
   const histWrap = $('#stockHist');
-  if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Sin cambios registrados', 'Modifica el stock para ver el historial.');
+  if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
 
   const adjust = (p, delta) => {
     const newVal = p.stock + delta;
@@ -881,7 +881,7 @@ function barStockHistory(el) {
   const renderRows = () => {
     const tbody = $('#stockHistoryRows', el);
     if (!history.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay cambios de stock registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay movimientos de stock</div><div class="tiny muted" style="margin-top:4px">Los ajustes de stock aparecerán aquí</div></td></tr>';
       return;
     }
     
@@ -1000,7 +1000,7 @@ function barPayments(el) {
           </td>
         </tr>
         `;
-      }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No hay pagos en este estado.</td></tr>';
+      }).join('') : `<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx ${selectedFilter==='pending' ? 'bx-happy-heart-eyes' : 'bx-search-alt'}"></i></div><div style="font-weight:600">${selectedFilter==='pending' ? '¡Todo al día! No hay pagos pendientes' : 'No encontramos pagos en este estado'}</div><div class="tiny muted" style="margin-top:4px">${selectedFilter==='pending' ? 'Respira tranquilo, por ahora no debes cobrar nada' : 'Prueba con otro filtro'}</div></td></tr>`;
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
@@ -1074,7 +1074,7 @@ function showVoucherModal(orderId) {
 function barPaymentDetail(el, id) {
   const order = Store.orders.find((o) => o.id === id);
   if (!order) {
-    el.innerHTML = emptyState('<i class="bx bx-credit-card"></i>', 'Pago no encontrado', 'El pedido solicitado no existe.');
+    el.innerHTML = emptyState('<i class="bx bx-credit-card"></i>', 'No encontramos ese pago', 'Parece que el pedido que buscas no existe o fue movido. ¡Revisa el listado!');
     return;
   }
   lastVisitedPaymentId = id;
@@ -1165,7 +1165,7 @@ const days = [];
               <div class="tiny muted">unidades</div>
             </div>
           `).join('')}
-        </div>` : `<p style="margin:8px 0;color:var(--text-3)">No hay datos de ventas aún.</p>`}
+        </div>` : `<div style="text-align:center;padding:24px 12px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-bar-chart-alt-2"></i></div><div style="font-weight:600">Aún no hay ventas registradas</div><div class="tiny muted" style="margin-top:4px">Cuando haya movimiento, verás aquí tus productos estrella</div></div>`}
     </div>
   `;
 animateSalesMetrics(el);
@@ -1339,7 +1339,7 @@ function barSalesHistory(el) {
     if (!tbodyEl) return;
     const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
     tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
-      <tr><td class="small" data-label="Fecha/hora">${o.date} ${o.time || '—'}</td><td class="bold" data-label="Pedido">#${o.id}</td><td class="bold tabular-nums" data-label="Monto">${money(o.total)}</td><td data-label="Método pago">${paymentMethodLabel(o.payment)}</td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">No hay ventas registradas.</td></tr>';
+      <tr><td class="small" data-label="Fecha/hora">${o.date} ${o.time || '—'}</td><td class="bold" data-label="Pedido">#${o.id}</td><td class="bold tabular-nums" data-label="Monto">${money(o.total)}</td><td data-label="Método pago">${paymentMethodLabel(o.payment)}</td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
   };
 
   renderSkeletonRows();
