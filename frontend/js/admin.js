@@ -772,11 +772,11 @@ function barStock(el) {
         <td data-label="Última actualización">${h ? `${h.time} ${h.date}` : '—'}</td>
         <td data-label="Acciones">
             <div style="display:flex;align-items:center;gap:8px">
-              <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
-                <span class="ico bx bx-plus" style="font-size:1.1rem;color:var(--success)"></span>
+              <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--success);border-color:var(--success)">
+                <span class="ico bx bx-plus" style="font-size:18px;color:#fff;line-height:1"></span>
               </button>
               <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
-                <span class="ico bx bx-minus" style="font-size:1.1rem;color:var(--danger)"></span>
+                <span class="ico bx bx-minus" style="font-size:18px;color:var(--danger);line-height:1"></span>
               </button>
             </div>
           </td>
