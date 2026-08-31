@@ -528,7 +528,7 @@ function barProducts(el) {
     }
     tbody.innerHTML = list.map((p) => `
       <tr>
-        <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px"><img style="width:36px;height:36px;border-radius:8px;object-fit:cover;" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.previousElementSibling.style.display='flex'"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
         <td data-label="Categoría">${esc(p.category)}</td>
         <td class="bold tabular-nums" data-label="Precio">${money(p.price)}</td>
         <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.minStock ? '· bajo' : ''}</span></td>
@@ -577,7 +577,8 @@ function productFormModal(p) {
     minStock: p.minStock,
     desc: p.desc,
     available: p.available,
-    allowExtras: p.allowExtras || false
+    allowExtras: p.allowExtras || false,
+    image: p.image || ''
   } : null;
   let hasUnsavedChanges = false;
   
@@ -604,6 +605,8 @@ function productFormModal(p) {
       <div class="tiny muted" style="margin-left:26px">Desactiva para ocultar del menú sin eliminarlo.</div>
     </div>
     ` : ''}
+    <div class="field"><label class="label">Imagen del producto</label><input class="input" type="file" id="pfImage" accept="image/*"></div>
+    <div class="field" style="margin-top:8px"><img id="pfImagePreview" src="${p.image || ''}" style="max-width:200px;max-height:200px;border:1px solid var(--border);display:none" onload="this.style.display=''"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSaveProduct" ${isEdit && !hasUnsavedChanges ? 'disabled style="opacity:0.6"' : ''}>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
@@ -635,13 +638,28 @@ function productFormModal(p) {
     btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
   };
   
-  fields.forEach(id => {
+fields.forEach(id => {
     const field = $('#' + id, ov);
     if (field) {
       field.addEventListener('input', checkChanges);
       field.addEventListener('change', checkChanges);
     }
   });
+
+  const pfImage = $('#pfImage', ov);
+  const pfImagePreview = $('#pfImagePreview', ov);
+  if (pfImage && pfImagePreview) {
+    pfImage.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        pfImagePreview.src = e.target.result;
+        pfImagePreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
   $('[data-cancel]', ov).onclick = () => ov.remove();
   btnSave.onclick = () => {
@@ -667,11 +685,11 @@ function productFormModal(p) {
       const allowExtras = $('#pfExtras', ov).checked;
       const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
       if (isEdit) {
-        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras });
+        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras, image: pfImagePreview.src || p.image });
         logAudit('Editó producto', name);
         toast('Producto actualizado.', 'success');
       } else {
-        products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available, desc: $('#pfDesc', ov).value, emoji: '', allowExtras });
+        products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available, desc: $('#pfDesc', ov).value, emoji: '', image: pfImagePreview.src || '', allowExtras });
         logAudit('Creó producto', name);
         toast('Producto creado.', 'success');
       }
