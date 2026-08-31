@@ -535,9 +535,15 @@ function barProducts(el) {
         <td data-label="Prep">${p.prepMin} min</td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
-          <button class="btn btn-outline btn-sm" data-edit="${p.id}" style="min-width: 80px">Editar</button>
-          <button class="btn btn-neutral btn-sm" data-toggle="${p.id}" style="min-width: 80px">${p.available ? 'Desactivar' : 'Activar'}</button>
-        </td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn btn-outline btn-icon" title="Editar ${esc(p.name)}" aria-label="Editar ${esc(p.name)}" data-edit="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+                <span class="ico bx bx-edit-alt" style="font-size:1.1rem;color:var(--primary)"></span>
+              </button>
+              <button class="btn btn-neutral btn-icon" title="${p.available ? 'Desactivar' : 'Activar'}" aria-label="${p.available ? 'Desactivar' : 'Activar'}" data-toggle="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+                <span class="ico ${p.available ? 'bx bx-hide' : 'bx bx-show'}" style="font-size:1.1rem;color:${p.available ? 'var(--danger)' : 'var(--primary)'}"></span>
+              </button>
+            </div>
+          </td>
       </tr>
     `).join('');
     $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === b.dataset.edit)));
@@ -757,8 +763,15 @@ function barStock(el) {
         <td data-label="Estado">${stockBadge(p)}</td>
         <td data-label="Última actualización">${h ? `${h.time} ${h.date}` : '—'}</td>
         <td data-label="Acciones">
-          <button class="btn btn-outline btn-sm" data-inc="${p.id}">+ Aumentar</button>
-          <button class="btn btn-neutral btn-sm" data-dec="${p.id}">− Disminuir</button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+                <span class="ico bx bx-plus" style="font-size:1.1rem;color:var(--success)"></span>
+              </button>
+              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+                <span class="ico bx bx-minus" style="font-size:1.1rem;color:var(--danger)"></span>
+              </button>
+            </div>
+          </td>
         </td>
       </tr>`;
     }).join('');
