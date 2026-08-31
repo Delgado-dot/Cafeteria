@@ -10,7 +10,7 @@ function esc(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const money = (v) => '$' + Number(v).toFixed(2);
+const money = (v) => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function toast(msg, type = 'info') {
   const wrap = $('.toast-wrap') || (() => {
