@@ -24,21 +24,25 @@ const Auth = {
   logout() { this.clear(); logAudit('Cerró sesión', ''); },
 };
 
+/* ---------- Iconos SVG (login/forgot, evita emojis) ---------- */
+const AUTH_SVG_ATTRS = 'viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const AUTH_ICO = {
+  cup: (w, h) => `<svg ${AUTH_SVG_ATTRS} width="${w}" height="${h}"><path d="M17 8h1a3 3 0 0 1 0 6h-1"/><path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>`,
+  user: `<svg ${AUTH_SVG_ATTRS}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>`,
+  eye: `<svg ${AUTH_SVG_ATTRS}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  phone: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>`,
+  scooter: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17L9 8h4l2 5h4"/></svg>`,
+  roles: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.6.8 2.6 2.4 3 5"/></svg>`,
+  lock: (w, h) => `<svg ${AUTH_SVG_ATTRS} width="${w}" height="${h}"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+  done: `<svg ${AUTH_SVG_ATTRS} width="44" height="44" style="color:var(--success)"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.8 2.8L16 9.5"/></svg>`,
+};
+window.AUTH_ICO = AUTH_ICO;
+
 /* ---------- Render login ---------- */
 function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
   <div class="login-screen">
-    <div class="login-brand">
-      <div class="brand-logo-badge">☕</div>
-      <h1>Cafetería INTESUD</h1>
-      <p>Instituto Tecnológico Superior Sudamericano — Pedidos en línea para el receso, con delivery interno y gestión de la cafetería.</p>
-      <div class="brand-tags">
-        <span>📱 Pedidos en línea</span>
-        <span>🛵 Delivery interno</span>
-        <span>👨‍🏫 Roles y permisos</span>
-      </div>
-    </div>
     <div class="login-section">
       <div class="login-card">
         <div class="login-head">
@@ -50,9 +54,9 @@ function renderLogin() {
           <div class="field">
             <label class="label" for="li_email">Usuario o correo</label>
             <div class="input-wrap">
-              <span class="leading-ico">👤</span>
+              <span class="leading-ico">${AUTH_ICO.user}</span>
               <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar">✕</button>
+              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
             </div>
             <div class="input-err-msg" id="li_emailErr"></div>
           </div>
@@ -60,7 +64,7 @@ function renderLogin() {
             <label class="label" for="li_pass">Contraseña</label>
             <div class="input-group">
               <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar">👁</button>
+              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
             </div>
             <div class="input-err-msg" id="li_passErr"></div>
           </div>
@@ -139,7 +143,7 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge">🔐</div>
+      <div class="brand-logo-badge">${AUTH_ICO.lock(30, 30)}</div>
       <h1>Recuperar contraseña</h1>
       <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
     </div>
@@ -241,7 +245,7 @@ function recoverStep(step, ctx = { email: '' }) {
     title.textContent = '¡Contraseña actualizada!';
     sub.textContent = 'Tu contraseña ha sido restablecida correctamente.';
     body.innerHTML = `
-      <div class="empty-state" style="padding:20px 0"><div class="icon">✅</div></div>
+      <div class="empty-state" style="padding:20px 0">${AUTH_ICO.done}</div>
       <button class="btn btn-primary btn-block" id="rvDone">Ir a iniciar sesión</button>`;
     $('#rvDone').onclick = () => route('login');
   }

@@ -9,8 +9,7 @@
 @media (max-width: 1080px) {
   .cart-layout { grid-template-columns: 1fr; }
   .summary-card { position: static; }
-  .login-screen { grid-template-columns: 1fr 1fr; }
-  .login-brand { padding: var(--sp-6); }
+  .login-screen { padding: var(--sp-5); }
 }
 
 /* ============================================================
@@ -27,9 +26,8 @@
   .user-nav { display: none; }
   .header-search { display: none; }
 
-  /* Login: pila */
-  .login-screen { grid-template-columns: 1fr; }
-  .login-brand { display: none; }
+  /* Login: la marca se mantiene compacta (nada se oculta) */
+  .login-brand { padding: var(--sp-4) var(--sp-3); margin-bottom: var(--sp-3); }
 
   /* Menú → filtros en horizontal */
   .menu-layout { grid-template-columns: 1fr; }

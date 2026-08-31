@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6efe2"/>
+      <stop offset="1" stop-color="#e8d6b8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <circle cx="120" cy="120" r="170" fill="#ffffff" opacity="0.35"/>
+  <circle cx="700" cy="680" r="190" fill="#40807e" opacity="0.1"/>
+
+  <!-- mantel -->
+  <rect x="120" y="470" width="560" height="200" rx="24" fill="#ffffff"/>
+  <rect x="120" y="470" width="560" height="26" rx="13" fill="#40807e"/>
+  <rect x="150" y="640" width="60" height="60" rx="14" fill="#e7f1f0"/>
+  <rect x="590" y="640" width="60" height="60" rx="14" fill="#e7f1f0"/>
+
+  <!-- plato -->
+  <ellipse cx="400" cy="470" rx="120" ry="26" fill="#2f605e"/>
+  <ellipse cx="400" cy="462" rx="132" ry="30" fill="#5b9c99"/>
+  <ellipse cx="400" cy="462" rx="104" ry="22" fill="#ffffff"/>
+
+  <!-- taza grande -->
+  <rect x="300" y="300" width="200" height="150" rx="22" fill="#40807e"/>
+  <path d="M500 330 h44 c30 0 30 100 0 100 h-44" fill="none" stroke="#40807e" stroke-width="18"/>
+  <ellipse cx="400" cy="300" rx="100" ry="26" fill="#5b9c99"/>
+  <ellipse cx="400" cy="302" rx="86" ry="20" fill="#2f605e"/>
+  <ellipse cx="400" cy="304" rx="74" ry="16" fill="#6b4a2e"/>
+  <path d="M340 250 c-8 -20 8 -28 0 -48 M400 240 c-8 -20 8 -28 0 -48 M460 250 c-8 -20 8 -28 0 -48" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- croissant -->
+  <path d="M600 420 c34 6 58 30 62 60 c0 10 -12 16 -20 8 c-16 -18 -38 -26 -70 -26 c-18 0 -34 4 -46 12 c-8 6 -22 2 -22 -10 c0 -26 28 -44 62 -46 c10 0 24 0 34 2 Z" fill="#c98a1d"/>
+  <path d="M596 426 c18 2 30 8 40 16" stroke="#a86f13" fill="none" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- granos de café -->
+  <ellipse cx="250" cy="520" rx="26" ry="14" fill="#5a3a24" transform="rotate(-20 250 520)"/>
+  <line x1="237" y1="512" x2="262" y2="528" stroke="#7a5133" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="292" cy="556" rx="22" ry="12" fill="#6b4a2e" transform="rotate(24 292 556)"/>
+  <line x1="280" y1="550" x2="303" y2="564" stroke="#8a5f3f" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="222" cy="572" rx="20" ry="11" fill="#4c301f" transform="rotate(-8 222 572)"/>
+</svg>

@@ -1,6 +1,7 @@
 /* ============================================================
    landing.js — Landing Page público de la Cafetería INTESUD
    Puerta de entrada pública -> ACCEDER -> login existente.
+   Rediseño minimalista inspirado en la rama Dylan.
    No modifica la lógica de roles ni los paneles internos.
    ============================================================ */
 
@@ -53,61 +54,7 @@ function lpProductIcon(cat) {
   };
   return lpIcon(map[cat] || 'plate');
 }
-
-/* Ilustración hero: estudiante con su teléfono y el pedido.
-   Estilo flat 2D / vector / moderno sobre el bloque orgánico. */
-const LP_HERO_ART = `
-  <div class="lp-hero-art">
-    <div class="lp-blob-2"></div>
-    <div class="lp-blob-3"></div>
-    <div class="lp-blob"></div>
-    <svg width="360" height="360" viewBox="0 0 360 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Estudiante realizando un pedido desde su teléfono" style="position:relative;z-index:2;width:min(88%,360px);height:auto">
-      <!-- teléfono -->
-      <g>
-        <rect x="214" y="112" width="72" height="140" rx="16" fill="#ffffff" stroke="#40807E" stroke-width="3"/>
-        <rect x="222" y="122" width="56" height="104" rx="7" fill="#e7f1f0"/>
-        <rect x="230" y="130" width="40" height="9" rx="4.5" fill="#40807E"/>
-        <rect x="230" y="148" width="40" height="6" rx="3" fill="#b9d3d1"/>
-        <rect x="230" y="160" width="26" height="6" rx="3" fill="#b9d3d1"/>
-        <rect x="230" y="182" width="40" height="16" rx="4" fill="#40807E"/>
-        <rect x="230" y="202" width="40" height="6" rx="3" fill="#cfe0de"/>
-        <circle cx="250" cy="248" r="5" fill="#40807E"/>
-      </g>
-      <!-- mano apoyada en el teléfono -->
-      <g fill="#8a6b4f">
-        <rect x="208" y="240" width="26" height="12" rx="6"/>
-        <rect x="232" y="238" width="24" height="12" rx="6"/>
-      </g>
-      <!-- brazo -->
-      <path d="M206 258 C196 236 200 214 220 198" stroke="#8a6b4f" stroke-width="20" stroke-linecap="round" fill="none"/>
-      <!-- cabeza -->
-      <circle cx="180" cy="168" r="44" fill="#c89a6e"/>
-      <circle cx="180" cy="168" r="44" fill="#c89a6e"/>
-      <!-- pelo -->
-      <path d="M136 158 C134 120 226 120 224 158 C226 138 196 132 180 132 C164 132 134 138 136 158 Z" fill="#2e2520"/>
-      <!-- torso -->
-      <path d="M152 212 C150 232 150 258 150 258 L210 258 C210 258 210 232 208 212 C204 236 156 236 152 212 Z" fill="#40807E"/>
-      <rect x="150" y="232" width="60" height="6" rx="3" fill="#2f605e"/>
-      <!-- mochila -->
-      <rect x="138" y="196" width="30" height="34" rx="9" fill="#2f605e"/>
-      <!-- bolsa de pedido -->
-      <rect x="252" y="268" width="52" height="40" rx="10" fill="none" stroke="#fff" stroke-width="4"/>
-      <path d="M258 268 C258 250 296 250 296 268" stroke="#fff" stroke-width="4" fill="none"/>
-      <path d="M262 290 L290 296" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-      <!-- estrellitas -->
-      <path d="M150 110 l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#40807E" opacity="0.7"/>
-      <path d="M116 204 l2 5 6 1-4 4 1 6-5-3-5 3 1-6-4-4 6-1z" fill="#ffffff" opacity="0.9"/>
-      <path d="M296 82 l3 7 8 1-6 6 1 8-6-4-6 4 1-8-6-6 8-1z" fill="#40807E" opacity="0.6"/>
-    </svg>
-    <div class="lp-badge-float lp-bf-1">
-      <div class="bf-ico">${lpIcon('bag')}</div>
-      <div><div class="bf-t">Pedido listo</div><div class="bf-s">Prepárate para el receso</div></div>
-    </div>
-    <div class="lp-badge-float lp-bf-2">
-      <div class="bf-ico">${lpIcon('clock2')}</div>
-      <div><div class="bf-t">15 minutos</div><div class="bf-s">De 10:00 a 10:15</div></div>
-    </div>
-  </div>`;
+window.lpProductIcon = lpProductIcon;
 
 /* ---------- Datos del menú preview (demo, tomados de Store) ---------- */
 function lpMenuProducts() {
@@ -139,7 +86,7 @@ function renderLanding() {
       <div class="lp-product">
         <div class="lp-p-media">
           <span class="badge badge-primary lp-p-tag">${lpProductIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>
-          <span style="font-size:2.4rem">${lpProductIcon(p.category)}</span>
+          <span style="display:inline-flex">${lpProductIcon(p.category)}</span>
           ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
         </div>
         <div class="lp-p-body">
@@ -153,26 +100,8 @@ function renderLanding() {
       </div>`;
   }).join('');
 
-  const steps = [
-    { n: '01', name: 'Elige', ico: 'burger', txt: 'Selecciona tus productos favoritos del menú.' },
-    { n: '02', name: 'Realiza tu pedido', ico: 'check', txt: 'Confirma tu pedido antes de que cierre el horario de pedidos.' },
-    { n: '03', name: 'Espera', ico: 'hourglass', txt: 'Consulta el estado y el tiempo estimado de preparación.' },
-    { n: '04', name: 'Recibe o retira', ico: 'bag', txt: 'Retira tu pedido en la cafetería o recíbelo dentro del instituto mediante delivery.' },
-  ];
-
-  const capBlocks = [
-    { ico: 'chef', t: 'Una sola persona prepara los pedidos', s: 'El sistema organiza el flujo para que todo esté listo a tiempo.' },
-    { ico: 'clipboard', t: 'Sin acumulación', s: 'Se evita que se acumulen demasiados pedidos al mismo tiempo.' },
-    { ico: 'clock', t: 'Listo para el receso', s: 'Tu pedido estará esperándote cuando comience tu receso.' },
-  ];
-
-  const delPoints = [
-    { ico: 'building', t: 'Solo dentro de INTESUD', s: 'El delivery está limitado exclusivamente a las instalaciones del instituto.' },
-    { ico: 'pin', t: 'Elige Piso → Aula', s: 'Indica tu piso y tu aula: ' + '<b>1A · 2B · 3C</b>' + ', por ejemplo, y recibe en tu ubicación cuando esté disponible.' },
-  ];
-
   app.innerHTML = `
-  <div class="landing"><div class="landing-page">
+  <div class="landing">
 
     <!-- ======= HEADER ======= -->
     <header class="lp-header">
@@ -183,96 +112,92 @@ function renderLanding() {
         </a>
         <nav class="lp-nav">
           <a href="#" data-lp-scroll="home">Inicio</a>
-          <a href="#" data-lp-scroll="menu">Menú</a>
+          <a href="#" data-lp-scroll="about">Presentación</a>
           <a href="#" data-lp-scroll="how">¿Cómo funciona?</a>
+          <a href="#" data-lp-scroll="menu">Menú</a>
           <a href="#" data-lp-scroll="hours">Horarios</a>
         </nav>
         <div class="lp-header-actions">
           <button class="lp-btn-acceder" data-lp-login>ACCEDER</button>
           <button class="lp-burger" data-lp-burger aria-label="Abrir menú">${lpIcon('list')}</button>
         </div>
-        
+        <nav class="lp-nav-mobile" data-lp-mnav>
+          <a href="#" data-lp-scroll="home">Inicio</a>
+          <a href="#" data-lp-scroll="about">Presentación</a>
+          <a href="#" data-lp-scroll="how">¿Cómo funciona?</a>
+          <a href="#" data-lp-scroll="menu">Menú</a>
+          <a href="#" data-lp-scroll="hours">Horarios</a>
+          <span class="lp-mn-acceder"><button class="lp-btn-acceder" data-lp-login>ACCEDER</button></span>
+        </nav>
       </div>
     </header>
 
-    <!-- ======= HERO ======= -->
+    <!-- ======= HERO (portada) ======= -->
     <section class="lp-hero" id="home">
-      <div class="lp-wrap">
-        <div class="lp-hero-copy">
-          <div class="lp-eyebrow">Cafetería del Instituto Tecnológico Superior Sudamericano</div>
-          <h1 class="lp-hero-title">Tu comida <span class="hl">lista para el receso.</span></h1>
-          <p class="lp-hero-sub">Realiza tu pedido antes del receso y recógelo listo de 10:00 a 10:15.</p>
-          <div class="lp-cta-row">
-            <a class="btn btn-primary btn-lg" href="#" data-lp-scroll="menu">VER MENÚ</a>
-            <button class="btn btn-outline btn-lg" data-lp-login>ACCEDER</button>
+      <div class="lp-hero-media">
+        <img src="assets/images/Cafeteria1.jpg" alt="Barra de atención de la cafetería INTESUD">
+        <div class="lp-hero-overlay">
+          <span class="lp-eyebrow centered">Cafetería del Instituto Tecnológico Superior Sudamericano</span>
+          <h1 class="lp-hero-title">Tu comida <span class="hl">lista para el receso</span></h1>
+          <p class="lp-hero-tag">Realiza tu pedido antes del receso y recógelo listo de ${esc(cfg.breakStart || '10:00')} a ${esc(cfg.breakEnd || '10:15')}.</p>
+          <div class="lp-hero-actions">
+            <button class="lp-btn-white" data-lp-scroll="menu">VER MENÚ ${lpIcon('arrow')}</button>
+            <button class="lp-btn-hero" data-lp-login>ACCEDER ${lpIcon('arrow')}</button>
           </div>
           <div class="lp-hero-stats">
             <div class="lp-hero-stat"><div class="v">15 min</div><div class="l">de receso para retirar</div></div>
-            <div class="lp-hero-stat"><div class="v">09:00–09:45</div><div class="l">horario de pedidos</div></div>
+            <div class="lp-hero-stat"><div class="v">${esc(cfg.orderOpen || '09:00')}–${esc(cfg.orderClose || '09:45')}</div><div class="l">horario de pedidos</div></div>
             <div class="lp-hero-stat"><div class="v">Delivery</div><div class="l">dentro del instituto</div></div>
           </div>
         </div>
-        ${LP_HERO_ART}
+        <span class="lp-scroll-hint">${lpIcon('arrow', 'style="transform:rotate(90deg)"')} Explora</span>
       </div>
     </section>
 
     <!-- ======= PRESENTACIÓN ======= -->
-    ${lpSection('about', 'lp-present', `
-      <div class="lp-present-grid">
-        <div class="lp-reveal" style="animation-delay:.05s">
-          <div class="lp-eyebrow">Presentación</div>
-          <h2 class="lp-h2">La cafetería de tu instituto</h2>
-          <p class="lp-lead">La Cafetería INTESUD está ubicada dentro de las instalaciones del Instituto Tecnológico Superior Sudamericano y está pensada para facilitar los pedidos de los estudiantes durante el corto periodo de receso.</p>
-          <ul class="lp-points">
-            <li><span class="pi">${lpIcon('grad')}</span><div><div class="pt">Pensada para estudiantes</div><div class="ps">Pedidos rápidos y organizados para aprovechar tu receso.</div></div></li>
-            <li><span class="pi">${lpIcon('building')}</span><div><div class="pt">Dentro de las instalaciones</div><div class="ps">Retiro en cafetería o delivery interno en el edificio.</div></div></li>
-            <li><span class="pi">${lpIcon('zap')}</span><div><div class="pt">Rapidez y organización</div><div class="ps">Tu pedido listo para cuando empiece el receso.</div></div></li>
-          </ul>
-        </div>
-        <div class="lp-photo lp-reveal" style="animation-delay:.15s">
-          <div class="lp-photo-ph">
-            <span class="p-ico">${lpIcon('cup')}</span>
-            <span class="p-t">La Cafetería INTESUD</span>
-            <span class="p-s">Imagen representativa del espacio del bar del instituto. Se actualizará con una fotografía real cuando esté disponible.</span>
-          </div>
-        </div>
+    ${lpSection('about', 'lp-about', `
+      <div class="lp-center">
+        <div class="lp-eyebrow centered">Presentación</div>
+        <h2 class="lp-h2">La cafetería de tu instituto</h2>
+        <p class="lp-lead">La Cafetería INTESUD está ubicada dentro de las instalaciones del Instituto Tecnológico Superior Sudamericano y está pensada para facilitar los pedidos de los estudiantes durante el corto periodo de receso.</p>
       </div>
+      <ul class="lp-about-points">
+        <li><span class="pi">${lpIcon('grad')}</span><div><div class="pt">Pensada para estudiantes</div><div class="ps">Pedidos rápidos y organizados para aprovechar tu receso.</div></div></li>
+        <li><span class="pi">${lpIcon('building')}</span><div><div class="pt">Dentro de las instalaciones</div><div class="ps">Retiro en cafetería o delivery interno en el edificio.</div></div></li>
+        <li><span class="pi">${lpIcon('zap')}</span><div><div class="pt">Rapidez y organización</div><div class="ps">Tu pedido listo para cuando empiece el receso.</div></div></li>
+      </ul>
+      <figure class="lp-gallery">
+        <div class="lp-g-card"><img src="assets/images/galeria-1.svg" alt="Barra de atención de la cafetería"><figcaption>Barra de atención</figcaption></div>
+        <div class="lp-g-card"><img src="assets/images/galeria-2.svg" alt="Espacio para disfrutar en la cafetería"><figcaption>Espacio para disfrutar</figcaption></div>
+        <div class="lp-g-card"><img src="assets/images/galeria-3.svg" alt="Café y snacks de la cafetería"><figcaption>Café y snacks</figcaption></div>
+      </figure>
     `)}
 
     <!-- ======= CÓMO FUNCIONA ======= -->
     ${lpSection('how', 'lp-how', `
-      <div class="lp-eyebrow">Cómo funciona</div>
-      <h2 class="lp-h2">Pide antes del receso</h2>
-      <p class="lp-lead">Cuatro pasos sencillos para que tu comida esté lista justo a tiempo.</p>
-      <div class="lp-steps">
-        ${steps.map((s, i) => `
-          <div class="lp-step lp-reveal" style="animation-delay:${i * 0.08}s">
-            ${i < steps.length - 1 ? `<span class="lp-step-arrow">${lpIcon('arrow')}</span>` : ''}
-            <div class="lp-step-num">${s.n}</div>
-            <div class="lp-step-ico">${lpIcon(s.ico)}</div>
-            <h3>${s.name}</h3>
-            <p>${s.txt}</p>
-          </div>`).join('')}
+      <div class="lp-center">
+        <div class="lp-eyebrow centered">Cómo funciona</div>
+        <h2 class="lp-h2">Pide antes del receso</h2>
+        <p class="lp-lead">Tres pasos sencillos para que tu comida esté lista justo a tiempo.</p>
       </div>
-    `)}
-
-    <!-- ======= HORARIOS ======= -->
-    ${lpSection('hours', 'lp-hours', `
-      <div class="lp-eyebrow">Horarios</div>
-      <h2 class="lp-h2">Organiza tu pedido a tiempo</h2>
-      <p class="lp-lead">No confundas el horario para hacer tu pedido con el horario para retirarlo. El receso es corto: solo 15 minutos.</p>
-      <div class="lp-hours-grid">
-        <div class="lp-hour-card lp-reveal">
-          <span class="hc-label">${lpIcon('pencil')} Pedidos</span>
-          <h3>${esc(cfg.orderOpen || '09:00')} — ${esc(cfg.orderClose || '09:45')}</h3>
-          <p>Realiza tu pedido antes del cierre.</p>
-          <div class="lp-hour-note">${lpIcon('clock')} Cierra a las ${esc(cfg.orderClose || '09:45')}</div>
+      <div class="lp-steps">
+        <div class="lp-step">
+          <span class="lp-step-num">01</span>
+          <span class="lp-step-ico">${lpIcon('burger')}</span>
+          <h3>Elige</h3>
+          <p>Selecciona tus productos favoritos del menú antes de que cierre el horario de pedidos.</p>
         </div>
-        <div class="lp-hour-card hl lp-reveal" style="animation-delay:.1s">
-          <span class="hc-label">${lpIcon('flag')} Receso de entrega</span>
-          <h3>${esc(cfg.breakStart || '10:00')} — ${esc(cfg.breakEnd || '10:15')}</h3>
-          <p>Retira tu pedido o recibe tu delivery.</p>
-          <div class="lp-hour-note"><span class="lp-15min">${lpIcon('clock2')} El receso dura <b>&nbsp;15 minutos</b></span></div>
+        <div class="lp-step">
+          <span class="lp-step-num">02</span>
+          <span class="lp-step-ico">${lpIcon('check')}</span>
+          <h3>Realiza tu pedido</h3>
+          <p>Confirma tu pedido en línea con retiro en cafetería o delivery interno.</p>
+        </div>
+        <div class="lp-step">
+          <span class="lp-step-num">03</span>
+          <span class="lp-step-ico">${lpIcon('bag')}</span>
+          <h3>Recibe o retira</h3>
+          <p>Retira tu pedido en la cafetería o recíbelo dentro del instituto cuando empiece el receso.</p>
         </div>
       </div>
     `)}
@@ -292,18 +217,46 @@ function renderLanding() {
       </div>
     `)}
 
+    <!-- ======= HORARIOS ======= -->
+    ${lpSection('hours', 'lp-hours', `
+      <div class="lp-center">
+        <div class="lp-eyebrow centered">Horarios</div>
+        <h2 class="lp-h2">Organiza tu pedido a tiempo</h2>
+        <p class="lp-lead">No confundas el horario para hacer tu pedido con el horario para retirarlo. El receso es corto: solo 15 minutos.</p>
+      </div>
+      <div class="lp-hours-grid">
+        <div class="lp-hour-card">
+          <span class="hc-ico">${lpIcon('pencil')}</span>
+          <div>
+            <div class="hc-label">Pedidos</div>
+            <div class="hc-value">${esc(cfg.orderOpen || '09:00')} — ${esc(cfg.orderClose || '09:45')}</div>
+            <div class="hc-note">${lpIcon('clock')} Cierra a las ${esc(cfg.orderClose || '09:45')}</div>
+          </div>
+        </div>
+        <div class="lp-hour-card">
+          <span class="hc-ico">${lpIcon('flag')}</span>
+          <div>
+            <div class="hc-label">Receso de entrega</div>
+            <div class="hc-value">${esc(cfg.breakStart || '10:00')} — ${esc(cfg.breakEnd || '10:15')}</div>
+            <div class="hc-note">${lpIcon('clock2')} El receso dura 15 minutos</div>
+          </div>
+        </div>
+      </div>
+    `)}
+
     <!-- ======= CAPACIDAD ======= -->
     ${lpSection('capacity', 'lp-capacity', `
       <div class="lp-capacity-grid">
-        <div class="lp-reveal">
+        <div>
           <div class="lp-eyebrow">Capacidad de preparación</div>
           <h2 class="lp-h2">Pedidos organizados para evitar esperas</h2>
-          <p class="lp-lead">El sistema organiza los pedidos considerando la capacidad de preparación de la cafetería, para evitar que se acumulen demasiados pedidos al mismo tiempo. Como el bar lo prepara una sola persona, cada pedido cuenta.</p>
-          <ul class="lp-cap-tags">
-            ${capBlocks.map((b) => `<li><span class="pi" style="width:40px;height:40px;border-radius:12px;background:var(--primary-soft);color:var(--lp-primary);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0">${lpIcon(b.ico)}</span><div><div class="pt">${b.t}</div><div class="ps" style="color:var(--text-2);font-size:var(--fs-sm);margin-top:2px">${b.s}</div></div></li>`).join('')}
+          <p class="lp-lead">El sistema organiza los pedidos considerando la capacidad de la cafetería para evitar que se acumulen demasiados al mismo tiempo. Como el bar lo prepara una sola persona, cada pedido cuenta.</p>
+          <ul class="lp-cap-points">
+            <li><span class="pi">${lpIcon('chef')}</span><div><div class="pt">Una sola persona prepara</div><div class="ps">El sistema organiza el flujo para que todo esté listo a tiempo.</div></div></li>
+            <li><span class="pi">${lpIcon('clipboard')}</span><div><div class="pt">Sin acumulación</div><div class="ps">Se evita que se acumulen demasiados pedidos al mismo tiempo.</div></div></li>
           </ul>
         </div>
-        <div class="lp-reveal" style="animation-delay:.1s">
+        <div style="display:flex;justify-content:center">
           <div class="lp-cap-gauge">
             <div class="cg-head">
               <span class="cg-label">Capacidad de preparación</span>
@@ -311,7 +264,7 @@ function renderLanding() {
             </div>
             <div class="cg-track"><div class="cg-fill" style="width:${cap.pct}%"></div></div>
             <div class="cg-num"><span>${cap.used} / ${cap.total} pedidos</span><b>${cap.pct}%</b></div>
-            <div class="lp-cap-foot">${lpIcon('bulb')} Capacidad disponible. Indicador demostrativo: la capacidad se gestiona en el panel de la administradora del bar.</div>
+            <div class="lp-cap-foot">${lpIcon('bulb')} Indicador demostrativo: la capacidad se gestiona en el panel de la administradora del bar.</div>
           </div>
         </div>
       </div>
@@ -320,15 +273,16 @@ function renderLanding() {
     <!-- ======= DELIVERY ======= -->
     ${lpSection('delivery', 'lp-delivery', `
       <div class="lp-delivery-grid">
-        <div class="lp-reveal">
+        <div>
           <div class="lp-eyebrow">Delivery interno</div>
           <h2 class="lp-h2">Recibe tu pedido dentro del instituto</h2>
           <p class="lp-lead">El delivery está limitado exclusivamente a las instalaciones de INTESUD. Elige tu piso y tu aula para recibir tu pedido cuando el servicio esté disponible.</p>
-          <ul class="lp-del-flow">
-            ${delPoints.map((d) => `<li><span class="df-ico">${lpIcon(d.ico)}</span><div>${d.t}<div style="font-size:var(--fs-sm);color:var(--text-3)">${d.s}</div></div></li>`).join('')}
+          <ul class="lp-del-points">
+            <li><span class="pi">${lpIcon('building')}</span><div><div class="pt">Solo dentro de INTESUD</div><div class="ps">El delivery está limitado a las instalaciones del instituto.</div></div></li>
+            <li><span class="pi">${lpIcon('pin')}</span><div><div class="pt">Elige Piso → Aula</div><div class="ps">Indica tu piso y tu aula —<b>&nbsp;1A · 2B · 3C</b>— y recibe en tu ubicación.</div></div></li>
           </ul>
         </div>
-        <div class="lp-reveal" style="animation-delay:.1s">
+        <div>
           <div class="lp-building">
             <div class="lp-bldg-frame">
               <div class="lp-floor">
@@ -352,11 +306,13 @@ function renderLanding() {
 
     <!-- ======= CTA FINAL ======= -->
     ${lpSection('cta', 'lp-cta', `
-      <div class="lp-eyebrow" style="color:rgba(255,255,255,0.85);justify-content:center">Tu café, listo antes del receso</div>
-      <h2 class="lp-h2" style="text-align:center">¿Listo para pedir?</h2>
-      <p class="lp-lead" style="text-align:center">Haz tu pedido antes de las ${esc(cfg.orderClose || '9:45')} y aprovecha tu receso.</p>
-      <div class="lp-cta-row">
-        <button class="lp-btn-access" data-lp-login>ACCEDER A LA CAFETERÍA ${lpIcon('arrow')}</button>
+      <div class="lp-center">
+        <div class="lp-eyebrow centered">Tu café, listo antes del receso</div>
+        <h2 class="lp-h2">¿Listo para pedir?</h2>
+        <p class="lp-lead">Haz tu pedido antes de las ${esc(cfg.orderClose || '09:45')} y aprovecha tu receso.</p>
+        <div class="lp-cta-row">
+          <button class="lp-btn-access" data-lp-login>ACCEDER A LA CAFETERÍA ${lpIcon('arrow')}</button>
+        </div>
       </div>
     `)}
 
@@ -369,7 +325,7 @@ function renderLanding() {
               <span class="lp-brand-mark">${lpIcon('cup')}</span>
               <span class="lp-brand-name">INTESUD — Cafetería</span>
             </a>
-            <div style="margin-top:12px;max-width:320px;font-size:var(--fs-sm);color:rgba(255,255,255,0.6)">Instituto Tecnológico Superior Sudamericano — INTESUD</div>
+            <div style="margin-top:14px;max-width:320px;font-size:var(--fs-sm);color:rgba(255,255,255,0.6)">Instituto Tecnológico Superior Sudamericano — INTESUD</div>
           </div>
           <div class="lp-footer-col">
             <h4>Navegación</h4>
@@ -397,13 +353,13 @@ function renderLanding() {
           </div>
         </div>
         <div class="lp-footer-bottom">
-          <span>© 2026 Cafetería INTESUD. Todos los derechos reservados.</span>
+          <span>© ${new Date().getFullYear()} Cafetería INTESUD. Todos los derechos reservados.</span>
           <span>Instituto Tecnológico Superior Sudamericano</span>
         </div>
       </div>
     </footer>
 
-  </div></div>`;
+  </div>`;
 
   // ---------- Comportamiento del landing ----------
   document.body.classList.add('is-landing');
