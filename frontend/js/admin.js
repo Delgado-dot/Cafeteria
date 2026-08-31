@@ -538,7 +538,7 @@ function barProducts(el) {
     }
     tbody.innerHTML = list.map((p) => `
       <tr>
-        <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px"><img style="width:36px;height:36px;border-radius:8px;object-fit:cover;" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.previousElementSibling.style.display='flex'"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px;min-width:0"><img style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:180px"><div class="bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.desc)}">${esc(p.desc)}</div></div></div></td>
         <td data-label="Categoría">${esc(p.category)}</td>
         <td class="bold tabular-nums" data-label="Precio">${money(p.price)}</td>
         <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.minStock ? '· bajo' : ''}</span></td>
@@ -801,7 +801,7 @@ function barStock(el) {
       const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
       const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
       return `<tr>
-        <td data-label="Producto"><div class="bold">${esc(p.name)}</div></td>
+        <td data-label="Producto"><div class="bold" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div></td>
         <td data-label="Stock actual"><div class="stock-line"><b class="tabular-nums">${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
         <td data-label="Stock mínimo" class="tabular-nums">${p.minStock}</td>
         <td data-label="Estado">${stockBadge(p)}</td>
