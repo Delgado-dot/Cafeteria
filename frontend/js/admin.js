@@ -619,8 +619,18 @@ function productFormModal(p) {
       <div class="tiny muted" style="margin-left:26px">Desactiva para ocultar del menú sin eliminarlo.</div>
     </div>
     ` : ''}
-    <div class="field"><label class="label">Imagen del producto</label><input class="input" type="file" id="pfImage" accept="image/*"></div>
-    <div class="field" style="margin-top:8px"><img id="pfImagePreview" src="${p.image || ''}" style="max-width:200px;max-height:200px;border:1px solid var(--border);display:none" onload="this.style.display=''"></div>
+    <div class="field"><label class="label">Imagen del producto</label>
+      <div id="pfDropZone" style="border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:all var(--t-fast);position:relative">
+        <div id="pfDropPlaceholder" style="${p.image ? 'display:none' : ''}">
+          <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
+          <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
+          <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+        </div>
+        <img id="pfImagePreview" src="${p.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
+        <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
+      </div>
+      <input class="input" type="file" id="pfImage" accept="image/*" style="display:none">
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSaveProduct" ${isEdit && !hasUnsavedChanges ? 'disabled style="opacity:0.6"' : ''}>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
@@ -662,17 +672,37 @@ fields.forEach(id => {
 
   const pfImage = $('#pfImage', ov);
   const pfImagePreview = $('#pfImagePreview', ov);
-  if (pfImage && pfImagePreview) {
-    pfImage.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        pfImagePreview.src = e.target.result;
-        pfImagePreview.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-    });
+  const pfDropZone = $('#pfDropZone', ov);
+  const pfDropPlaceholder = $('#pfDropPlaceholder', ov);
+  const pfRemoveImage = $('#pfRemoveImage', ov);
+  const showPreview = (src) => {
+    pfImagePreview.src = src;
+    pfImagePreview.style.display = 'block';
+    if (pfDropPlaceholder) pfDropPlaceholder.style.display = 'none';
+    if (pfRemoveImage) pfRemoveImage.style.display = 'flex';
+    if (pfDropZone) { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; }
+  };
+  const clearPreview = () => {
+    pfImage.value = '';
+    pfImagePreview.src = '';
+    pfImagePreview.style.display = 'none';
+    if (pfDropPlaceholder) pfDropPlaceholder.style.display = '';
+    if (pfRemoveImage) pfRemoveImage.style.display = 'none';
+  };
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => showPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+  if (pfImage && pfImagePreview && pfDropZone) {
+    pfImage.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
+    pfDropZone.addEventListener('click', (e) => { if (e.target.closest('#pfRemoveImage')) return; pfImage.click(); });
+    pfDropZone.addEventListener('dragover', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--primary)'; pfDropZone.style.background = 'var(--primary-soft)'; });
+    pfDropZone.addEventListener('dragleave', () => { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; });
+    pfDropZone.addEventListener('drop', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; handleFile(e.dataTransfer.files?.[0]); });
+    if (pfRemoveImage) pfRemoveImage.addEventListener('click', (e) => { e.stopPropagation(); clearPreview(); });
+    if (pfImagePreview.getAttribute('src')) { showPreview(pfImagePreview.getAttribute('src')); }
   }
 
   $('[data-cancel]', ov).onclick = () => ov.remove();
@@ -699,7 +729,7 @@ fields.forEach(id => {
       const allowExtras = $('#pfExtras', ov).checked;
       const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
       if (isEdit) {
-        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras, image: pfImagePreview.src || p.image });
+        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras, image: pfImagePreview.src });
         logAudit('Editó producto', name);
         toast('Producto actualizado.', 'success');
       } else {
