@@ -358,7 +358,7 @@ function renderCheckout(el) {
         <div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)">
           <div class="muted small">Banco Sudamericano · Cta. ahorros</div>
           <div class="bold" style="font-size:1.15rem">220 456 7890 1</div>
-          <div class="muted small">Titular: Cafetería INTESUD</div>
+          <div class="muted small">Titular: BAR INTESUD</div>
           <div class="muted small">Cédula/RUC: 0999999999001</div>
         </div>
         <div style="margin-top:12px">

@@ -97,9 +97,10 @@ function renderUserShell(page) {
   const header = `
     <div class="app">
       <header class="user-header">
+        <button class="user-menu-toggle" id="userMenuToggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark">☕</span>
-          <span class="brand-name">Cafetería INTESUD<span class="brand-sub">Pedidos en línea</span></span>
+          <span class="brand-mark"><img class="brand-mark-image" src="assets/bar-intesud-logo.png" alt=""></span>
+          <span class="brand-name">BAR INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
           <div class="header-search">
@@ -125,6 +126,18 @@ function renderUserShell(page) {
           </div>
         </div>
       </header>
+      <div class="user-sidebar-scrim" id="userSidebarScrim"></div>
+      <aside class="user-sidebar" id="userSidebar" aria-label="Navegación principal">
+        <div class="user-sidebar-head"><span>Menú</span><button class="user-sidebar-close" id="userSidebarClose" type="button" aria-label="Cerrar menú">×</button></div>
+        <nav class="user-sidebar-nav">
+          <a href="#" data-side-nav="home"><span>⌂</span>Inicio</a>
+          <a href="#" data-side-nav="menu"><span>🍔</span>Menú</a>
+          <a href="#" data-side-nav="cart"><span>🛒</span>Carrito${cartCount ? `<b>${cartCount}</b>` : ''}</a>
+          <a href="#" data-side-nav="orders"><span>🧾</span>Mis pedidos</a>
+          <a href="#" data-side-nav="profile"><span>👤</span>Mi perfil</a>
+        </nav>
+        <div class="user-sidebar-foot"><button class="user-sidebar-logout" id="btnSidebarLogout" type="button">⏻ Cerrar sesión</button></div>
+      </aside>
       <main class="page${page === 'product' ? ' page-wide' : page === 'cart' ? ' page-narrow' : page === 'checkout' ? ' page-narrow' : ''}" id="mainContent"></main>
       <nav class="mobile-nav" id="mobileNav"></nav>
     </div>`;
@@ -143,6 +156,19 @@ function renderUserShell(page) {
   document.body.onclick = () => { ud.style.display = 'none'; };
   $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
+
+  const sidebar = $('#userSidebar');
+  const sidebarScrim = $('#userSidebarScrim');
+  const toggleSidebar = (open) => {
+    sidebar.classList.toggle('open', open);
+    sidebarScrim.classList.toggle('open', open);
+    $('#userMenuToggle').setAttribute('aria-expanded', String(open));
+  };
+  $('#userMenuToggle').onclick = (e) => { e.stopPropagation(); toggleSidebar(!sidebar.classList.contains('open')); };
+  $('#userSidebarClose').onclick = () => toggleSidebar(false);
+  sidebarScrim.onclick = () => toggleSidebar(false);
+  $$('[data-side-nav]', sidebar).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.sideNav); });
+  $('#btnSidebarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
 
   // header search → go to menu with query
   const hs = $('#headerSearch');

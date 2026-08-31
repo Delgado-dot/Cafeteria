@@ -307,7 +307,7 @@ function devCafe(el) {
     <div class="card">
       <h3 style="margin-bottom:14px">Datos de la cafetería</h3>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Nombre del establecimiento</label><input class="input" id="cfName" value="Cafetería INTESUD"></div>
+        <div class="field"><label class="label">Nombre del establecimiento</label><input class="input" id="cfName" value="BAR INTESUD"></div>
         <div class="field"><label class="label">Descripción</label><input class="input" id="cfDesc" value="Cafetería y bar del Instituto Tecnológico Superior Sudamericano"></div>
       </div>
       <button class="btn" id="cfSave">Guardar información</button>
@@ -334,7 +334,7 @@ function devConfig(el) {
     <div class="card">
       <h3 style="margin-bottom:14px">Parámetros del sistema</h3>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Nombre del sistema</label><input class="input" id="gcName" value="Cafetería INTESUD — Pedidos en línea"></div>
+        <div class="field"><label class="label">Nombre del sistema</label><input class="input" id="gcName" value="BAR INTESUD — Pedidos en línea"></div>
         <div class="field"><label class="label">Capacidad máxima de preparación</label><input class="input" type="number" id="gcCap" value="${cfg.capacity}"></div>
       </div>
       <div class="field"><label class="checkbox-row"><input type="checkbox" id="gcDelivery" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label></div>

@@ -30,9 +30,9 @@ function renderLogin() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge">☕</div>
-      <h1>Cafetería INTESUD</h1>
-      <p>Instituto Tecnológico Superior Sudamericano — Pedidos en línea para el receso, con delivery interno y gestión de la cafetería.</p>
+      <div class="brand-logo-badge"><img class="brand-logo-image" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
+      <h1>BAR INTESUD</h1>
+      <p>Instituto Tecnológico Superior Sudamericano — Pedidos en línea para el receso, con delivery interno y gestión del bar.</p>
       <div class="brand-tags">
         <span>📱 Pedidos en línea</span>
         <span>🛵 Delivery interno</span>
