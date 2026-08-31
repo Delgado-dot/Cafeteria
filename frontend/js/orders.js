@@ -22,11 +22,14 @@ function renderOrders(el) {
 
   app.innerHTML = `
     <div class="page">
-      <div class="page-title"><h1>Mis pedidos</h1></div>
-      <p class="page-sub">Sigue el estado de tus pedidos activos y consulta tu historial.</p>
-      <h2 class="section-title">Pedidos actuales</h2>
+      <div class="page-title"><div><h1>Mis pedidos</h1><p class="page-sub">Lo importante de cada pedido, de un vistazo.</p></div></div>
+      <div class="orders-overview" aria-label="Resumen de pedidos">
+        <div><span class="orders-overview-num">${active.length}</span><span class="muted"> activos</span></div>
+        <span class="small muted">${history.length} en historial</span>
+      </div>
+      <h2 class="section-title">Pedidos actuales <span class="section-count">${active.length}</span></h2>
       <div id="currentOrders"></div>
-      <h2 class="section-title">Historial</h2>
+      <h2 class="section-title">Historial <span class="section-count">${history.length}</span></h2>
       <div id="historyOrders"></div>
     </div>`;
 
@@ -39,7 +42,12 @@ function renderOrders(el) {
 
   const histWrap = $('#historyOrders');
   if (!history.length) histWrap.innerHTML = emptyState('🗂️', 'Sin historial', 'No hay pedidos anteriores.');
-  histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
+  else {
+    histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
+    $$('[data-history-detail]', histWrap).forEach((button) => {
+      button.onclick = () => showOrderDetail(history.find((o) => o.id === button.dataset.historyDetail));
+    });
+  }
 }
 
 function orderTrackingCard(o) {
@@ -74,31 +82,28 @@ function orderTrackingCard(o) {
     <div class="order-head">
       <div>
         <div class="order-num">#${o.id}</div>
-        <div class="order-meta">${fmtDate(o.date)} · ${o.time}</div>
+        <div class="order-meta">${fmtDate(o.date)} · ${o.time || '—'}</div>
       </div>
       ${statusMeta(o.status)}
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between">
+    <div class="order-glance">
       <div>
-        ${o.items.map((i) => `<div class="small">${esc(i.name)} <span class="muted">× ${i.qty}</span></div>`).join('')}
+        <div class="order-glance-label">${orderStateMessage(o)}</div>
+        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' · ')}</div>
       </div>
-      <div style="text-align:right">
-        <div class="small muted">Total</div>
-        <div class="bold" style="color:var(--primary-strong)">${money(o.total)}</div>
+      <div class="order-eta">
+        <span class="tiny muted">TIEMPO ESTIMADO</span>
+        <strong>${orderEta(o)}</strong>
       </div>
-    </div>
-    <div class="divider"></div>
-    <div class="kv" style="font-size:var(--fs-sm)">
-      <dt>Entrega</dt><dd>${o.delivery === 'delivery' ? 'Delivery · Piso ' + (o.deliveryInfo?.piso || '') + ' Aula ' + (o.deliveryInfo?.aula || '') : 'Retiro en cafetería'}</dd>
-      <dt>Pago</dt><dd>${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)}</dd>
-      <dt>Tiempo est.</dt><dd>${o.prepMin} min</dd>
-      ${o.note ? `<dt>Nota</dt><dd>${esc(o.note)}</dd>` : ''}
     </div>
     ${timeline}
-    ${['queue', 'confirmed'].includes(o.status) ? `
-      <div style="margin-top:12px"><button class="btn btn-danger-outline btn-sm" data-cancel>Cancelar pedido</button></div>` : o.status === 'prep' ? `
-      <div class="alert neutral" style="margin-top:12px"><span class="a-ico">🔧</span><div>Este pedido ya está siendo preparado y no puede cancelarse.</div></div>` : ''}
+    <div class="order-card-actions">
+      <button class="btn btn-outline btn-sm" data-detail>Ver detalle</button>
+      ${['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-cancel>Cancelar pedido</button>' : ''}
+    </div>
   `;
+
+  $('[data-detail]', card).onclick = () => showOrderDetail(o);
 
   const cancelBtn = $('[data-cancel]', card);
   if (cancelBtn) {
@@ -119,20 +124,60 @@ function orderTrackingCard(o) {
 
 function historyCard(o) {
   return `
-    <div class="order-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+    <div class="order-card order-card-history" data-order-detail="${esc(o.id)}">
       <div>
         <div class="order-num" style="font-size:var(--fs-md)">#${o.id} <span class="badge badge-outline">${fmtDate(o.date)} · ${o.time}</span></div>
         <div class="small muted" style="margin-top:6px">${o.items.slice(0, 3).map((i) => esc(i.name)).join(', ')}${o.items.length > 3 ? ` +${o.items.length - 3} más` : ''}</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+      <div class="order-history-meta">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${statusMeta(o.status)}
           ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso</span>' : ''}
         </div>
-        <div class="bold" style="color:var(--primary-strong)">${money(o.total)} <span class="tiny muted">· ${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'}</span></div>
+        <div class="bold" style="color:var(--primary-strong)">${money(o.total)}</div>
       </div>
+      <button class="btn btn-outline btn-sm" data-history-detail="${esc(o.id)}">Detalle</button>
     </div>`;
 }
+
+function orderEta(o) {
+  if (o.status === 'ready') return 'Retira ahora';
+  if (o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep') return `${o.prepMin || '—'} min`;
+  return o.eta || ORDER_FLOW_LABEL[o.status] || '—';
+}
+
+function orderStateMessage(o) {
+  const messages = {
+    queue: 'Tu pedido está en cola', confirmed: 'Pedido confirmado', prep: 'Estamos preparando tu pedido',
+    ready: '¡Tu pedido está listo!', delivered: 'Pedido entregado', cancelled: 'Pedido cancelado',
+    nopickup: 'Pedido no retirado', refunded: 'Reembolso procesado',
+  };
+  return messages[o.status] || 'Estado actualizado';
+}
+
+function showOrderDetail(o) {
+  const isTerminal = ['cancelled', 'nopickup', 'refunded'].includes(o.status);
+  const flowIndex = Math.max(0, ORDER_FLOW.indexOf(o.status));
+  const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${ORDER_FLOW.map((status, index) => {
+    const cls = index < flowIndex ? 'done' : index === flowIndex ? 'current' : 'pending';
+    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? '✓' : index === flowIndex ? '●' : ''}</div><div class="tl-body"><div class="tl-label">${ORDER_FLOW_LABEL[status]}</div>${index === flowIndex ? `<div class="tl-time">${orderStateMessage(o)}</div>` : ''}</div>${index === ORDER_FLOW.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
+  }).join('')}</div>`;
+  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${o.status === 'nopickup' ? '⏰' : '↩'}</span><div><div class="a-title">${orderStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
+  const d = drawer(`
+    <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
+    <div class="detail-eta">${o.status === 'ready' ? '✓ Retira tu pedido en cafetería' : `⏱ ${orderEta(o)}`}</div>
+    ${terminal}${progress}
+    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
+    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
+  `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
+  $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
+    const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
+    if (!ok) return;
+    o.status = 'cancelled'; o.eta = 'Cancelado'; o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
+    logAudit('Canceló pedido', o.id); d.close(); toast('Pedido cancelado.', 'success'); renderOrders();
+  });
+}
+window.showOrderDetail = showOrderDetail;
 
 function saveOrders() { Store.orders = Store.orders; }
 
@@ -155,8 +200,8 @@ function renderProfile(el) {
   const user = Store.users.find((x) => x.email === u.email) || { name: u.name, email: u.email, cargo: u.cargo, aula: u.aula, registeredAt: '—' };
 
   app.innerHTML = `
-    <div class="page-title"><h1>Mi perfil</h1></div>
-    <div class="card" style="display:flex;gap:18px;align-items:center;margin-bottom:18px">
+    <div class="page-title"><div><h1>Mi perfil</h1><p class="page-sub">Tus datos y la seguridad de tu cuenta.</p></div></div>
+    <div class="card profile-hero">
       <div class="avatar lg">${esc(initials(u.name))}</div>
       <div>
         <h2>${esc(u.name)}</h2>
@@ -164,6 +209,7 @@ function renderProfile(el) {
         <div class="muted small">${esc(u.email)}</div>
       </div>
     </div>
+    <div class="profile-grid">
     <div class="card">
       <div class="card-header"><div><div class="card-title">Información institucional</div></div></div>
       <div class="card-body">
@@ -175,13 +221,16 @@ function renderProfile(el) {
           <dt>Aula / Ubicación</dt><dd>${esc(user.aula || '—')}</dd>
           <dt>Fecha de registro</dt><dd>${esc(user.registeredAt || '—')}</dd>
         </div>
-        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
-          <button class="btn btn-outline" id="btnEditProfile">Editar perfil</button>
-          <button class="btn btn-outline" id="btnChangePass">Cambiar contraseña</button>
-          <button class="btn btn-danger-outline" id="btnLogout">Cerrar sesión</button>
-        </div>
+        <div style="margin-top:18px"><button class="btn btn-outline" id="btnEditProfile">Editar perfil</button></div>
       </div>
-    </div>`;
+    </div>
+    <div class="card profile-security">
+      <div class="card-header"><div><div class="card-title">Seguridad</div><div class="small muted">Administra el acceso a tu cuenta.</div></div></div>
+      <div class="card-body">
+        <div class="security-row"><span class="security-icon">🔒</span><div><b>Contraseña</b><div class="small muted">Mantén tu cuenta protegida.</div></div><button class="btn btn-outline btn-sm" id="btnChangePass">Cambiar</button></div>
+        <div class="security-row"><span class="security-icon">⏻</span><div><b>Sesión actual</b><div class="small muted">Cierra sesión si terminas de usar este equipo.</div></div><button class="btn btn-danger-outline btn-sm" id="btnLogout">Cerrar sesión</button></div>
+      </div>
+    </div></div>`;
 
   $('#btnLogout').onclick = () => {
     Auth.logout();

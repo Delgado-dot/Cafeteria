@@ -107,7 +107,7 @@ function renderLanding() {
     <header class="lp-header">
       <div class="lp-wrap">
         <a class="lp-brand" href="#" data-lp-scroll="home">
-          <span class="lp-brand-mark">${lpIcon('cup')}</span>
+          <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
           <span class="lp-brand-name">INTESUD Cafetería<small>Pedidos en línea</small></span>
         </a>
         <nav class="lp-nav">
@@ -322,7 +322,7 @@ function renderLanding() {
         <div class="lp-footer-top">
           <div class="lp-footer-brand">
             <a class="lp-brand" href="#" data-lp-scroll="home">
-              <span class="lp-brand-mark">${lpIcon('cup')}</span>
+              <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
               <span class="lp-brand-name">INTESUD — Cafetería</span>
             </a>
             <div style="margin-top:14px;max-width:320px;font-size:var(--fs-sm);color:rgba(255,255,255,0.6)">Instituto Tecnológico Superior Sudamericano — INTESUD</div>

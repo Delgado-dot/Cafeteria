@@ -45,7 +45,8 @@ function renderLogin() {
   <div class="login-screen">
     <div class="login-section">
       <div class="login-card">
-        <div class="login-head">
+        <div class="login-head login-brand-head">
+          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
           <h2>Iniciar sesión</h2>
           <p>Ingresa con tu cuenta institucional</p>
         </div>
@@ -143,7 +144,7 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge">${AUTH_ICO.lock(30, 30)}</div>
+      <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
     </div>

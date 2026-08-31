@@ -101,7 +101,7 @@ function renderUserShell(page) {
     <div class="app">
       <header class="user-header">
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark">☕</span>
+          <span class="brand-mark"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
           <span class="brand-name">Cafetería INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
