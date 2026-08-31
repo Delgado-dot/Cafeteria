@@ -1071,15 +1071,14 @@ const days = [];
       <div class="stat-card sales-summary-card"><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
 
-    <div class="card mom-performance-card" style="margin-bottom:24px">
-      <h3 style="margin-bottom:16px">Rendimiento del mes</h3>
-      <div id="momDonutChart" class="mom-donut-chart"></div>
-    </div>
+<div class="grid grid-2" style="margin-bottom:24px">
+      <div class="card mom-performance-card"><h3 style="margin-bottom:16px">Rendimiento del mes</h3><div id="momDonutChart" class="mom-donut-chart"></div></div>
 
-<div class="card" style="margin-bottom:24px">
-      <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
-      <div id="salesLineChart" class="sales-line-chart"></div>
-    </div>
+  <div class="card" style="margin-bottom:24px">
+    <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
+    <div id="salesLineChart" class="sales-line-chart"></div>
+  </div>
+</div>
 
     <div class="card" style="margin-bottom:24px">
       <h3 style="margin-bottom:16px">Productos más vendidos</h3>
