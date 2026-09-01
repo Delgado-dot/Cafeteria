@@ -386,11 +386,33 @@ function barOrders(el) {
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const delivered = orders.filter((o) => o.status === 'delivered');
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((o) => o.date === today);
+  const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
+  const confirmedToday = todayOrders.filter((o) => o.status === 'confirmed').length;
+  const prepToday = todayOrders.filter((o) => o.status === 'prep').length;
+  const readyToday = todayOrders.filter((o) => o.status === 'ready').length;
+  const deliveredToday = todayOrders.filter((o) => o.status === 'delivered').length;
+  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.paymentStatus === 'rejected' || o.status === 'refunded').length;
 
   el.innerHTML = `
     <div class="page-title"><h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span></div>
     <div style="display:flex;justify-content:flex-end;margin:12px 0">
       <button class="btn btn-primary btn-sm" id="btnConfirmAllReady" ${ready.length ? '' : 'disabled style="opacity:0.6;pointer-events:none"'}><i class="bx bx-check-double" style="margin-right:6px"></i>Confirmar todos los pedidos listos${ready.length ? ` (${ready.length})` : ''}</button>
+    </div>
+    <div class="card" style="margin-bottom:16px; padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-weight:700; font-size:var(--fs-sm); color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
+        <span class="badge badge-neutral">${todayOrders.length} pedidos hoy</span>
+      </div>
+      <div class="grid grid-3" style="gap:10px">
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-check" style="margin-right:4px"></i>Confirmados</div><div class="st-value primary" style="font-size:1.5rem">${confirmedToday}</div></div>
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-restaurant" style="margin-right:4px"></i>En preparación</div><div class="st-value warning" style="font-size:1.5rem">${prepToday}</div></div>
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value" style="font-size:1.5rem;color:var(--success)">${readyToday}</div></div>
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-package" style="margin-right:4px"></i>Entregados</div><div class="st-value success" style="font-size:1.5rem">${deliveredToday}</div></div>
+        <div class="stat-card" style="padding:12px;text-align:center"><div class="st-label"><i class="bx bx-x-circle" style="margin-right:4px"></i>Cancelados</div><div class="st-value danger" style="font-size:1.5rem">${cancelledToday}</div></div>
+      </div>
     </div>
     <div class="adv-tabs">
       <button class="category-chip active" data-tab="queue">En cola (${queue.length})</button>
