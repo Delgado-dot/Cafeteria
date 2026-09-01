@@ -158,6 +158,7 @@ function renderBarAdmin(page, params) {
     <div class="admin-layout">
       <aside class="admin-sidebar">
         <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span></div>
+        <button class="sidebar-toggle" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
         <nav class="sb-nav">
 ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
@@ -172,7 +173,6 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
           <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
           <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
