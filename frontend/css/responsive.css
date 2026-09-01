@@ -34,6 +34,26 @@
   .menu-filters { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
   .menu-filter-btn { white-space: nowrap; }
 
+  /* Landing: apilar hero — referencia */
+  .landing-hero-wrap { grid-template-columns: 1fr; gap: 28px; padding: 32px 20px 20px; }
+  .landing-hero h1 { font-size: 2.3rem; }
+  .landing-hero-img { min-height: 360px; }
+  .landing-hero-overlay { grid-template-columns: repeat(2,1fr); }
+  .landing-hero-overlay .ov-item { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .landing-hero-overlay .ov-item:nth-child(2n) { border-right:none; }
+  .landing-hero-overlay .ov-item:nth-last-child(-n+2) { border-bottom:none; }
+  .landing-bottom { padding:28px 20px 32px; }
+  .landing-bottom-grid { grid-template-columns: 1fr; gap:8px; }
+  .landing-bottom-grid .b-item { border-right:none !important; border-bottom:1px solid #e2e8f0; padding:14px 0; }
+  .landing-bottom-grid .b-item:last-child { border-bottom:none; }
+  .landing-section { padding: 32px 20px; }
+  .landing-features { grid-template-columns: 1fr; }
+  .landing-horario { grid-template-columns: 1fr; }
+  .landing-gallery { grid-template-columns: 1fr; }
+  .landing-footer-inner { grid-template-columns: 1fr; gap: 24px; }
+  .landing-nav { padding: 0 16px; height:58px; }
+  .landing-nav .brand-sub { display:none; }
+
   /* Admin sidebar → drawer */
   .hamburger { display: flex; }
   .admin-sidebar {
@@ -43,6 +63,19 @@
   .admin-sidebar.open { transform: translateX(0); }
   .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
   .admin-content { padding: var(--sp-4); }
+
+  /* Admin operativo tablet: apilar */
+  .ops-cap-row { grid-template-columns: 1fr !important; }
+  .ops-queue-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .ops-ready-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .ops-header { flex-wrap: wrap; }
+}
+
+/* Base: mobile nav oculta en desktop — solo móvil/tablet */
+.mobile-nav { display: none; }
+@media (max-width: 900px) {
+  body.has-bottom-nav:not(.is-admin) .mobile-nav { display: flex; }
+  body.is-admin .mobile-nav { display: none !important; }
 }
 
 /* ============================================================
@@ -60,12 +93,21 @@
   .user-chip { padding: 4px; }
   .header-icon-btn { width: 38px; height: 38px; }
 
-  /* Bottom navigation, excluir admin */
-  body.has-bottom-nav .app { padding-bottom: 74px; }
-  body:not(.is-admin) .mobile-nav { display: flex; }
-  body.is-admin .mobile-nav { display: none; }
-  .mobile-nav { display: none; }
-  body.has-bottom-nav .mobile-nav { display: block; }
+  /* Landing móvil */
+  .landing-nav .badge-abierta { display:none !important; }
+  .landing-hero-wrap { padding:20px 16px 16px; gap:20px; }
+  .landing-hero h1 { font-size:1.9rem; }
+  .landing-hero p.lead { font-size:0.92rem; }
+  .landing-hero-actions { flex-direction:column; }
+  .landing-hero-actions .btn-pedir, .landing-hero-actions .btn-servicios { width:100%; justify-content:center; }
+  .landing-info-row { flex-direction:column; align-items:stretch; gap:10px; }
+  .landing-info-row .sep { display:none; }
+  .landing-hero-img { min-height:320px; }
+  .landing-hero-overlay .ov-item b { font-size:0.95rem; }
+
+  /* Bottom navigation — safe area y sin tapar */
+  body.has-bottom-nav .app { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+  body.has-bottom-nav .page { padding-bottom: 20px; }
 
   /* Formularios a columnas */
   .form-2col { grid-template-columns: 1fr !important; }
@@ -88,6 +130,20 @@
   /* Tablas scroll horizontal (ya manejado con .table-wrap) */
   .admin-topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }
   .admin-content { padding: var(--sp-3); }
+
+  /* Admin Bar operativo: 1 col y orden móvil */
+  .ops-header { flex-direction: column; }
+  .ops-header-actions { width: 100%; }
+  .ops-cap-row { grid-template-columns: 1fr !important; }
+  .ops-queue-grid, .ops-ready-grid { grid-template-columns: 1fr !important; }
+  .ops-dash { gap: 14px; }
+  /* Orden móvil: alertas(1), counts(2), cola(3), capacidad(4), listos(5) → reordena hero vs counts */
+  .ops-cap-row { display: flex; flex-direction: column; }
+  .ops-cap-row .capacity-hero { order: 2; }
+  .ops-cap-row .ops-counts { order: 1; }
+  .ops-section-head { flex-direction: column; align-items: flex-start; }
+  .capacity-hero-pct { font-size: 2rem; }
+  .ops-title { font-size: 1.25rem; }
 }
 
 /* ============================================================
