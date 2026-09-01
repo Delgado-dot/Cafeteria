@@ -56,6 +56,7 @@ function handleRoute() {
   params.product = null;
 
   // Páginas públicas
+  if (r === 'landing') return renderLanding();
   if (r === 'login') {
     if (user) { setRoute(homeRouteFor(user.role)); return; }
     return renderLogin();
@@ -73,7 +74,9 @@ function handleRoute() {
     r = 'product';
   }
 
-  if (!user) return renderLogin();
+  // Sin sesión: el Landing público es la puerta de entrada del sistema.
+  // El login se alcanza desde el botón "ACCEDER" del Landing.
+  if (!user) return renderLanding();
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {
@@ -98,7 +101,7 @@ function renderUserShell(page) {
     <div class="app">
       <header class="user-header">
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark">☕</span>
+          <span class="brand-mark"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
           <span class="brand-name">Cafetería INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
@@ -200,41 +203,69 @@ function userHome(el) {
   }
 
   el.innerHTML = `
-    <div class="page-title"><h1>¡Hola, ${esc(currentUser().name.split(' ')[0])}! 👋</h1>
-      <span class="badge ${open ? 'badge-success' : 'badge-danger'}">${open ? '● ABIERTA' : '● CERRADA'}</span>
+    <div class="page-welcome">
+      <div class="home-hero">
+        <span class="hh-photo"></span>
+        <div class="hh-inner">
+          <div class="hh-copy">
+            <span class="hh-eyebrow">☕ Cafetería INTESUD</span>
+            <div class="hh-welcome">BIENVENIDO ESTUDIANTE</div>
+            <h1>Tu comida, <span class="hl">lista para el receso</span>.</h1>
+            <p class="hh-sub">Pídelo en segundos y recógelo calientito en la bar o que te lo lleven a tu aula.</p>
+            <div class="hh-actions">
+              <a class="hh-btn" href="#" data-nav2="menu">🍔 Ver el menú</a>
+              <a class="hh-btn ghost" href="#" data-nav2="cart">🛒 Mi pedido</a>
+            </div>
+            <div class="hh-status">
+              <span class="dot" style="background:${open ? '#7df0b0' : '#ffb0a8'}"></span>
+              ${open ? 'Abierto · aceptando pedidos' : 'Cerrado ahora — mira el menú igual'}
+            </div>
+          </div>
+
+          <div class="hh-panel">
+            <div class="hp-left">
+              <span class="hp-dot"></span>
+              <span class="hp-label">Preparación en vivo</span>
+              <div class="hp-track"><div class="hp-fill" style="width:${cap.pct}%"></div></div>
+            </div>
+            <div class="hp-nums"><span><b>${cap.used}</b> en curso</span><span>Cupo <b>${cap.total}</b></span></div>
+            <div class="hp-facts">
+              <span>Horario de pedidos <b>${cfg.orderOpen} – ${cfg.orderClose}</b></span>
+              <span>Entrega en receso <b>${cfg.breakStart} – ${cfg.breakEnd}</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="page-sub">Pide tu almuerzo o snack y retíralo durante el receso.</p>
 
     ${statusBanner}
 
-    <div class="grid grid-2" style="margin-bottom:12px;grid-template-columns:1.4fr 1fr">
-      <div class="card card-hover">
-        <div class="card-header">
-          <div><div class="card-title">Estado actual</div><div class="card-sub">Horario de la cafetería</div></div>
-          <span class="badge ${cap.stateCls === 'danger' ? 'badge-danger' : cap.stateCls === 'warning' ? 'badge-warning' : 'badge-success'}">${cap.state}</span>
+    <div class="cat-banner">
+      <div class="cat-banner-inner">
+        <div class="cat-banner-left">
+          <div class="cat-s">S</div>
+          <div class="cat-titles">
+            <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
+            <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
+          </div>
         </div>
-        <div class="card-body" style="display:grid;gap:10px;font-size:var(--fs-md)">
-          <div class="kv"><dt>Pedidos hasta</dt><dd>${cfg.orderClose}</dd></div>
-          <div class="kv"><dt>Receso de entrega</dt><dd>${cfg.breakStart} - ${cfg.breakEnd}</dd></div>
-          <div class="kv"><dt>Horario de pedidos</dt><dd>${cfg.orderOpen} - ${cfg.orderClose}</dd></div>
-        </div>
+        <div class="cat-banner-deco" aria-hidden="true">🍔🥤</div>
       </div>
-      <div id="homeCap"></div>
+      <div class="cat-pills">
+        ${CATEGORIES.map((c) => {
+          const n = products.filter((p) => p.category === c).length;
+          return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${catIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+        }).join('')}
+      </div>
     </div>
 
-    <h2 class="section-title">Categorías</h2>
-    <div class="grid grid-3" style="margin-bottom:8px">
-      ${CATEGORIES.map((c) => `<a class="cat-card" href="#" data-cat="${esc(c)}"><span class="cc-ico">${catIcon(c)}</span><div><div class="cc-name">${esc(c)}</div><div class="cc-count">${products.filter((p) => p.category === c).length} productos</div></div></a>`).join('')}
+    <div class="reco-head">
+      <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
+      <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
     </div>
+    <div class="reco-grid" id="featuredGrid"></div>`;
 
-    <div class="flex justify-between items-center" style="margin:26px 0 14px">
-      <h2 class="section-title" style="margin:0">Productos destacados</h2>
-      <a class="btn btn-outline btn-sm" href="#" data-nav="menu">Ver menú completo →</a>
-    </div>
-    <div class="grid grid-4" id="featuredGrid"></div>`;
-
-  const capWrap = $('#homeCap');
-  if (capWrap) renderCapacityCard(capWrap);
+  $$('[data-nav2]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav2); });
 
   const featuredEl = $('#featuredGrid');
   if (!featured.length) featuredEl.innerHTML = emptyState('🍽️', 'Sin productos', 'No hay productos disponibles por ahora.');
@@ -248,22 +279,29 @@ function productCard(p, size = '') {
   const soldOut = !p.available || p.stock === 0;
   const card = document.createElement('div');
   card.className = 'product-card' + (soldOut ? ' disabled' : '');
+  card.setAttribute('data-cat', p.category);
   card.innerHTML = `
     <div class="product-media">
-      ${catIcon(p.category) ? `<span class="p-cat badge badge-primary">${catIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>` : ''}
-      ${productIcon(p)}
+      <span class="p-cat">${catIcon(p.category)} ${esc(p.category.toUpperCase())}</span>
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
+      <span class="pc-dots pc-dots-l" aria-hidden="true"></span>
+      <span class="pc-dots pc-dots-r" aria-hidden="true"></span>
+      <span class="p-emoji">${productIcon(p)}</span>
+      <span class="pc-wave pc-wave-1"></span>
+      <span class="pc-wave pc-wave-2"></span>
+      <span class="pc-wave pc-wave-3"></span>
+      ${p.stock > 0 && p.stock <= p.minStock ? `<span class="low-stock-tag">Quedan ${p.stock}</span>` : ''}
     </div>
     <div class="product-body">
       <div class="product-name">${esc(p.name)}</div>
       <div class="product-desc">${esc(p.desc)}</div>
       <div class="product-foot">
-        <span class="product-price">${money(p.price)}</span>
-        <span class="prep-tag">⏱ ${p.prepMin} min</span>
+        <span class="product-price"><small>desde</small> ${money(p.price)}</span>
+        <span class="prep-tag">◷ ${p.prepMin} min</span>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">Ver</button>
-        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} ${canPlaceOrder() ? '' : 'disabled'} data-add="${p.id}">${soldOut ? 'Agotado' : '+ Agregar'}</button>
+        <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">👁 Ver</button>
+        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} ${canPlaceOrder() ? '' : 'disabled'} data-add="${p.id}">${soldOut ? 'Agotado' : '🛒 Agregar'}</button>
       </div>
     </div>`;
 
@@ -292,30 +330,44 @@ function userMenuPage(el) {
   sessionStorage.removeItem('int_cat');
 
   el.innerHTML = `
-    <div class="page-title"><h1>Menú</h1><span class="badge badge-primary" id="menuCount"></span></div>
-    <p class="page-sub">Elige lo que quieras y agrégalo a tu carrito.</p>
-
-    <div class="menu-layout">
-      <aside class="menu-filters" id="menuFilters"></aside>
-      <div>
-        <div class="input-wrap" style="margin-bottom:18px;max-width:360px">
-          <span class="leading-ico">🔍</span>
-          <input class="input" id="menuSearch" placeholder="Buscar producto..." value="${esc(search)}">
-          ${search ? '' : ''}
+    <div class="menu-page">
+      <div class="menu-lead">
+        <div>
+          <div class="ml-title">Nuestro <span>menú</span></div>
+          <div class="ml-sub">Todo rico y recién preparado en la cafetería.</div>
         </div>
-        <div class="chips-scroll" style="margin-bottom:20px" id="menuChips"></div>
-        <div id="menuGrid" class="grid grid-4"></div>
+        <span class="ml-badge" id="menuCount"></span>
+      </div>
+
+      <div class="menu-layout">
+        <aside class="menu-side">
+          <div class="menu-side-head">
+            <span class="menu-side-title">Categorías</span>
+            <span class="menu-side-hint">Elige una</span>
+          </div>
+          <div id="menuChips" class="menu-side-list"></div>
+        </aside>
+        <div class="menu-main">
+          <div class="menu-toolbar">
+            <div class="mt-search">
+              <span class="leading-ico">🔍</span>
+              <input class="input" id="menuSearch" placeholder="Buscar en el menú..." value="${esc(search)}">
+            </div>
+          </div>
+          <div id="menuGrid" class="grid grid-3"></div>
+        </div>
       </div>
     </div>`;
 
-  const renderFilters = () => {
-    const wrap = $('#menuFilters');
+  const renderChips = () => {
+    const wrap = $('#menuChips');
     const cats = ['Todas', ...CATEGORIES];
     const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
     wrap.innerHTML = cats.map((c) => `
-      <button class="menu-filter-btn ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-        ${c === 'Todas' ? '🍽️' : catIcon(c)} ${esc(c)}
-        <span class="mf-count">${countFor(c)}</span>
+      <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
+        <span class="cp-ico">${c === 'Todas' ? '🍽️' : catIcon(c)}</span>
+        <span class="cp-name">${esc(c)}</span>
+        <span class="cp-badge">${countFor(c)}</span>
       </button>`).join('');
     $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
       $$('[data-cat]', wrap).forEach((x) => x.classList.remove('active'));
@@ -330,15 +382,15 @@ function userMenuPage(el) {
     if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
     if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
     const grid = $('#menuGrid');
-    $('#menuCount').textContent = list.length + ' productos';
-    $('#menuCount').classList.toggle('badge-primary', list.length > 0);
+    const mc = $('#menuCount');
+    if (mc) mc.textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
     if (!list.length) { grid.innerHTML = emptyState('🔍', 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
     grid.innerHTML = '';
     list.forEach((p) => grid.appendChild(productCard(p)));
   };
 
   $('#menuSearch').addEventListener('input', (e) => { search = e.target.value; render(); });
-  renderFilters();
+  renderChips();
   render();
 }
 
@@ -422,6 +474,8 @@ function userProductPage(el) {
 
 /* ---------- Inicialización ---------- */
 function syncBodyClass() {
+  // El Landing público no convive con las clases de shell internas.
+  document.body.classList.remove('is-landing');
   const u = currentUser();
   if (u && (u.role === 'adminbar' || u.role === 'admindev')) {
     document.body.classList.add('is-admin');
