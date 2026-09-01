@@ -40,6 +40,12 @@ const DEFAULT_USERS = [
   { id: 'u6', name: 'Docente Demo', email: 'docente@intesud.edu.ec', username: 'docente.demo', role: 'user', cargo: 'Docente', aula: '—', active: false, registeredAt: '2025-04-01', lastAccess: recentDt(12) },
 ];
 
+const DEFAULT_SUPPLIERS = [
+  { id: 's1', name: 'Distribuciones Andinas', type: 'Bebidas', phone: '0991234567' },
+  { id: 's2', name: 'Panadería La Unión', type: 'Panadería', phone: '0987654321' },
+  { id: 's3', name: 'Snacks del Valle', type: 'Snacks', phone: '0998765432' },
+];
+
 const PASSWORDS = {
   'usuario@intesud.edu.ec': 'estudiante123',
   'adminbar@intesud.edu.ec': 'adminbar123',
@@ -141,9 +147,11 @@ const Store = {
   set audit(v) { this._cache['int_audit'] = v; this.save('int_audit', v); },
   get stockHistory() { return this._get('int_stockHistory', [], 'int_stockHistory'); },
   set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
+  get suppliers() { return this._get('int_suppliers', DEFAULT_SUPPLIERS, 'int_suppliers'); },
+  set suppliers(v) { this._cache['int_suppliers'] = v; this.save('int_suppliers', v); },
   reset() {
     this._cache = {};
-    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory'].forEach((k) => localStorage.removeItem(k));
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers'].forEach((k) => localStorage.removeItem(k));
   },
 };
 

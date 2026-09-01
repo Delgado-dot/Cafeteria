@@ -326,6 +326,13 @@ function barConfigTabs(el, initialTab) {
         <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)"><b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
       </div>
     </div>
+    <div class="card" style="margin-top:var(--sp-5)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div style="font-size:var(--fs-sm);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)"><i class="bx bx-store" style="margin-right:6px"></i>Proveedores</div>
+        <button class="btn btn-primary btn-sm" id="btnAddSupplier"><i class="bx bx-plus" style="margin-right:4px"></i>Agregar proveedor</button>
+      </div>
+      <div id="suppliersList"></div>
+    </div>
   `;
 
   const btnSave = $('#btnSaveConfigHours', el);
@@ -350,6 +357,75 @@ function barConfigTabs(el, initialTab) {
   if (btnSave) btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
   const btnToggle = $('#btnToggleCafeStatus', el);
   if (btnToggle) btnToggle.onclick = () => confirmToggleState(!isOpen, btnToggle);
+
+  const renderSuppliers = () => {
+    const list = Store.suppliers;
+    const wrap = $('#suppliersList', el);
+    if (!wrap) return;
+    if (!list.length) {
+      wrap.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-3)">Aún no hay proveedores. ¡Agrega el primero!</div>`;
+      return;
+    }
+    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${list.map(s => `
+      <div class="stat-card" style="padding:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.2rem"><i class="bx bx-store"></i></div>
+          <div><div class="bold">${esc(s.name)}</div><div class="tiny muted">${esc(s.type)}</div></div>
+        </div>
+        <div class="tiny" style="margin-bottom:10px"><i class="bx bx-phone" style="margin-right:4px"></i>${esc(s.phone)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn btn-outline btn-sm" href="tel:${esc(s.phone)}"><i class="bx bx-phone"></i> Llamar</a>
+          <a class="btn btn-outline btn-sm" href="https://wa.me/${esc(s.phone.replace(/\D/g,''))}" target="_blank"><i class="bx bxl-whatsapp"></i> WhatsApp</a>
+          <button class="btn btn-neutral btn-sm" data-edit-supplier="${s.id}"><i class="bx bx-edit-alt"></i> Editar</button>
+          <button class="btn btn-neutral btn-sm" data-del-supplier="${s.id}"><i class="bx bx-trash"></i></button>
+        </div>
+      </div>
+    `).join('')}</div>`;
+    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = () => supplierFormModal(Store.suppliers.find(x => x.id === b.dataset.editSupplier), renderSuppliers));
+    $$('[data-del-supplier]', wrap).forEach(b => b.onclick = () => {
+      const sup = Store.suppliers.find(x => x.id === b.dataset.delSupplier);
+      confirmDialog('Eliminar proveedor', `¿Eliminar a ${esc(sup?.name || '')}?`, 'Eliminar', true).then(ok => {
+        if (!ok) return;
+        Store.suppliers = Store.suppliers.filter(x => x.id !== b.dataset.delSupplier);
+        toast('Proveedor eliminado', 'success');
+        renderSuppliers();
+      });
+    });
+  };
+  renderSuppliers();
+  $('#btnAddSupplier', el)?.addEventListener('click', () => supplierFormModal(null, renderSuppliers));
+}
+
+function supplierFormModal(supplier, onSave) {
+  const isEdit = !!supplier;
+  const ov = modal(`
+    <h3>${isEdit ? 'Editar' : 'Nuevo'} proveedor</h3>
+    <div class="field"><label class="label">Nombre</label><input class="input" id="supName" value="${isEdit ? esc(supplier.name) : ''}" placeholder="Ej. Distribuciones Andinas"></div>
+    <div class="field"><label class="label">Tipo de insumo</label><input class="input" id="supType" value="${isEdit ? esc(supplier.type) : ''}" placeholder="Ej. Bebidas, Panadería, Snacks"></div>
+    <div class="field"><label class="label">Teléfono</label><input class="input" id="supPhone" value="${isEdit ? esc(supplier.phone) : ''}" placeholder="0991234567"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="btn btn-neutral" data-cancel>Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveSupplier">${isEdit ? 'Guardar cambios' : 'Crear proveedor'}</button>
+    </div>
+  `, { wide: false });
+  $('[data-cancel]', ov).onclick = () => ov.remove();
+  $('#btnSaveSupplier', ov).onclick = () => {
+    const name = $('#supName', ov).value.trim();
+    const type = $('#supType', ov).value.trim();
+    const phone = $('#supPhone', ov).value.trim();
+    if (!name || !type || !phone) { toast('Completa todos los campos', 'warning'); return; }
+    if (isEdit) {
+      Object.assign(supplier, { name, type, phone });
+      toast('Proveedor actualizado', 'success');
+    } else {
+      const list = Store.suppliers;
+      list.push({ id: 's' + Date.now(), name, type, phone });
+      Store.suppliers = list;
+      toast('Proveedor agregado', 'success');
+    }
+    ov.remove();
+    if (onSave) onSave();
+  };
 }
 
 /* ============================================================
