@@ -268,24 +268,25 @@
   box-shadow: 4px 0 14px rgba(16,30,29,0.08);
 }
 .sidebar-toggle {
-  position: absolute;
-  right: -14px;
-  top: calc(var(--header-h) / 2);
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  border: 1px solid var(--primary);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
   cursor: pointer;
-  z-index: 10;
-  transition: background var(--t-fast);
-  box-shadow: 0 2px 6px rgba(16,30,29,0.12);
+  flex-shrink: 0;
+  margin: var(--sp-3) auto;
+  box-shadow: 0 2px 6px rgba(16,30,29,0.15);
+  transition: background var(--t-fast), box-shadow var(--t-fast);
+}
+.sidebar-toggle:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(16,30,29,0.22);
 }
 .sidebar-toggle:hover { background: var(--primary-hover); }
 .admin-sidebar.collapsed {
