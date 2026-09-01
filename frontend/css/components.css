@@ -270,7 +270,8 @@
 .sidebar-toggle {
   position: absolute;
   right: -14px;
-  top: 18px;
+  top: calc(var(--header-h) / 2);
+  transform: translateY(-50%);
   width: 28px;
   height: 28px;
   border-radius: 50%;
