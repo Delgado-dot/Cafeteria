@@ -135,13 +135,42 @@ function handleRoute() {
   if (!user) { setRoute('landing'); return; }
 
   // Separación por rol: cada rol vive en su propia interfaz.
-  if (routeTargetRole(r) !== user.role && routeTargetRole(r) !== 'public') {
+  // Para roles personalizados, no forzar redirect por rol; permitir home + control por permisos granulares
+  const isKnownAdmin = ['adminbar','admindev'].includes(user.role);
+  if (isKnownAdmin && routeTargetRole(r) !== user.role && routeTargetRole(r) !== 'public') {
     setRoute(homeRouteFor(user.role));
     return;
   }
+  // Si es rol personalizado intentando entrar a admin, verificar permiso básico
+  if (!isKnownAdmin && r.startsWith('admin')) {
+    // requiere al menos dashboard.view o users.view para entrar a admindev
+    const need = r.startsWith('admindev') ? 'dashboard.view' : 'orders.view_all';
+    if (typeof can === 'function' && !can(need) && user.role !== 'admindev') {
+      toast('Acceso denegado: sin permiso '+need, 'error');
+      setRoute('home');
+      return;
+    }
+  }
 
   if (r.startsWith('adminbar')) return renderBarAdmin(r.split('/')[1] || 'dashboard');
-  if (r.startsWith('admindev')) return renderDevAdmin(r.split('/')[1] || 'dashboard');
+  if (r.startsWith('admindev')) {
+    // Guard granular por sección dentro de admindev
+    const sec = r.split('/')[1] || 'dashboard';
+    const needMap = { dashboard:'dashboard.view', users:'users.view', roles:'roles.view', audit:'audit.view', cafe:'cafe.view', config:'config.view', design:'dashboard.view' };
+    const need = needMap[sec];
+    if (need && typeof can === 'function' && !can(need)) {
+      // No romper: mostrar mensaje en lugar de pantalla en blanco
+      const appEl = document.getElementById('app');
+      if (appEl) {
+        appEl.innerHTML = `<div class="admin-layout dev-layout"><div class="admin-main"><div class="admin-content"><div class="card" style="max-width:640px;margin:40px auto;text-align:center;padding:32px"><div style="font-size:2rem">🔒</div><h2>Acceso denegado</h2><p class="muted">Tu rol <b>${esc(user.role)}</b> no tiene permiso <code>${esc(need)}</code> para ver <b>${esc(sec)}</b>.</p><p class="tiny muted">Contacta al administrador para que active el permiso en Roles y permisos.</p><button class="btn btn-primary" onclick="setRoute('admindev/dashboard')">Volver al dashboard</button></div></div></div></div>`;
+        return;
+      }
+      toast('Acceso denegado: falta '+need, 'error');
+      setRoute('admindev/dashboard');
+      return;
+    }
+    return renderDevAdmin(sec);
+  }
 
   renderUserShell(r);
 }

@@ -5,7 +5,7 @@ Administración de la aplicación de cuentas.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_user_model
-from .models import UserProfile
+from .models import RolePermission, UserProfile
 
 User = get_user_model()
 
@@ -28,3 +28,10 @@ class UserProfileAdmin(admin.ModelAdmin):
 
     list_display = ("user", "registered_at", "last_access")
     search_fields = ("user__username", "user__email")
+
+
+@admin.register(RolePermission)
+class RolePermissionAdmin(admin.ModelAdmin):
+    list_display = ("role", "code", "enabled", "updated_by", "updated_at")
+    list_filter = ("role", "enabled")
+    search_fields = ("role", "code")
