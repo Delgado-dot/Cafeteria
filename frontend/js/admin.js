@@ -161,7 +161,6 @@ function renderBarAdmin(page, params) {
     <div class="admin-layout">
       <aside class="admin-sidebar">
         <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span></div>
-        <button class="sidebar-toggle" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
         <nav class="sb-nav">
 ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
@@ -169,6 +168,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
             </a>`).join('')}
         </nav>
+        <button class="sidebar-toggle" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
           <div class="tiny muted">Administradora de cafetería</div>
@@ -383,11 +383,11 @@ function barSuppliers(el) {
         </div>
         <div class="tiny" style="margin-bottom:10px"><i class="bx bx-phone" style="margin-right:4px"></i>${esc(s.phone)}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn btn-outline btn-sm" href="tel:${esc(s.phone)}"><i class="bx bx-phone"></i> Llamar</a>
-          <a class="btn btn-outline btn-sm" href="https://wa.me/${esc(s.phone.replace(/\D/g,''))}" target="_blank"><i class="bx bxl-whatsapp"></i> WhatsApp</a>
-          <button class="btn btn-neutral btn-sm" data-edit-supplier="${s.id}"><i class="bx bx-edit-alt"></i> Editar</button>
-          <button class="btn btn-neutral btn-sm" data-del-supplier="${s.id}"><i class="bx bx-trash"></i></button>
-        </div>
+	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone)}" title="Llamar"><i class="bx bx-phone"></i></a>
+	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc(s.phone.replace(/\D/g,""))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
+	         <button class="btn btn-icon-supplier" data-edit-supplier="${s.id}" title="Editar"><i class="bx bx-edit-alt"></i></button>
+	         <button class="btn btn-icon-supplier" data-del-supplier="${s.id}" title="Eliminar"><i class="bx bx-trash"></i></button>
+	         </div>
       </div>
     `).join('')}</div>`;
     $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = () => supplierFormModal(Store.suppliers.find(x => x.id === b.dataset.editSupplier), renderSuppliersPage));
