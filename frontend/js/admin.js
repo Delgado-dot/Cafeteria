@@ -196,20 +196,14 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   renderCafePill($('#cafePill'));
 
   const sidebar = $('.admin-sidebar', app);
-  if (localStorage.getItem('int_sidebar_collapsed') === 'true' && window.innerWidth > 900) sidebar?.classList.add('collapsed');
   const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
   $('#barHamburger')?.addEventListener('click', () => {
-    if (window.innerWidth <= 900) {
-      sidebar?.classList.add('open');
-      if (!$('.sb-scrim')) {
-        const scrim = document.createElement('div');
-        scrim.className = 'sb-scrim';
-        scrim.addEventListener('click', closeSidebar);
-        document.body.appendChild(scrim);
-      }
-    } else {
-      sidebar?.classList.toggle('collapsed');
-      localStorage.setItem('int_sidebar_collapsed', sidebar?.classList.contains('collapsed'));
+    sidebar?.classList.add('open');
+    if (!$('.sb-scrim')) {
+      const scrim = document.createElement('div');
+      scrim.className = 'sb-scrim';
+      scrim.addEventListener('click', closeSidebar);
+      document.body.appendChild(scrim);
     }
   });
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {

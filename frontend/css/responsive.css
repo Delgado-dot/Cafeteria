@@ -43,14 +43,6 @@
     transition: transform var(--t-med); box-shadow: var(--shadow-lg); width: var(--sidebar-w); height: 100vh;
   }
   .admin-sidebar.open { transform: translateX(0); }
-  .admin-sidebar.collapsed {
-    width: var(--sidebar-w);
-    min-width: 0;
-    overflow: visible;
-    opacity: 1;
-    border-right: 1px solid rgba(255,255,255,0.12);
-    padding: 0;
-  }
   .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
   .admin-content { padding: var(--sp-4); }
 }
