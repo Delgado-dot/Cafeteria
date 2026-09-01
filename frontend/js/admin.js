@@ -3,8 +3,8 @@
    ============================================================ */
 
 const BAR_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: 'bx-grid-alt' },
   orders: { label: 'Pedidos', icon: 'bx-receipt' },
+  dashboard: { label: 'Dashboard', icon: 'bx-grid-alt' },
   products: { label: 'Productos', icon: 'bx-food-menu' },
   stock: { label: 'Stock', icon: 'bx-box' },
   payments: { label: 'Pagos', icon: 'bx-credit-card' },
