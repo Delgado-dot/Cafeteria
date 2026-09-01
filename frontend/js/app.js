@@ -91,44 +91,100 @@ function handleRoute() {
 }
 window.handleRoute = handleRoute;
 
-/* ---------- User shell (header + main + mobile nav) ---------- */
+/* ---------- Iconos Lucide (inline SVG, sin emojis) ---------- */
+const UI_ICO = {
+  svg: (paths, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`,
+  home: (s) => UI_ICO.svg('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', s),
+  menu: (s) => UI_ICO.svg('<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>', s),
+  orders: (s) => UI_ICO.svg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>', s),
+  profile: (s) => UI_ICO.svg('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', s),
+  logout: (s) => UI_ICO.svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>', s),
+  menuToggle: (s) => UI_ICO.svg('<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>', s),
+  close: (s) => UI_ICO.svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', s),
+  cart: (s) => UI_ICO.svg('<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>', s),
+  search: (s) => UI_ICO.svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', s),
+  chevron: (s) => UI_ICO.svg('<path d="m6 9 6 6 6-6"/>', s),
+  lock: (s) => UI_ICO.svg('<rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', s),
+};
+window.UI_ICO = UI_ICO;
+
+/* ---------- User shell (header + sidebar + main + mobile nav) ---------- */
+const USER_SIDEBAR_LINKS = [
+  ['home', 'home', 'Inicio'],
+  ['menu', 'menu', 'Menú'],
+  ['orders', 'orders', 'Mis pedidos'],
+  ['profile', 'profile', 'Perfil'],
+];
+
 function renderUserShell(page) {
   const app = $('#app');
   const user = currentUser();
   const cartCount = Cart.count();
 
+  const pageClasses = page === 'product' ? ' page-wide' : (page === 'cart' || page === 'checkout') ? ' page-narrow' : '';
+  const profileInfo = Store.users.find((x) => x.email === user.email) || {};
+  const sidebarNav = USER_SIDEBAR_LINKS.map(([k, ico, label]) => `
+      <a href="#" data-side-nav="${k}" class="user-sidebar-link${page === k ? ' active' : ''}">
+        <span class="usi-ico">${UI_ICO[ico]()}</span><span class="usi-label">${label}</span>
+      </a>`).join('');
+
   const header = `
     <div class="app">
       <header class="user-header">
-        <a class="brand" href="#" data-nav="home">
+        <div class="uh-left">
+          <button class="user-menu-toggle" id="userMenuToggle" type="button" aria-label="Abrir o cerrar menú" aria-expanded="false">${UI_ICO.menuToggle(22)}</button>
+        </div>
+        <a class="brand uh-center" href="#" data-nav="home">
           <span class="brand-mark"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
-          <span class="brand-name">Cafetería INTESUD<span class="brand-sub">Pedidos en línea</span></span>
+          <span class="brand-name">Bar INTESUD</span>
         </a>
-        <div class="header-actions">
-          <div class="header-search">
-            <span class="ico">🔍</span>
-            <input class="input" id="headerSearch" placeholder="Buscar producto..." autocomplete="off">
+        <div class="uh-right">
+          <div class="user-search" id="userSearch">
+            <button class="user-search-toggle" id="userSearchToggle" type="button" aria-label="Buscar productos" aria-expanded="false">${UI_ICO.search(20)}</button>
+            <div class="user-search-open" id="userSearchBox">
+              <span class="user-search-prefix">${UI_ICO.search(16)}</span>
+              <input class="input user-search-input" id="headerSearch" placeholder="Buscar productos..." autocomplete="off">
+              <button class="user-search-close" id="userSearchClose" type="button" aria-label="Cerrar búsqueda">${UI_ICO.close(16)}</button>
+            </div>
           </div>
-          <button class="header-icon-btn" onclick="setRoute('cart')" title="Carrito">🛒<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
-          <div class="user-chip" id="userMenu">
+          <button class="header-icon-btn on-teal" data-nav="cart" title="Carrito">${UI_ICO.cart(20)}<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
+          <div class="user-chip on-teal" id="userMenu">
             <div class="avatar">${esc(initials(user.name))}</div>
-            <span class="chip-info bold" style="font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
-            <span class="chip-info" style="color:var(--text-3);font-size:.7rem">▾</span>
+            <span class="chip-info bold" style="color:#fff;font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
+            <span class="chip-info" style="color:rgba(255,255,255,0.85);font-size:.7rem">${UI_ICO.chevron(15)}</span>
             <div class="dropdown-menu" id="userDropdown" style="display:none">
               <div class="dropdown-head">
                 <div class="bold small">${esc(user.name)}</div>
                 <div class="tiny muted">${esc(user.email)}</div>
               </div>
-              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">👤</span>Mi perfil</a>
-              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">🧾</span>Mis pedidos</a>
-              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">🔒</span>Cambio de contraseña</a>
+              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">${UI_ICO.profile(17)}</span>Mi perfil</a>
+              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">${UI_ICO.orders(17)}</span>Mis pedidos</a>
+              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">${UI_ICO.lock(17)}</span>Cambio de contraseña</a>
               <div class="dropdown-sep"></div>
-              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">⏻</span>Cerrar sesión</a>
+              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">${UI_ICO.logout(17)}</span>Cerrar sesión</a>
             </div>
           </div>
         </div>
       </header>
-      <main class="page${page === 'product' ? ' page-wide' : page === 'cart' ? ' page-narrow' : page === 'checkout' ? ' page-narrow' : ''}" id="mainContent"></main>
+      <div class="user-sidebar-scrim" id="userSidebarScrim"></div>
+      <aside class="user-sidebar" id="userSidebar" aria-label="Navegación principal">
+        <div class="user-sidebar-head">
+          <span class="user-sidebar-logo"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
+          <span class="user-sidebar-title">Bar INTESUD</span>
+        </div>
+        <div class="user-sidebar-profile">
+          <div class="avatar">${esc(initials(user.name))}</div>
+          <div class="usp-info">
+            <div class="bold ellipsis">${esc(user.name)}</div>
+            <div class="muted xs ellipsis">${esc(profileInfo.cargo || ROLE_LABELS[user.role] || 'Usuario institucional')}</div>
+          </div>
+        </div>
+        <nav class="user-sidebar-nav">${sidebarNav}</nav>
+        <div class="user-sidebar-foot">
+          <button class="user-sidebar-logout" id="btnSidebarLogout" type="button">${UI_ICO.logout(18)}<span>Cerrar sesión</span></button>
+        </div>
+      </aside>
+      <main class="page${pageClasses}" id="mainContent"></main>
       <nav class="mobile-nav" id="mobileNav"></nav>
     </div>`;
 
@@ -141,19 +197,41 @@ function renderUserShell(page) {
   // header nav binding
   $$('[data-nav]', app).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav); });
 
+  // Sidebar: drawer lateral controlado únicamente por el ☰ del header
+  const sidebar = $('#userSidebar');
+  const sidebarScrim = $('#userSidebarScrim');
+  const toggleSidebar = (open) => {
+    sidebar.classList.toggle('open', open);
+    sidebarScrim.classList.toggle('open', open);
+    $('#userMenuToggle').setAttribute('aria-expanded', String(open));
+  };
+  $('#userMenuToggle').onclick = (e) => { e.stopPropagation(); toggleSidebar(!sidebar.classList.contains('open')); };
+  sidebarScrim.onclick = () => toggleSidebar(false);
+  $$('[data-side-nav]', sidebar).forEach((a) => a.onclick = (e) => { e.preventDefault(); toggleSidebar(false); setRoute(a.dataset.sideNav); });
+  $('#btnSidebarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
+
   const ud = $('#userDropdown');
   $('#userMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
-  // header search → go to menu with query
+  // Buscador desplegable (icono Search → campo)
+  const setSearchOpen = (open) => {
+    $('#userSearch').classList.toggle('open', open);
+    $('#userSearchToggle').setAttribute('aria-expanded', String(open));
+    if (open) $('#headerSearch').focus();
+  };
+  $('#userSearchToggle').onclick = (e) => { e.stopPropagation(); setSearchOpen(!$('#userSearch').classList.contains('open')); };
+  $('#userSearchClose').onclick = () => { setSearchOpen(false); $('#headerSearch').value = ''; };
   const hs = $('#headerSearch');
   if (hs) hs.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && hs.value.trim()) {
       sessionStorage.setItem('int_search', hs.value.trim());
+      setSearchOpen(false);
       setRoute('menu');
     }
+    if (e.key === 'Escape') setSearchOpen(false);
   });
 
   const main = $('#mainContent');
@@ -173,13 +251,13 @@ function renderUserShell(page) {
 function renderMobileNav(page, app) {
   const nav = $('#mobileNav', app);
   const items = [
-    ['home', '🏠', 'Inicio'], ['menu', '🍔', 'Menú'],
-    ['cart', '🛒', 'Carrito'], ['orders', '🧾', 'Pedidos'],
+    ['home', 'home', 'Inicio'], ['menu', 'menu', 'Menú'],
+    ['cart', 'cart', 'Carrito'], ['orders', 'orders', 'Pedidos'],
   ];
   const cartCount = Cart.count();
   nav.innerHTML = `<div class="mn-grid">` + items.map(([k, ico, l]) => `
     <a class="mn-item ${page === k ? 'active' : ''}" href="#" data-nav="${k}">
-      <span class="mn-ico">${ico}</span>${l}
+      <span class="mn-ico">${UI_ICO[ico](20)}</span>${l}
       ${k === 'cart' && cartCount ? `<span class="mn-badge">${cartCount}</span>` : ''}
     </a>`).join('') + `</div>`;
   $$('[data-nav]', nav).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav); });

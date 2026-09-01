@@ -108,7 +108,7 @@ function renderLanding() {
       <div class="lp-wrap">
         <a class="lp-brand" href="#" data-lp-scroll="home">
           <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
-          <span class="lp-brand-name">INTESUD Cafetería<small>Pedidos en línea</small></span>
+          <span class="lp-brand-name">Bar INTESUD<small>Pedidos en línea</small></span>
         </a>
         <nav class="lp-nav">
           <a href="#" data-lp-scroll="home">Inicio</a>
@@ -135,9 +135,9 @@ function renderLanding() {
     <!-- ======= HERO (portada) ======= -->
     <section class="lp-hero" id="home">
       <div class="lp-hero-media">
-        <img src="assets/images/Cafeteria1.jpg" alt="Barra de atención de la cafetería INTESUD">
+        <img src="assets/images/Cafeteria1.jpg" alt="Barra de atención de Bar INTESUD">
         <div class="lp-hero-overlay">
-          <span class="lp-eyebrow centered">Cafetería del Instituto Tecnológico Superior Sudamericano</span>
+          <span class="lp-eyebrow centered">Bar INTESUD del Instituto Tecnológico Superior Sudamericano</span>
           <h1 class="lp-hero-title">Tu comida <span class="hl">lista para el receso</span></h1>
           <p class="lp-hero-tag">Realiza tu pedido antes del receso y recógelo listo de ${esc(cfg.breakStart || '10:00')} a ${esc(cfg.breakEnd || '10:15')}.</p>
           <div class="lp-hero-actions">
@@ -159,7 +159,7 @@ function renderLanding() {
       <div class="lp-center">
         <div class="lp-eyebrow centered">Presentación</div>
         <h2 class="lp-h2">La cafetería de tu instituto</h2>
-        <p class="lp-lead">La Cafetería INTESUD está ubicada dentro de las instalaciones del Instituto Tecnológico Superior Sudamericano y está pensada para facilitar los pedidos de los estudiantes durante el corto periodo de receso.</p>
+        <p class="lp-lead">El Bar INTESUD está ubicado dentro de las instalaciones del Instituto Tecnológico Superior Sudamericano y está pensado para facilitar los pedidos de los estudiantes durante el corto periodo de receso.</p>
       </div>
       <ul class="lp-about-points">
         <li><span class="pi">${lpIcon('grad')}</span><div><div class="pt">Pensada para estudiantes</div><div class="ps">Pedidos rápidos y organizados para aprovechar tu receso.</div></div></li>
@@ -311,7 +311,7 @@ function renderLanding() {
         <h2 class="lp-h2">¿Listo para pedir?</h2>
         <p class="lp-lead">Haz tu pedido antes de las ${esc(cfg.orderClose || '09:45')} y aprovecha tu receso.</p>
         <div class="lp-cta-row">
-          <button class="lp-btn-access" data-lp-login>ACCEDER A LA CAFETERÍA ${lpIcon('arrow')}</button>
+          <button class="lp-btn-access" data-lp-login>ACCEDER A BAR INTESUD ${lpIcon('arrow')}</button>
         </div>
       </div>
     `)}
@@ -323,7 +323,7 @@ function renderLanding() {
           <div class="lp-footer-brand">
             <a class="lp-brand" href="#" data-lp-scroll="home">
               <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
-              <span class="lp-brand-name">INTESUD — Cafetería</span>
+              <span class="lp-brand-name">Bar INTESUD</span>
             </a>
             <div style="margin-top:14px;max-width:320px;font-size:var(--fs-sm);color:rgba(255,255,255,0.6)">Instituto Tecnológico Superior Sudamericano — INTESUD</div>
           </div>
@@ -353,7 +353,7 @@ function renderLanding() {
           </div>
         </div>
         <div class="lp-footer-bottom">
-          <span>© ${new Date().getFullYear()} Cafetería INTESUD. Todos los derechos reservados.</span>
+          <span>© ${new Date().getFullYear()} Bar INTESUD. Todos los derechos reservados.</span>
           <span>Instituto Tecnológico Superior Sudamericano</span>
         </div>
       </div>

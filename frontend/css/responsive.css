@@ -43,6 +43,13 @@
   .admin-sidebar.open { transform: translateX(0); }
   .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
   .admin-content { padding: var(--sp-4); }
+
+  /* Usuario: el drawer ya está definido en base para todos los tamaños.
+     Aquí solo se compacta el buscador desplegable en pantallas pequeñas. */
+  .user-search.open .user-search-open { max-width: min(60vw, 220px); }
+  .user-search-input { width: 180px; }
+  body:not(.is-admin) .mobile-nav { display: block; }
+  body:not(.is-admin).has-bottom-nav .app { padding-bottom: 74px; }
 }
 
 /* ============================================================

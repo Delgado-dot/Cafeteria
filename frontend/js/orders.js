@@ -52,7 +52,7 @@ function renderOrders(el) {
 
 function orderTrackingCard(o) {
   const card = document.createElement('div');
-  card.className = 'order-card';
+  card.className = `order-card order-card-active state-${o.status}`;
   const flowIdx = ORDER_FLOW.indexOf(o.status);
   const current = o.status === 'cancelled' ? -1 : flowIdx >= 0 ? flowIdx : 0;
   const showFlow = !['cancelled', 'nopickup'].includes(o.status);
@@ -269,7 +269,7 @@ function renderProfile(el) {
 function changePasswordModal() {
   const ov = modal(`
     <h3>Cambiar contraseña</h3>
-    <p class="muted small" style="margin-bottom:14px">Cambio simulado — no se modifica nada real.</p>
+    <p class="muted small" style="margin-bottom:14px">Usa una contraseña de al menos 6 caracteres.</p>
     <div class="field"><label class="label">Contraseña actual</label><input class="input" type="password" id="cpOld"></div>
     <div class="field"><label class="label">Nueva contraseña</label><input class="input" type="password" id="cpNew"></div>
     <div class="field"><label class="label">Confirmar contraseña</label><input class="input" type="password" id="cpNew2"><div class="input-err-msg" id="cpErr"></div></div>
@@ -282,9 +282,11 @@ function changePasswordModal() {
     const a = $('#cpOld', ov).value, b = $('#cpNew', ov).value, c = $('#cpNew2', ov).value;
     const err = $('#cpErr', ov);
     if (!a || !b || !c) { err.textContent = 'Completa todos los campos.'; return; }
+    if (PASSWORDS[currentUser().email] !== a) { err.textContent = 'La contraseña actual no es correcta.'; return; }
     if (b.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
     if (b !== c) { err.textContent = 'Las contraseñas no coinciden.'; return; }
-    toast('Contraseña actualizada (simulado).', 'success');
+    PASSWORDS[currentUser().email] = b;
+    toast('Contraseña actualizada.', 'success');
     logAudit('Cambió su contraseña', '');
     ov.remove();
   };
