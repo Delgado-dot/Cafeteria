@@ -91,100 +91,44 @@ function handleRoute() {
 }
 window.handleRoute = handleRoute;
 
-/* ---------- Iconos Lucide (inline SVG, sin emojis) ---------- */
-const UI_ICO = {
-  svg: (paths, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`,
-  home: (s) => UI_ICO.svg('<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', s),
-  menu: (s) => UI_ICO.svg('<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>', s),
-  orders: (s) => UI_ICO.svg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>', s),
-  profile: (s) => UI_ICO.svg('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', s),
-  logout: (s) => UI_ICO.svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>', s),
-  menuToggle: (s) => UI_ICO.svg('<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>', s),
-  close: (s) => UI_ICO.svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', s),
-  cart: (s) => UI_ICO.svg('<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>', s),
-  search: (s) => UI_ICO.svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', s),
-  chevron: (s) => UI_ICO.svg('<path d="m6 9 6 6 6-6"/>', s),
-  lock: (s) => UI_ICO.svg('<rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', s),
-};
-window.UI_ICO = UI_ICO;
-
-/* ---------- User shell (header + sidebar + main + mobile nav) ---------- */
-const USER_SIDEBAR_LINKS = [
-  ['home', 'home', 'Inicio'],
-  ['menu', 'menu', 'Menú'],
-  ['orders', 'orders', 'Mis pedidos'],
-  ['profile', 'profile', 'Perfil'],
-];
-
+/* ---------- User shell (header + main + mobile nav) ---------- */
 function renderUserShell(page) {
   const app = $('#app');
   const user = currentUser();
   const cartCount = Cart.count();
 
-  const pageClasses = page === 'product' ? ' page-wide' : (page === 'cart' || page === 'checkout') ? ' page-narrow' : '';
-  const profileInfo = Store.users.find((x) => x.email === user.email) || {};
-  const sidebarNav = USER_SIDEBAR_LINKS.map(([k, ico, label]) => `
-      <a href="#" data-side-nav="${k}" class="user-sidebar-link${page === k ? ' active' : ''}">
-        <span class="usi-ico">${UI_ICO[ico]()}</span><span class="usi-label">${label}</span>
-      </a>`).join('');
-
   const header = `
     <div class="app">
       <header class="user-header">
-        <div class="uh-left">
-          <button class="user-menu-toggle" id="userMenuToggle" type="button" aria-label="Abrir o cerrar menú" aria-expanded="false">${UI_ICO.menuToggle(22)}</button>
-        </div>
-        <a class="brand uh-center" href="#" data-nav="home">
+        <a class="brand" href="#" data-nav="home">
           <span class="brand-mark"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
-          <span class="brand-name">Bar INTESUD</span>
+          <span class="brand-name">Bar INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
-        <div class="uh-right">
-          <div class="user-search" id="userSearch">
-            <button class="user-search-toggle" id="userSearchToggle" type="button" aria-label="Buscar productos" aria-expanded="false">${UI_ICO.search(20)}</button>
-            <div class="user-search-open" id="userSearchBox">
-              <span class="user-search-prefix">${UI_ICO.search(16)}</span>
-              <input class="input user-search-input" id="headerSearch" placeholder="Buscar productos..." autocomplete="off">
-              <button class="user-search-close" id="userSearchClose" type="button" aria-label="Cerrar búsqueda">${UI_ICO.close(16)}</button>
-            </div>
+        <div class="header-actions">
+          <div class="header-search">
+            <span class="ico">🔍</span>
+            <input class="input" id="headerSearch" placeholder="Buscar producto..." autocomplete="off">
           </div>
-          <button class="header-icon-btn on-teal" data-nav="cart" title="Carrito">${UI_ICO.cart(20)}<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
-          <div class="user-chip on-teal" id="userMenu">
+          <button class="header-icon-btn" onclick="setRoute('cart')" title="Carrito">🛒<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
+          <div class="user-chip" id="userMenu">
             <div class="avatar">${esc(initials(user.name))}</div>
-            <span class="chip-info bold" style="color:#fff;font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
-            <span class="chip-info" style="color:rgba(255,255,255,0.85);font-size:.7rem">${UI_ICO.chevron(15)}</span>
+            <span class="chip-info bold" style="font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
+            <span class="chip-info" style="color:var(--text-3);font-size:.7rem">▾</span>
             <div class="dropdown-menu" id="userDropdown" style="display:none">
               <div class="dropdown-head">
                 <div class="bold small">${esc(user.name)}</div>
                 <div class="tiny muted">${esc(user.email)}</div>
               </div>
-              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">${UI_ICO.profile(17)}</span>Mi perfil</a>
-              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">${UI_ICO.orders(17)}</span>Mis pedidos</a>
-              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">${UI_ICO.lock(17)}</span>Cambio de contraseña</a>
+              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">👤</span>Mi perfil</a>
+              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">🧾</span>Mis pedidos</a>
+              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">🔒</span>Cambio de contraseña</a>
               <div class="dropdown-sep"></div>
-              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">${UI_ICO.logout(17)}</span>Cerrar sesión</a>
+              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">⏻</span>Cerrar sesión</a>
             </div>
           </div>
         </div>
       </header>
-      <div class="user-sidebar-scrim" id="userSidebarScrim"></div>
-      <aside class="user-sidebar" id="userSidebar" aria-label="Navegación principal">
-        <div class="user-sidebar-head">
-          <span class="user-sidebar-logo"><img class="brand-mark-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
-          <span class="user-sidebar-title">Bar INTESUD</span>
-        </div>
-        <div class="user-sidebar-profile">
-          <div class="avatar">${esc(initials(user.name))}</div>
-          <div class="usp-info">
-            <div class="bold ellipsis">${esc(user.name)}</div>
-            <div class="muted xs ellipsis">${esc(profileInfo.cargo || ROLE_LABELS[user.role] || 'Usuario institucional')}</div>
-          </div>
-        </div>
-        <nav class="user-sidebar-nav">${sidebarNav}</nav>
-        <div class="user-sidebar-foot">
-          <button class="user-sidebar-logout" id="btnSidebarLogout" type="button">${UI_ICO.logout(18)}<span>Cerrar sesión</span></button>
-        </div>
-      </aside>
-      <main class="page${pageClasses}" id="mainContent"></main>
+      <main class="page${page === 'product' ? ' page-wide' : page === 'cart' ? ' page-narrow' : page === 'checkout' ? ' page-narrow' : ''}" id="mainContent"></main>
       <nav class="mobile-nav" id="mobileNav"></nav>
     </div>`;
 
@@ -197,41 +141,19 @@ function renderUserShell(page) {
   // header nav binding
   $$('[data-nav]', app).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav); });
 
-  // Sidebar: drawer lateral controlado únicamente por el ☰ del header
-  const sidebar = $('#userSidebar');
-  const sidebarScrim = $('#userSidebarScrim');
-  const toggleSidebar = (open) => {
-    sidebar.classList.toggle('open', open);
-    sidebarScrim.classList.toggle('open', open);
-    $('#userMenuToggle').setAttribute('aria-expanded', String(open));
-  };
-  $('#userMenuToggle').onclick = (e) => { e.stopPropagation(); toggleSidebar(!sidebar.classList.contains('open')); };
-  sidebarScrim.onclick = () => toggleSidebar(false);
-  $$('[data-side-nav]', sidebar).forEach((a) => a.onclick = (e) => { e.preventDefault(); toggleSidebar(false); setRoute(a.dataset.sideNav); });
-  $('#btnSidebarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
-
   const ud = $('#userDropdown');
   $('#userMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
-  // Buscador desplegable (icono Search → campo)
-  const setSearchOpen = (open) => {
-    $('#userSearch').classList.toggle('open', open);
-    $('#userSearchToggle').setAttribute('aria-expanded', String(open));
-    if (open) $('#headerSearch').focus();
-  };
-  $('#userSearchToggle').onclick = (e) => { e.stopPropagation(); setSearchOpen(!$('#userSearch').classList.contains('open')); };
-  $('#userSearchClose').onclick = () => { setSearchOpen(false); $('#headerSearch').value = ''; };
+  // header search → go to menu with query
   const hs = $('#headerSearch');
   if (hs) hs.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && hs.value.trim()) {
       sessionStorage.setItem('int_search', hs.value.trim());
-      setSearchOpen(false);
       setRoute('menu');
     }
-    if (e.key === 'Escape') setSearchOpen(false);
   });
 
   const main = $('#mainContent');
@@ -251,13 +173,13 @@ function renderUserShell(page) {
 function renderMobileNav(page, app) {
   const nav = $('#mobileNav', app);
   const items = [
-    ['home', 'home', 'Inicio'], ['menu', 'menu', 'Menú'],
-    ['cart', 'cart', 'Carrito'], ['orders', 'orders', 'Pedidos'],
+    ['home', '🏠', 'Inicio'], ['menu', '🍔', 'Menú'],
+    ['cart', '🛒', 'Carrito'], ['orders', '🧾', 'Pedidos'],
   ];
   const cartCount = Cart.count();
   nav.innerHTML = `<div class="mn-grid">` + items.map(([k, ico, l]) => `
     <a class="mn-item ${page === k ? 'active' : ''}" href="#" data-nav="${k}">
-      <span class="mn-ico">${UI_ICO[ico](20)}</span>${l}
+      <span class="mn-ico">${ico}</span>${l}
       ${k === 'cart' && cartCount ? `<span class="mn-badge">${cartCount}</span>` : ''}
     </a>`).join('') + `</div>`;
   $$('[data-nav]', nav).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav); });
@@ -281,41 +203,69 @@ function userHome(el) {
   }
 
   el.innerHTML = `
-    <div class="page-title"><h1>¡Hola, ${esc(currentUser().name.split(' ')[0])}! 👋</h1>
-      <span class="badge ${open ? 'badge-success' : 'badge-danger'}">${open ? '● ABIERTA' : '● CERRADA'}</span>
+    <div class="page-welcome">
+      <div class="home-hero">
+        <span class="hh-photo"></span>
+        <div class="hh-inner">
+          <div class="hh-copy">
+            <span class="hh-eyebrow">☕ Bar INTESUD</span>
+            <div class="hh-welcome">BIENVENIDO ESTUDIANTE</div>
+            <h1>Tu comida, <span class="hl">lista para el receso</span>.</h1>
+            <p class="hh-sub">Pídelo en segundos y recógelo calientito en la bar o que te lo lleven a tu aula.</p>
+            <div class="hh-actions">
+              <a class="hh-btn" href="#" data-nav2="menu">🍔 Ver el menú</a>
+              <a class="hh-btn ghost" href="#" data-nav2="cart">🛒 Mi pedido</a>
+            </div>
+            <div class="hh-status">
+              <span class="dot" style="background:${open ? '#7df0b0' : '#ffb0a8'}"></span>
+              ${open ? 'Abierto · aceptando pedidos' : 'Cerrado ahora — mira el menú igual'}
+            </div>
+          </div>
+
+          <div class="hh-panel">
+            <div class="hp-left">
+              <span class="hp-dot"></span>
+              <span class="hp-label">Preparación en vivo</span>
+              <div class="hp-track"><div class="hp-fill" style="width:${cap.pct}%"></div></div>
+            </div>
+            <div class="hp-nums"><span><b>${cap.used}</b> en curso</span><span>Cupo <b>${cap.total}</b></span></div>
+            <div class="hp-facts">
+              <span>Horario de pedidos <b>${cfg.orderOpen} – ${cfg.orderClose}</b></span>
+              <span>Entrega en receso <b>${cfg.breakStart} – ${cfg.breakEnd}</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="page-sub">Pide tu almuerzo o snack y retíralo durante el receso.</p>
 
     ${statusBanner}
 
-    <div class="grid grid-2" style="margin-bottom:12px;grid-template-columns:1.4fr 1fr">
-      <div class="card card-hover">
-        <div class="card-header">
-          <div><div class="card-title">Estado actual</div><div class="card-sub">Horario de la cafetería</div></div>
-          <span class="badge ${cap.stateCls === 'danger' ? 'badge-danger' : cap.stateCls === 'warning' ? 'badge-warning' : 'badge-success'}">${cap.state}</span>
+    <div class="cat-banner">
+      <div class="cat-banner-inner">
+        <div class="cat-banner-left">
+          <div class="cat-s">S</div>
+          <div class="cat-titles">
+            <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
+            <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
+          </div>
         </div>
-        <div class="card-body" style="display:grid;gap:10px;font-size:var(--fs-md)">
-          <div class="kv"><dt>Pedidos hasta</dt><dd>${cfg.orderClose}</dd></div>
-          <div class="kv"><dt>Receso de entrega</dt><dd>${cfg.breakStart} - ${cfg.breakEnd}</dd></div>
-          <div class="kv"><dt>Horario de pedidos</dt><dd>${cfg.orderOpen} - ${cfg.orderClose}</dd></div>
-        </div>
+        <div class="cat-banner-deco" aria-hidden="true">🍔🥤</div>
       </div>
-      <div id="homeCap"></div>
+      <div class="cat-pills">
+        ${CATEGORIES.map((c) => {
+          const n = products.filter((p) => p.category === c).length;
+          return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${catIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+        }).join('')}
+      </div>
     </div>
 
-    <h2 class="section-title">Categorías</h2>
-    <div class="grid grid-3" style="margin-bottom:8px">
-      ${CATEGORIES.map((c) => `<a class="cat-card" href="#" data-cat="${esc(c)}"><span class="cc-ico">${catIcon(c)}</span><div><div class="cc-name">${esc(c)}</div><div class="cc-count">${products.filter((p) => p.category === c).length} productos</div></div></a>`).join('')}
+    <div class="reco-head">
+      <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
+      <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
     </div>
+    <div class="reco-grid" id="featuredGrid"></div>`;
 
-    <div class="flex justify-between items-center" style="margin:26px 0 14px">
-      <h2 class="section-title" style="margin:0">Productos destacados</h2>
-      <a class="btn btn-outline btn-sm" href="#" data-nav="menu">Ver menú completo →</a>
-    </div>
-    <div class="grid grid-4" id="featuredGrid"></div>`;
-
-  const capWrap = $('#homeCap');
-  if (capWrap) renderCapacityCard(capWrap);
+  $$('[data-nav2]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav2); });
 
   const featuredEl = $('#featuredGrid');
   if (!featured.length) featuredEl.innerHTML = emptyState('🍽️', 'Sin productos', 'No hay productos disponibles por ahora.');
@@ -331,8 +281,10 @@ function productCard(p, size = '') {
   card.className = 'product-card' + (soldOut ? ' disabled' : '');
   card.innerHTML = `
     <div class="product-media">
-      ${catIcon(p.category) ? `<span class="p-cat badge badge-primary">${catIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>` : ''}
-      ${productIcon(p)}
+      <span class="pc-dots"></span>
+      <span class="pc-wave"></span>
+      <span class="p-emoji">${productIcon(p)}</span>
+      ${catIcon(p.category) ? `<span class="p-cat badge badge-primary">${catIcon(p.category)} ${esc(p.category)}</span>` : ''}
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
     </div>
     <div class="product-body">
@@ -373,30 +325,44 @@ function userMenuPage(el) {
   sessionStorage.removeItem('int_cat');
 
   el.innerHTML = `
-    <div class="page-title"><h1>Menú</h1><span class="badge badge-primary" id="menuCount"></span></div>
-    <p class="page-sub">Elige lo que quieras y agrégalo a tu carrito.</p>
-
-    <div class="menu-layout">
-      <aside class="menu-filters" id="menuFilters"></aside>
-      <div>
-        <div class="input-wrap" style="margin-bottom:18px;max-width:360px">
-          <span class="leading-ico">🔍</span>
-          <input class="input" id="menuSearch" placeholder="Buscar producto..." value="${esc(search)}">
-          ${search ? '' : ''}
+    <div class="menu-page">
+      <div class="menu-lead">
+        <div>
+          <div class="ml-title">Nuestro <span>menú</span></div>
+          <div class="ml-sub">Todo rico y recién preparado en la cafetería.</div>
         </div>
-        <div class="chips-scroll" style="margin-bottom:20px" id="menuChips"></div>
-        <div id="menuGrid" class="grid grid-4"></div>
+        <span class="ml-badge" id="menuCount"></span>
+      </div>
+
+      <div class="menu-layout">
+        <aside class="menu-side">
+          <div class="menu-side-head">
+            <span class="menu-side-title">Categorías</span>
+            <span class="menu-side-hint">Elige una</span>
+          </div>
+          <div id="menuChips" class="menu-side-list"></div>
+        </aside>
+        <div class="menu-main">
+          <div class="menu-toolbar">
+            <div class="mt-search">
+              <span class="leading-ico">🔍</span>
+              <input class="input" id="menuSearch" placeholder="Buscar en el menú..." value="${esc(search)}">
+            </div>
+          </div>
+          <div id="menuGrid" class="grid grid-3"></div>
+        </div>
       </div>
     </div>`;
 
-  const renderFilters = () => {
-    const wrap = $('#menuFilters');
+  const renderChips = () => {
+    const wrap = $('#menuChips');
     const cats = ['Todas', ...CATEGORIES];
     const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
     wrap.innerHTML = cats.map((c) => `
-      <button class="menu-filter-btn ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-        ${c === 'Todas' ? '🍽️' : catIcon(c)} ${esc(c)}
-        <span class="mf-count">${countFor(c)}</span>
+      <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
+        <span class="cp-ico">${c === 'Todas' ? '🍽️' : catIcon(c)}</span>
+        <span class="cp-name">${esc(c)}</span>
+        <span class="cp-badge">${countFor(c)}</span>
       </button>`).join('');
     $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
       $$('[data-cat]', wrap).forEach((x) => x.classList.remove('active'));
@@ -411,15 +377,15 @@ function userMenuPage(el) {
     if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
     if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
     const grid = $('#menuGrid');
-    $('#menuCount').textContent = list.length + ' productos';
-    $('#menuCount').classList.toggle('badge-primary', list.length > 0);
+    const mc = $('#menuCount');
+    if (mc) mc.textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
     if (!list.length) { grid.innerHTML = emptyState('🔍', 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
     grid.innerHTML = '';
     list.forEach((p) => grid.appendChild(productCard(p)));
   };
 
   $('#menuSearch').addEventListener('input', (e) => { search = e.target.value; render(); });
-  renderFilters();
+  renderChips();
   render();
 }
 
