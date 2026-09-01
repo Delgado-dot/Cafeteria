@@ -274,9 +274,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.15);
+  background: var(--primary);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -286,7 +286,7 @@
   transition: background var(--t-fast);
   box-shadow: 0 2px 6px rgba(16,30,29,0.12);
 }
-.sidebar-toggle:hover { background: rgba(255,255,255,0.25); }
+.sidebar-toggle:hover { background: var(--primary-hover); }
 .admin-sidebar.collapsed {
   width: 72px;
 }
