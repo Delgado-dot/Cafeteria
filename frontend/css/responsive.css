@@ -134,17 +134,27 @@
     padding: 8px 0;
     border-bottom: 1px solid var(--border);
     font-size: var(--fs-sm);
+    gap: 12px;
   }
   .admin-table tr:last-child td { border-bottom: none; }
   .admin-table td:first-child { padding-top: 0; }
   .admin-table td:last-child { padding-bottom: 0; }
   .admin-table td::before {
-    content: attr(data-label);
+    content: attr(data-label) ":";
     font-weight: var(--fw-semibold);
     color: var(--text-2);
     font-size: var(--fs-xs);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .admin-table td > div,
+  .admin-table td > span,
+  .admin-table td > button,
+  .admin-table td > a {
+    flex: 1;
+    text-align: right;
+    min-width: 0;
   }
   .admin-table td:has(button)::before { content: 'Acciones'; }
   .admin-table .badge { margin-left: var(--sp-2); }
