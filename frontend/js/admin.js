@@ -333,6 +333,29 @@ function barConfigTabs(el, initialTab) {
       </div>
       <div id="suppliersList"></div>
     </div>
+    <div class="card" style="margin-top:var(--sp-5)">
+      <div style="margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)"><i class="bx bx-bar-chart-alt-2" style="margin-right:6px"></i>Informes</div></div>
+      <div class="grid grid-3" style="gap:12px">
+        <div class="stat-card" style="padding:16px;text-align:center">
+          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-line-chart"></i></div>
+          <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
+          <div class="tiny muted" style="margin-bottom:12px">Resumen de ventas por período</div>
+          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        </div>
+        <div class="stat-card" style="padding:16px;text-align:center">
+          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-box"></i></div>
+          <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
+          <div class="tiny muted" style="margin-bottom:12px">Movimientos y existencias</div>
+          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        </div>
+        <div class="stat-card" style="padding:16px;text-align:center">
+          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-credit-card"></i></div>
+          <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
+          <div class="tiny muted" style="margin-bottom:12px">Estado de pagos y cobros</div>
+          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        </div>
+      </div>
+    </div>
   `;
 
   const btnSave = $('#btnSaveConfigHours', el);
