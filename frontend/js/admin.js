@@ -20,7 +20,8 @@ const BAR_PAGES = {
   'payment-detail': { label: 'Detalle de pago', icon: 'bx-credit-card' },
   'sales-history': { label: 'Historial de ventas', icon: 'bx-history' },
   'stock-history': { label: 'Historial de stock', icon: 'bx-history' },
-  'config-status': { label: 'Estado de cafetería', icon: 'bx-coffee-togo' },
+  'config-status': { label: 'Estado de cafetería', icon: 'bx-cog' },
+  profile: { label: 'Mi perfil', icon: 'bx-user' },
 };
 
 // Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
@@ -180,8 +181,8 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <span id="cafePill"></span>
             <div class="profile-chip" id="barUserMenu">
-              <div class="avatar sm">${esc(initials(currentUser().name))}</div>
-              <span class="pname">${esc(currentUser().name)}</span> ▾
+              <div class="avatar sm" style="${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? `background-image:url('${currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')}');background-size:cover;background-position:center;color:transparent` : ''}">${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? '' : esc(initials(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name))}</div>
+              <span class="pname">${esc(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name)}</span> ▾
               <div class="dropdown-menu" id="barUserDropdown" style="display:none">
                 <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
                 <div class="dropdown-sep"></div>
@@ -229,7 +230,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   const ud = $('#barUserDropdown');
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
-  $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
+  $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { setRoute('adminbar/profile'); ud.style.display = 'none'; } else setRoute(t); });
   $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
 
   const content = $('#barContent');
@@ -248,6 +249,7 @@ const renderers = {
     reports: barReports,
     'config-hours': (target) => barConfigTabs(target, 'hours'),
     'config-status': (target) => barConfigTabs(target, 'status'),
+    profile: barAdminProfile,
   };
   // Skeleton loading al cambiar de pantalla (200-300ms) para transición suave
   content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
@@ -1784,6 +1786,114 @@ function barConfigStatus(el) {
     </div>
   `;
   $('#btnToggleCafeStatus', el).onclick = () => confirmToggleState(!isOpen, $('#btnToggleCafeStatus', el));
+}
+
+function barAdminProfile(el) {
+  const user = currentUser();
+  if (!user) return route('login');
+  const storedPhoto = Store.load('int_admin_photo_' + user.id, null) || user.photo || '';
+  const currentPhoto = storedPhoto;
+  const currentName = Store.load('int_admin_name_' + user.id, null) || user.name || '';
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-user"></span> Mi perfil</h1></div>
+    <div class="card" style="max-width:560px">
+      <div style="display:flex;gap:18px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+        <div id="profileAvatarPreview" class="avatar lg" style="width:80px;height:80px;font-size:1.8rem;flex-shrink:0;${currentPhoto ? `background-image:url('${currentPhoto}');background-size:cover;background-position:center;color:transparent` : ''}">${currentPhoto ? '' : esc(initials(currentName))}</div>
+        <div style="flex:1;min-width:200px">
+          <div class="field" style="margin-bottom:8px">
+            <label class="label">Foto de perfil</label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+                <i class="bx bx-cloud-upload" style="margin-right:6px"></i>Subir foto
+                <input type="file" id="profilePhotoInput" accept="image/*" style="display:none">
+              </label>
+              <button class="btn btn-neutral btn-sm" id="btnRemovePhoto" ${currentPhoto ? '' : 'disabled style="opacity:0.6"'}>Quitar foto</button>
+            </div>
+            <div class="tiny muted" style="margin-top:6px">Se guarda en base64 local, como las imágenes de producto</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Nombre para mostrar</label>
+        <input class="input" id="profileNameInput" value="${esc(currentName)}" placeholder="Administradora Bar">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+        <button class="btn btn-primary" id="btnSaveProfile">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+
+  const photoInput = $('#profilePhotoInput', el);
+  const avatarPreview = $('#profileAvatarPreview', el);
+  const nameInput = $('#profileNameInput', el);
+  const btnRemove = $('#btnRemovePhoto', el);
+  let newPhotoBase64 = currentPhoto;
+
+  const updateAvatarPreview = (photo) => {
+    if (photo) {
+      avatarPreview.style.backgroundImage = `url('${photo}')`;
+      avatarPreview.style.backgroundSize = 'cover';
+      avatarPreview.style.backgroundPosition = 'center';
+      avatarPreview.style.color = 'transparent';
+      avatarPreview.textContent = '';
+      if (btnRemove) { btnRemove.disabled = false; btnRemove.style.opacity = '1'; }
+    } else {
+      avatarPreview.style.backgroundImage = '';
+      avatarPreview.textContent = esc(initials(nameInput.value.trim() || currentName));
+      avatarPreview.style.color = '';
+      if (btnRemove) { btnRemove.disabled = true; btnRemove.style.opacity = '0.6'; }
+    }
+  };
+
+  nameInput.addEventListener('input', () => {
+    if (!newPhotoBase64) {
+      avatarPreview.textContent = esc(initials(nameInput.value.trim() || 'AB'));
+    }
+  });
+
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes', 'warning'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      newPhotoBase64 = ev.target.result;
+      updateAvatarPreview(newPhotoBase64);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  if (btnRemove) {
+    btnRemove.onclick = () => {
+      newPhotoBase64 = '';
+      photoInput.value = '';
+      updateAvatarPreview('');
+    };
+  }
+
+  $('#btnSaveProfile', el).onclick = () => {
+    const newName = nameInput.value.trim();
+    if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    const session = Store.load('int_session', null);
+    if (session) {
+      session.name = newName;
+      if (newPhotoBase64 !== undefined) session.photo = newPhotoBase64;
+      Store.save('int_session', session);
+    }
+    const users = Store.users;
+    const u = users.find(x => x.id === user.id);
+    if (u) {
+      u.name = newName;
+      if (newPhotoBase64 !== undefined) u.photo = newPhotoBase64;
+      Store.users = users;
+    }
+    Store.save('int_admin_name_' + user.id, newName);
+    Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
+    // Actualiza también la foto en el avatar global si existe
+    toast('Perfil actualizado', 'success');
+    renderBarAdmin('profile');
+  };
 }
 
 // Helper for config-status toggle - defined globally for onclick handlers
