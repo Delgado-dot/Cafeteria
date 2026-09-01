@@ -283,10 +283,73 @@ function barSalesTabs(el, initialTab) {
 }
 
 function barConfigTabs(el, initialTab) {
-  renderAdminTabs(el, [
-    { id: 'hours', label: 'Horarios', render: barConfigHours },
-    { id: 'status', label: 'Estado de cafetería', render: barConfigStatus },
-  ], initialTab);
+  // Layout tipo Settings: 2 columnas (izquierda Horarios, derecha Estado) en vez de pestañas separadas
+  const cfg = Store.config;
+  const isOpen = cfg.cafeOpen;
+  const originalValues = {
+    orderOpen: cfg.orderOpen,
+    orderClose: cfg.orderClose,
+    breakStart: cfg.breakStart,
+    breakEnd: cfg.breakEnd,
+    capacity: String(cfg.capacity)
+  };
+  let hasUnsavedChanges = false;
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
+    <div class="grid grid-2" style="align-items:start">
+      <div class="card" style="width:100%;max-width:none;margin:0">
+        <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
+        <div class="grid grid-2">
+          <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+          <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
+        </div>
+        <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
+        <div class="grid grid-2">
+          <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
+          <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
+        </div>
+        <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
+        <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
+        <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
+          <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar"><span class="pulse-dot"></span></span>
+          <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+        </div>
+      </div>
+      <div class="card" style="width:100%;max-width:none;margin:0">
+        <div style="text-align:center;margin-bottom:24px">
+          <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+        </div>
+        <div style="text-align:center">
+          <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}</button>
+        </div>
+        <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)"><b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
+      </div>
+    </div>
+  `;
+
+  const btnSave = $('#btnSaveConfigHours', el);
+  const indicator = $('#unsavedIndicator', el);
+  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
+  const checkChanges = () => {
+    const currentValues = {
+      orderOpen: $('#ohOpen', el).value,
+      orderClose: $('#ohClose', el).value,
+      breakStart: $('#brStart', el).value,
+      breakEnd: $('#brEnd', el).value,
+      capacity: $('#cpCap', el).value
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
+    if (indicator) indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
+    if (btnSave) { btnSave.disabled = !hasUnsavedChanges; btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6'; }
+  };
+  fields.forEach(id => {
+    const field = $('#' + id, el);
+    if (field) { field.addEventListener('input', checkChanges); field.addEventListener('change', checkChanges); }
+  });
+  if (btnSave) btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
+  const btnToggle = $('#btnToggleCafeStatus', el);
+  if (btnToggle) btnToggle.onclick = () => confirmToggleState(!isOpen, btnToggle);
 }
 
 /* ============================================================
