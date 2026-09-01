@@ -95,6 +95,26 @@
   .grid.grid-2 { grid-template-columns: 1fr; gap: var(--sp-3); }
   .admin-table td { flex-wrap: wrap; gap: 6px; }
 
+  /* Mejora responsive para mis 6 áreas: Pagos, Ventas, Config, Productos, Stock, Delivery - prioridad móvil 375-400px */
+  .grid.grid-3,
+  .grid.grid-4 {
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+  .input, textarea.input, select.input {
+    min-height: 44px;
+  }
+  .btn {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 40px;
+  }
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+  }
+
   /* Admin tables → cards on narrow screens */
   .admin-table thead { display: none; }
   .admin-table tbody { display: block; }
