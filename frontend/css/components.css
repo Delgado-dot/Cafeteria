@@ -459,12 +459,12 @@
 .stat-card.warning-card { border-top: 4px solid var(--warning); }
 .stat-card.danger-card { border-top: 4px solid var(--danger); }
 
-/* Tabs admin (adv-tabs / category-chip) */
-.adv-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; }
+/* Tabs admin (adv-tabs / category-chip) - glassmorphism sutil en pestañas inactivas */
+.adv-tabs { display: flex; gap: 10px; overflow-x: auto; padding: 8px; margin-bottom: 20px; background: rgba(255,255,255,0.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: var(--r-lg); box-shadow: 0 2px 12px rgba(16,30,29,0.05); }
 .adv-tabs .category-chip { flex-shrink: 0; }
 .category-chip, .cat-chip {
   display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--r-pill);
-  background: var(--surface); border: 1.5px solid var(--border); font-size: var(--fs-md); font-weight: var(--fw-semibold);
+  background: rgba(255,255,255,0.68); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 1px 6px rgba(16,30,29,0.04); font-size: var(--fs-md); font-weight: var(--fw-semibold);
   color: var(--text-2); white-space: nowrap; transition: all var(--t-fast);
 }
 .category-chip .cc-ico, .cat-chip .cc-ico { font-size: 1.05rem; }
