@@ -825,45 +825,99 @@ function productFormModal(p) {
     image: p.image || ''
   } : null;
   let hasUnsavedChanges = false;
-  
+
+  function setFieldError(fieldId, msg) {
+    const field = $('#' + fieldId, ov);
+    const err = $('#' + fieldId + 'Err', ov);
+    if (field) field.classList.add('field-has-error');
+    if (err) err.textContent = msg || '';
+  }
+  function clearFieldError(fieldId) {
+    const field = $('#' + fieldId, ov);
+    const err = $('#' + fieldId + 'Err', ov);
+    if (field) field.classList.remove('field-has-error');
+    if (err) err.textContent = '';
+  }
+
   const ov = modal(`
-    <h3>${isEdit ? 'Editar' : 'Nuevo'} producto</h3>
-    <div style="margin:16px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Información básica</div></div>
-    <div class="field"><label class="label">Nombre</label><input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}"><div class="input-err-msg" id="pfNameErr"></div></div>
-    <div class="field"><label class="label">Categoría</label><select class="input" id="pfCat">${cats.map((c) => `<option ${isEdit && p.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-    <div class="field"><label class="label">Descripción</label><textarea class="input" id="pfDesc" rows="3">${isEdit ? esc(p.desc) : ''}</textarea></div>
-    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Precio y tiempo</div></div>
-    <div class="grid grid-2">
-      <div class="field"><label class="label">Precio ($)</label><input class="input" type="number" step="0.05" id="pfPrice" value="${isEdit ? p.price : ''}"><div class="input-err-msg" id="pfPriceErr"></div></div>
-      <div class="field"><label class="label">Stock</label><input class="input" type="number" id="pfStock" value="${isEdit ? p.stock : ''}"><div class="input-err-msg" id="pfStockErr"></div></div>
-    </div>
-    <div class="grid grid-2">
-      <div class="field"><label class="label">Tiempo prep (min)</label><input class="input" type="number" id="pfPrep" value="${isEdit ? p.prepMin : ''}"><div class="input-err-msg" id="pfPrepErr"></div></div>
-      <div class="field"><label class="label">Stock mínimo</label><input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}"><div class="input-err-msg" id="pfMinErr"></div></div>
-    </div>
-    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Disponibilidad</div></div>
-    <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
-      <label class="checkbox-row"><input type="checkbox" id="pfExtras" ${isEdit && p.allowExtras ? 'checked' : ''}> <b>Permitir adicionales/observaciones</b></label>
-      <div class="tiny muted" style="margin-left:26px;margin-top:4px">El cliente podrá agregar notas o extras al producto.</div>
-    </div>
-    ${isEdit ? `
-    <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
-      <label class="checkbox-row"><input type="checkbox" id="pfActive" ${p.available ? 'checked' : ''}> <b>Producto activo</b></label>
-      <div class="tiny muted" style="margin-left:26px;margin-top:4px">Desactiva para ocultar del menú sin eliminarlo.</div>
-    </div>
-    ` : ''}
-    <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Imagen</div></div>
-    <div class="field"><label class="label">Imagen del producto</label>
-      <div id="pfDropZone" style="border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:all var(--t-fast);position:relative">
-        <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
-          <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
-          <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
-          <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+    <div class="pf-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="pf-header-title">${isEdit ? 'Editar producto' : 'Nuevo producto'}</div>
+          <div class="tiny" style="color:rgba(255,255,255,.8)">${isEdit ? 'Actualiza la información del producto' : 'Registra un nuevo producto'}</div>
         </div>
-        <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
-        <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
+        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar">×</button>
       </div>
-      <input class="input" type="file" id="pfImage" accept="image/*" style="display:none">
+    </div>
+    <div class="pf-cols">
+      <div class="pf-left">
+        <div class="field" id="pfNameFld">
+          <label class="label">Nombre</label>
+          <input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}">
+          <div class="input-err-msg" id="pfNameErr"></div>
+        </div>
+        <div class="field" id="pfDescFld">
+          <label class="label">Descripción</label>
+          <textarea class="input" id="pfDesc" rows="3">${isEdit ? esc(p.desc) : ''}</textarea>
+          <div class="input-err-msg" id="pfDescErr"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field" id="pfPriceFld">
+            <label class="label">Precio ($)</label>
+            <input class="input" type="number" step="0.05" id="pfPrice" value="${isEdit ? p.price : ''}">
+            <div class="input-err-msg" id="pfPriceErr"></div>
+          </div>
+          <div class="field" id="pfCatFld">
+            <label class="label">Categoría</label>
+            <select class="input" id="pfCat">${cats.map((c) => `<option ${isEdit && p.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field" id="pfPrepFld">
+            <label class="label">Tiempo prep (min)</label>
+            <input class="input" type="number" id="pfPrep" value="${isEdit ? p.prepMin : ''}">
+            <div class="input-err-msg" id="pfPrepErr"></div>
+          </div>
+          <div class="field" id="pfStockFld">
+            <label class="label">Stock</label>
+            <input class="input" type="number" id="pfStock" value="${isEdit ? p.stock : ''}">
+            <div class="input-err-msg" id="pfStockErr"></div>
+          </div>
+        </div>
+        <div class="field" id="pfMinFld">
+          <label class="label">Stock mínimo</label>
+          <input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}">
+          <div class="input-err-msg" id="pfMinErr"></div>
+        </div>
+        <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
+          <label class="checkbox-row"><input type="checkbox" id="pfExtras" ${isEdit && p.allowExtras ? 'checked' : ''}> <b>Permitir adicionales/observaciones</b></label>
+          <div class="tiny muted" style="margin-left:26px;margin-top:4px">El cliente podrá agregar notas o extras al producto.</div>
+        </div>
+        ${isEdit ? `
+        <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
+          <div class="pf-switch-label">
+            <label class="switch"><input type="checkbox" id="pfActive" ${p.available ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label>
+            <span style="font-weight:600">Producto activo</span>
+          </div>
+          <div class="tiny muted" style="margin-left:36px;margin-top:4px">Desactiva para ocultar del menú sin eliminarlo.</div>
+        </div>
+        ` : ''}
+      </div>
+      <div class="pf-right">
+        <div class="field">
+          <label class="label">Imagen del producto</label>
+          <div id="pfDropZone" style="border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:all var(--t-fast);position:relative">
+            <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
+              <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
+              <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+            </div>
+            <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
+            <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
+          </div>
+          <input class="input" type="file" id="pfImage" accept="image/*" style="display:none">
+        </div>
+      </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
@@ -873,7 +927,7 @@ function productFormModal(p) {
   const btnSave = $('#btnSaveProduct', ov);
   const fields = ['pfName', 'pfCat', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin', 'pfDesc', 'pfExtras'];
   if (isEdit) fields.push('pfActive');
-  
+
   const checkChanges = () => {
     if (!isEdit || !originalValues) return;
     const currentValues = {
@@ -895,8 +949,8 @@ function productFormModal(p) {
     btnSave.disabled = !hasUnsavedChanges;
     btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
   };
-  
-fields.forEach(id => {
+
+  fields.forEach(id => {
     const field = $('#' + id, ov);
     if (field) {
       field.addEventListener('input', checkChanges);
@@ -939,6 +993,14 @@ fields.forEach(id => {
     if (pfImagePreview.getAttribute('src')) { showPreview(pfImagePreview.getAttribute('src')); }
   }
 
+  ['pfName', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin'].forEach(id => {
+    const field = $('#' + id, ov);
+    if (field) {
+      field.addEventListener('input', () => clearFieldError(id));
+      field.addEventListener('change', () => clearFieldError(id));
+    }
+  });
+
   $('[data-cancel]', ov).onclick = () => ov.remove();
   btnSave.onclick = () => {
     const name = $('#pfName', ov).value.trim();
@@ -947,17 +1009,20 @@ fields.forEach(id => {
     const prep = parseInt($('#pfPrep', ov).value);
     const mn = parseInt($('#pfMin', ov).value);
     let ok = true;
-    if (!name) { $('#pfNameErr', ov).textContent = 'El nombre es obligatorio.'; ok = false; }
-    if (isNaN(price) || price <= 0) { $('#pfPriceErr', ov).textContent = 'Precio inválido.'; ok = false; }
-    if (isNaN(stock) || stock < 0) { $('#pfStockErr', ov).textContent = 'Stock inválido.'; ok = false; }
-    if (isNaN(prep) || prep <= 0) { $('#pfPrepErr', ov).textContent = 'Tiempo inválido.'; ok = false; }
-    if (isNaN(mn) || mn < 0) { $('#pfMinErr', ov).textContent = 'Stock mínimo inválido.'; ok = false; }
+
+    ['pfName', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin'].forEach(clearFieldError);
+
+    if (!name) { setFieldError('pfName', 'Requerido'); ok = false; }
+    if (isNaN(price) || price <= 0) { setFieldError('pfPrice', 'Requerido'); ok = false; }
+    if (isNaN(stock) || stock < 0) { setFieldError('pfStock', 'Requerido'); ok = false; }
+    if (isNaN(prep) || prep <= 0) { setFieldError('pfPrep', 'Requerido'); ok = false; }
+    if (isNaN(mn) || mn < 0) { setFieldError('pfMin', 'Requerido'); ok = false; }
     if (!ok) return;
-    
+
     const originalText = btnSave.innerHTML;
     btnSave.disabled = true;
     btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
-    
+
     setTimeout(() => {
       const products = Store.products;
       const allowExtras = $('#pfExtras', ov).checked;
@@ -972,11 +1037,11 @@ fields.forEach(id => {
         toast('Producto creado.', 'success');
       }
       Store.products = products;
-      
+
       btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
       btnSave.classList.add('btn-success');
       btnSave.classList.remove('btn-primary');
-      
+
       setTimeout(() => {
         ov.remove();
         renderBarAdmin('products');

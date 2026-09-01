@@ -426,10 +426,38 @@
 
 .revert-btn { position: relative; display: inline-flex; }
 
+/* ---------- Product form 2-column layout ---------- */
+.pf-header {
+  background: #40807E;
+  color: #fff;
+  padding: 20px 24px;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  margin: -24px -24px 20px -24px;
+}
+.pf-header-title { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+.pf-cols {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--sp-5);
+}
+.pf-right { display: flex; flex-direction: column; }
+@media (max-width: 768px) {
+  .pf-cols { grid-template-columns: 1fr; }
+  .pf-header { margin: -24px -24px 16px -24px; }
+}
+
+/* ---------- Product form validation ---------- */
+.field-has-error .input { border-color: var(--danger); box-shadow: 0 0 0 3.5px rgba(217, 75, 75, 0.12); }
+.field-has-error .input-err-msg { color: var(--danger); font-size: var(--fs-xs); margin-top: 5px; display: block; }
+
+/* ---------- Switch toggle for product form ---------- */
+.pf-switch-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
+.pf-switch-label .switch { flex-shrink: 0; }
+
 /* ============================================================
-   13. LEGACY ADMIN COMPAT � mapea markup hist�rico de admin.js
-       y devadmin.js a los tokens del sistema de dise�o v2
-   ============================================================ */
+    13. LEGACY ADMIN COMPAT — mapea marcado histórico de admin.js
+        y devadmin.js a los tokens del sistema de diseño v2
+    ============================================================ */
 
 /* Banners de estado (status-banner ? alert) */
 .status-banner { display: inline-flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-md); font-size: var(--fs-md); line-height: 1.45; border: 1px solid transparent; margin-bottom: 18px; }
