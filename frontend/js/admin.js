@@ -172,7 +172,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="barHamburger" title="Menú">☰</button>
+          <button class="hamburger" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
           <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
           <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -196,14 +196,29 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   renderCafePill($('#cafePill'));
 
   const sidebar = $('.admin-sidebar', app);
+  const barHamburger = $('#barHamburger', app);
+  const updateHamburgerIcon = () => {
+    if (!barHamburger) return;
+    const isCollapsed = sidebar?.classList.contains('collapsed');
+    barHamburger.innerHTML = `<i class="bx ${isCollapsed ? 'bx-chevron-right' : 'bx-chevron-left'}"></i>`;
+    barHamburger.title = isCollapsed ? 'Expandir menú' : 'Colapsar menú';
+  };
+  if (localStorage.getItem('int_sidebar_collapsed') === 'true' && window.innerWidth > 900) sidebar?.classList.add('collapsed');
+  updateHamburgerIcon();
   const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
-  $('#barHamburger')?.addEventListener('click', () => {
-    sidebar?.classList.add('open');
-    if (!$('.sb-scrim')) {
-      const scrim = document.createElement('div');
-      scrim.className = 'sb-scrim';
-      scrim.addEventListener('click', closeSidebar);
-      document.body.appendChild(scrim);
+  barHamburger?.addEventListener('click', () => {
+    if (window.innerWidth <= 900) {
+      sidebar?.classList.add('open');
+      if (!$('.sb-scrim')) {
+        const scrim = document.createElement('div');
+        scrim.className = 'sb-scrim';
+        scrim.addEventListener('click', closeSidebar);
+        document.body.appendChild(scrim);
+      }
+    } else {
+      sidebar?.classList.toggle('collapsed');
+      localStorage.setItem('int_sidebar_collapsed', sidebar?.classList.contains('collapsed'));
+      updateHamburgerIcon();
     }
   });
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
