@@ -199,6 +199,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   renderCafePill($('#cafePill'));
 
   const sidebar = $('.admin-sidebar', app);
+  const layout = $('.admin-layout', app);
   const barHamburger = $('#barHamburger', app);
   const updateHamburgerIcon = () => {
     if (!barHamburger) return;
@@ -208,10 +209,11 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   };
   if (localStorage.getItem('int_sidebar_collapsed') === 'true' && window.innerWidth > 900) sidebar?.classList.add('collapsed');
   updateHamburgerIcon();
-  const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
+  const closeSidebar = () => { sidebar?.classList.remove('open'); layout?.classList.remove('sidebar-push'); $('.sb-scrim')?.remove(); };
   barHamburger?.addEventListener('click', () => {
     if (window.innerWidth <= 900) {
       sidebar?.classList.add('open');
+      layout?.classList.add('sidebar-push');
       if (!$('.sb-scrim')) {
         const scrim = document.createElement('div');
         scrim.className = 'sb-scrim';
