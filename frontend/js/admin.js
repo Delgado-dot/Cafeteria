@@ -767,10 +767,10 @@ function barProducts(el) {
     tbody.innerHTML = list.map((p) => `
       <tr>
         <td data-label="Producto"><div style="display:flex;align-items:center;gap:10px;min-width:0"><img style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:180px"><div class="bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.desc)}">${esc(p.desc)}</div></div></div></td>
-        <td data-label="Categoría">${esc(p.category)}</td>
-        <td class="bold tabular-nums" data-label="Precio">${money(p.price)}</td>
+        <td data-label="Categoría"><span>${esc(p.category)}</span></td>
+        <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
         <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.minStock ? '· bajo' : ''}</span></td>
-        <td data-label="Prep">${p.prepMin} min</td>
+        <td data-label="Prep"><span>${p.prepMin} min</span></td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
             <div style="display:flex;align-items:center;gap:8px">
@@ -1031,9 +1031,9 @@ function barStock(el) {
       return `<tr>
         <td data-label="Producto"><div class="bold" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div></td>
         <td data-label="Stock actual"><div class="stock-line"><b class="tabular-nums">${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
-        <td data-label="Stock mínimo" class="tabular-nums">${p.minStock}</td>
+        <td data-label="Stock mínimo"><span class="tabular-nums">${p.minStock}</span></td>
         <td data-label="Estado">${stockBadge(p)}</td>
-        <td data-label="Última actualización">${h ? `${h.time} ${h.date}` : '—'}</td>
+        <td data-label="Última actualización"><span>${h ? `${h.time} ${h.date}` : '—'}</span></td>
         <td data-label="Acciones">
             <div style="display:flex;align-items:center;gap:8px">
               <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--success);border-color:var(--success)">
@@ -1136,11 +1136,11 @@ function barStockHistory(el) {
         const deltaClass = h.delta > 0 ? 'stock-delta-positive' : 'stock-delta-negative';
         return `
           <tr>
-            <td data-label="Fecha/hora" class="small" style="text-align:right; white-space:nowrap;">${h.time}</td>
-            <td data-label="Producto">${esc(h.name)}</td>
+            <td data-label="Fecha/hora"><span class="small" style="white-space:nowrap;">${h.time}</span></td>
+            <td data-label="Producto"><span>${esc(h.name)}</span></td>
             <td data-label="Tipo"><span class="badge ${typeBadge}">${typeIcon} ${type}</span></td>
-            <td data-label="Cantidad" class="bold tabular-nums ${deltaClass}">${h.delta > 0 ? '+' : ''}${h.delta}</td>
-            <td data-label="Stock resultante" class="tabular-nums">${h.newVal}</td>
+            <td data-label="Cantidad"><span class="bold tabular-nums ${deltaClass}">${h.delta > 0 ? '+' : ''}${h.delta}</span></td>
+            <td data-label="Stock resultante"><span class="tabular-nums">${h.newVal}</span></td>
           </tr>
         `;
       }).join('')}
@@ -1216,12 +1216,12 @@ function barPayments(el) {
         const isVisited = lastVisitedPaymentId === o.id;
         return `
         <tr class="${isVisited ? 'visited-row' : ''}" data-order-id="${o.id}">
-          <td class="bold" data-label="Pedido">#${o.id}</td>
-          <td data-label="Usuario">${esc(o.userName)}</td>
+          <td data-label="Pedido"><span class="bold">#${o.id}</span></td>
+          <td data-label="Usuario"><span>${esc(o.userName)}</span></td>
           <td data-label="Método"><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
-          <td class="bold tabular-nums" data-label="Total">${money(o.total)}</td>
+          <td data-label="Total"><span class="bold tabular-nums">${money(o.total)}</span></td>
           <td data-label="Estado"><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
-          <td class="small muted" data-label="Fecha">${o.date} ${o.time || '—'}</td>
+          <td data-label="Fecha"><span class="small muted">${o.date} ${o.time || '—'}</span></td>
           <td data-label="Acciones">
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
@@ -1584,7 +1584,7 @@ function barSalesHistory(el) {
     if (!tbodyEl) return;
     const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
     tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
-      <tr><td class="small" data-label="Fecha/hora">${o.date} ${o.time || '—'}</td><td class="bold" data-label="Pedido">#${o.id}</td><td class="bold tabular-nums" data-label="Monto">${money(o.total)}</td><td data-label="Método pago">${paymentMethodLabel(o.payment)}</td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
+      <tr><td data-label="Fecha/hora"><span class="small">${o.date} ${o.time || '—'}</span></td><td data-label="Pedido"><span class="bold">#${o.id}</span></td><td data-label="Monto"><span class="bold tabular-nums">${money(o.total)}</span></td><td data-label="Método pago"><span>${paymentMethodLabel(o.payment)}</span></td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
   };
 
   renderSkeletonRows();
