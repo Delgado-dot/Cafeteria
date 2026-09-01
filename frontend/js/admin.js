@@ -10,6 +10,8 @@ const BAR_SECTIONS = {
   payments: { label: 'Pagos', icon: 'bx-credit-card' },
   'sales-dashboard': { label: 'Ventas', icon: 'bx-line-chart' },
   delivery: { label: 'Delivery', icon: 'bx-cycling' },
+  suppliers: { label: 'Proveedores', icon: 'bx-store' },
+  reports: { label: 'Informes', icon: 'bx-bar-chart-alt-2' },
   'config-hours': { label: 'Configuración', icon: 'bx-cog' },
 };
 
@@ -242,6 +244,8 @@ const renderers = {
     'sales-dashboard': (target) => barSalesTabs(target, 'summary'),
     'sales-history': (target) => barSalesTabs(target, 'history'),
     delivery: barDelivery,
+    suppliers: barSuppliers,
+    reports: barReports,
     'config-hours': (target) => barConfigTabs(target, 'hours'),
     'config-status': (target) => barConfigTabs(target, 'status'),
   };
@@ -326,36 +330,6 @@ function barConfigTabs(el, initialTab) {
         <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)"><b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
       </div>
     </div>
-    <div class="card" style="margin-top:var(--sp-5)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-        <div style="font-size:var(--fs-sm);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)"><i class="bx bx-store" style="margin-right:6px"></i>Proveedores</div>
-        <button class="btn btn-primary btn-sm" id="btnAddSupplier"><i class="bx bx-plus" style="margin-right:4px"></i>Agregar proveedor</button>
-      </div>
-      <div id="suppliersList"></div>
-    </div>
-    <div class="card" style="margin-top:var(--sp-5)">
-      <div style="margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)"><i class="bx bx-bar-chart-alt-2" style="margin-right:6px"></i>Informes</div></div>
-      <div class="grid grid-3" style="gap:12px">
-        <div class="stat-card" style="padding:16px;text-align:center">
-          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-line-chart"></i></div>
-          <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
-          <div class="tiny muted" style="margin-bottom:12px">Resumen de ventas por período</div>
-          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
-        </div>
-        <div class="stat-card" style="padding:16px;text-align:center">
-          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-box"></i></div>
-          <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
-          <div class="tiny muted" style="margin-bottom:12px">Movimientos y existencias</div>
-          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
-        </div>
-        <div class="stat-card" style="padding:16px;text-align:center">
-          <div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-credit-card"></i></div>
-          <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
-          <div class="tiny muted" style="margin-bottom:12px">Estado de pagos y cobros</div>
-          <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
-        </div>
-      </div>
-    </div>
   `;
 
   const btnSave = $('#btnSaveConfigHours', el);
@@ -380,13 +354,21 @@ function barConfigTabs(el, initialTab) {
   if (btnSave) btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
   const btnToggle = $('#btnToggleCafeStatus', el);
   if (btnToggle) btnToggle.onclick = () => confirmToggleState(!isOpen, btnToggle);
+}
 
-  const renderSuppliers = () => {
+function barSuppliers(el) {
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-store"></span> Proveedores</h1><button class="btn btn-primary btn-sm" id="btnAddSupplierPage"><i class="bx bx-plus" style="margin-right:4px"></i>Agregar proveedor</button></div>
+    <div class="card">
+      <div id="suppliersListPage"></div>
+    </div>
+  `;
+  const renderSuppliersPage = () => {
     const list = Store.suppliers;
-    const wrap = $('#suppliersList', el);
+    const wrap = $('#suppliersListPage', el);
     if (!wrap) return;
     if (!list.length) {
-      wrap.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-3)">Aún no hay proveedores. ¡Agrega el primero!</div>`;
+      wrap.innerHTML = `<div style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-store"></i></div><div style="font-weight:600">Aún no hay proveedores</div><div class="tiny muted" style="margin-top:4px">¡Agrega el primero para tener tus contactos a mano!</div></div>`;
       return;
     }
     wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${list.map(s => `
@@ -404,19 +386,46 @@ function barConfigTabs(el, initialTab) {
         </div>
       </div>
     `).join('')}</div>`;
-    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = () => supplierFormModal(Store.suppliers.find(x => x.id === b.dataset.editSupplier), renderSuppliers));
+    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = () => supplierFormModal(Store.suppliers.find(x => x.id === b.dataset.editSupplier), renderSuppliersPage));
     $$('[data-del-supplier]', wrap).forEach(b => b.onclick = () => {
       const sup = Store.suppliers.find(x => x.id === b.dataset.delSupplier);
       confirmDialog('Eliminar proveedor', `¿Eliminar a ${esc(sup?.name || '')}?`, 'Eliminar', true).then(ok => {
         if (!ok) return;
         Store.suppliers = Store.suppliers.filter(x => x.id !== b.dataset.delSupplier);
         toast('Proveedor eliminado', 'success');
-        renderSuppliers();
+        renderSuppliersPage();
       });
     });
   };
-  renderSuppliers();
-  $('#btnAddSupplier', el)?.addEventListener('click', () => supplierFormModal(null, renderSuppliers));
+  renderSuppliersPage();
+  $('#btnAddSupplierPage', el)?.addEventListener('click', () => supplierFormModal(null, renderSuppliersPage));
+}
+
+function barReports(el) {
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-bar-chart-alt-2"></span> Informes</h1></div>
+    <p class="page-sub" style="margin-bottom:16px">Descarga reportes listos para compartir. Por ahora en modo vista previa.</p>
+    <div class="grid grid-3" style="gap:14px">
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
+        <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
+        <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
+        <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+    </div>
+  `;
 }
 
 function supplierFormModal(supplier, onSave) {
