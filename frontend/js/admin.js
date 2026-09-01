@@ -389,6 +389,9 @@ function barOrders(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span></div>
+    <div style="display:flex;justify-content:flex-end;margin:12px 0">
+      <button class="btn btn-primary btn-sm" id="btnConfirmAllReady" ${ready.length ? '' : 'disabled style="opacity:0.6;pointer-events:none"'}><i class="bx bx-check-double" style="margin-right:6px"></i>Confirmar todos los pedidos listos${ready.length ? ` (${ready.length})` : ''}</button>
+    </div>
     <div class="adv-tabs">
       <button class="category-chip active" data-tab="queue">En cola (${queue.length})</button>
       <button class="category-chip" data-tab="prep">En preparación (${prep.length})</button>
@@ -411,6 +414,23 @@ function barOrders(el) {
       $$('[data-tab]', el).forEach((x) => x.classList.remove('active'));
       t.classList.add('active'); tab = t.dataset.tab; render();
     };
+  });
+  $('#btnConfirmAllReady', el)?.addEventListener('click', () => {
+    const readyOrders = Store.orders.filter((o) => o.status === 'ready');
+    if (!readyOrders.length) return;
+    confirmDialog('Confirmar entrega en lote', `¿Confirmar que se entregaron los ${readyOrders.length} pedidos listos?`, `Confirmar ${readyOrders.length} entregas`).then((ok) => {
+      if (!ok) return;
+      readyOrders.forEach((order) => {
+        order.status = 'delivered';
+        order.eta = 'Entregado';
+        if (order.paymentStatus === 'pending') order.paymentStatus = 'paid';
+        if (order.delivery === 'delivery') logAudit('Entregó pedido', order.id);
+      });
+      saveOrders();
+      logAudit('Entrega en lote', `${readyOrders.length} pedidos marcados como entregados`);
+      toast(`${readyOrders.length} pedidos marcados como entregados`, 'success');
+      renderBarAdmin('orders');
+    });
   });
   render();
 }
