@@ -212,13 +212,32 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
 
   const sidebar = $('.admin-sidebar', app);
   const layout = $('.admin-layout', app);
+  const updateTogglePosition = () => {
+    if (!sidebar || !barHamburger) return;
+    // Posiciona el toggle "mordiendo" el borde derecho del sidebar según su ancho real
+    if (window.innerWidth <= 768) {
+      if (sidebar.classList.contains('open')) {
+        barHamburger.style.left = (sidebar.offsetWidth - 19) + 'px';
+      } else {
+        barHamburger.style.left = '16px';
+      }
+    } else {
+      // Escritorio: colapsado 72px → left 53px, expandido 264px → left 245px (usa offsetWidth real)
+      barHamburger.style.left = (sidebar.offsetWidth - 19) + 'px';
+    }
+  };
   const updateHamburgerIcon = () => {
     if (!barHamburger) return;
-    const isOpen = sidebar?.classList.contains('open');
-    barHamburger.innerHTML = `<i class="bx ${isOpen ? 'bx-chevron-left' : 'bx-chevron-right'}"></i>`;
-    barHamburger.title = isOpen ? 'Cerrar menú' : 'Abrir menú';
+    let isActive;
+    if (window.innerWidth <= 768) {
+      isActive = sidebar?.classList.contains('open');
+    } else {
+      isActive = !sidebar?.classList.contains('collapsed');
+    }
+    barHamburger.innerHTML = `<i class="bx ${isActive ? 'bx-chevron-left' : 'bx-chevron-right'}"></i>`;
+    barHamburger.title = isActive ? (window.innerWidth <= 768 ? 'Cerrar menú' : 'Colapsar menú') : (window.innerWidth <= 768 ? 'Abrir menú' : 'Expandir menú');
   };
-  // Móvil (<768px): oculto por defecto, sin persistencia. Escritorio: siempre visible fijo
+  // Móvil (<768px): oculto por defecto. Escritorio: expandido por defecto (respeta colapsado si había)
   if (window.innerWidth <= 768) {
     sidebar?.classList.remove('open');
     layout?.classList.remove('sidebar-push');
@@ -226,16 +245,23 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
     if (scrim) scrim.remove();
   } else {
     sidebar?.classList.remove('open');
-    sidebar?.classList.remove('collapsed');
     layout?.classList.remove('sidebar-push');
+    // Opcional: restaura colapsado previo si se desea persistencia
+    // if (localStorage.getItem('int_sidebar_collapsed') === 'true') sidebar?.classList.add('collapsed');
   }
   updateHamburgerIcon();
+  updateTogglePosition();
   const closeSidebar = () => {
-    sidebar?.classList.remove('open');
+    if (window.innerWidth <= 768) {
+      sidebar?.classList.remove('open');
+    } else {
+      // En escritorio, cerrar no oculta, solo asegura estado consistente
+    }
     layout?.classList.remove('sidebar-push');
     const scrim = $('.sb-scrim');
     if (scrim) scrim.remove();
     updateHamburgerIcon();
+    updateTogglePosition();
   };
   // Evita duplicación de listeners: onclick sobrescribe en cada render pero el botón es singleton
   barHamburger.onclick = () => {
@@ -253,9 +279,19 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
           document.body.appendChild(scrim);
         }
         updateHamburgerIcon();
+        updateTogglePosition();
       }
+    } else {
+      sidebar?.classList.toggle('collapsed');
+      updateHamburgerIcon();
+      updateTogglePosition();
     }
   };
+  // Mantiene posición correcta al redimensionar ventana
+  window.addEventListener('resize', () => {
+    updateTogglePosition();
+    updateHamburgerIcon();
+  });
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault(); closeSidebar(); setRoute('adminbar/' + a.dataset.bar);
   }));

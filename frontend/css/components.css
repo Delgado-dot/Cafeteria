@@ -285,7 +285,7 @@
   cursor: pointer;
   z-index: 200;
   box-shadow: 0 4px 14px rgba(16,30,29,0.24);
-  transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+  transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast), left var(--t-med);
 }
 .sidebar-toggle:hover {
   background: var(--primary-hover);

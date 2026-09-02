@@ -40,7 +40,7 @@
 }
 
 /* ============================================================
-   Admin sidebar - ESCRITORIO (≥769px): fijo siempre visible, sin toggle
+   Admin sidebar - ESCRITORIO (≥769px): fijo, colapsable, toggle sigue borde derecho
    ============================================================ */
 @media (min-width: 769px) {
   .admin-sidebar {
@@ -48,8 +48,8 @@
     width: var(--sidebar-w) !important;
     transform: none !important;
   }
-  .sidebar-toggle {
-    display: none !important;
+  .admin-sidebar.collapsed {
+    width: 72px !important;
   }
 }
 
@@ -67,9 +67,8 @@
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  /* Toggle fixed centrado verticalmente — posición fija en viewport, no se mueve con animación */
+  /* Toggle sigue borde derecho del sidebar (posicionado vía JS con offsetWidth) */
   .sidebar-toggle {
-    left: 16px !important;
     right: auto !important;
   }
   .admin-main {
