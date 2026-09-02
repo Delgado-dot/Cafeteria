@@ -12,6 +12,9 @@
   --primary-soft: #e7f1f0;
   --primary-softer: #f2f8f7;
   --primary-glass: rgba(64, 128, 126, 0.12);
+  --primary-very-light: #E8F3F1;
+  --primary-light: #7FB5AE;
+  --primary-mid: #5AA9A5;
   --on-primary: #ffffff;
 
   /* Superficies y texto */
@@ -137,6 +140,7 @@ h4 { font-size: var(--fs-md); }
 .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -491,9 +495,42 @@ tbody tr:hover { background: var(--primary-softer); }
   padding: 12px; box-shadow: var(--shadow-sm);
 }
 
+/* Tipografía del login, aislada del resto de shells. */
+.login-screen { font-family: "Arvo", serif; }
+.login-screen h1,
+.login-screen h2,
+.login-screen h3 { font-family: "Playfair Display", serif; }
+
 @media (max-width: 900px) {
   .login-screen { padding: var(--sp-5); }
   .login-brand { padding: var(--sp-5) var(--sp-3); margin-bottom: var(--sp-4); }
   .login-brand h1 { font-size: var(--fs-2xl); }
   .login-brand p { font-size: var(--fs-md); }
 }
+
+/* ============================================================
+   PANEL ADMIN BAR (integración Delgado) — estilos scoped
+   Estas reglas SOLO afectan al área admin (.is-admin / .admin-*),
+   NO al login, landing ni panel del cliente.
+   ============================================================ */
+body.is-admin { font-family: 'DM Sans', var(--font); }
+body.is-admin h1,
+body.is-admin .page-title h1,
+body.is-admin .admin-topbar .tb-title { font-family: 'Berkshire Swash', cursive; font-weight: 400; letter-spacing: 0.02em; }
+body.is-admin .btn,
+body.is-admin .badge,
+body.is-admin .status-chip,
+body.is-admin .priority-tag,
+body.is-admin .sb-badge,
+body.is-admin .category-chip,
+body.is-admin .cat-chip,
+body.is-admin .status-banner { font-family: 'Lobster', cursive; font-weight: 400; letter-spacing: 0.02em; }
+body.is-admin .btn { letter-spacing: 0.03em; }
+
+/* Admin bar: las fuentes de Delgado de body.is-admin y sus componentes específicos prevalecen. */
+body.is-adminbar .admin-content { font-family: "Arvo", serif; }
+body.is-adminbar .admin-content h2,
+body.is-adminbar .admin-content h3,
+body.is-adminbar .admin-content .card-title,
+body.is-adminbar .admin-content .section-title { font-family: "Playfair Display", serif; }
+

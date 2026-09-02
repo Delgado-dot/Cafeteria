@@ -57,22 +57,28 @@ async function main() {
   // 1. Initial load => Landing
   ok(!!document.querySelector('.landing'), 'Landing renderizado al cargar sin sesión');
   ok(!!document.querySelector('.lp-hero'), 'Hero presente en Landing');
-  ok(!!document.querySelector('.lp-header'), 'Header presente en Landing');
-  ok(!!document.querySelector('.lp-footer'), 'Footer presente en Landing');
+  ok(!document.querySelector('.lp-header'), 'Header/navbar eliminado de Landing');
+  ok(!!document.querySelector('.lp-topbar .lp-brand-mark'), 'Logo visible sin header tradicional');
+  ok(!!document.querySelector('.lp-topbar [data-lp-login]'), 'Acceder visible en la esquina superior');
+  ok(document.querySelector('link[href*="family=Arvo"]'), 'Arvo importada');
+  ok(document.querySelector('link[href*="family=Playfair"]'), 'Playfair Display importada');
+  ok(!!document.querySelector('.lp-footer-strip'), 'Footer presente en Landing');
   ok(!!document.getElementById('about'), 'Sección presentación presente');
   ok(!!document.getElementById('how'), 'Sección cómo funciona presente');
   ok(!!document.getElementById('hours'), 'Sección horarios presente');
   ok(!!document.getElementById('menu'), 'Sección menú preview presente');
-  ok(!!document.getElementById('capacity'), 'Sección capacidad presente');
-  ok(!!document.getElementById('delivery'), 'Sección delivery presente');
+  ok(!document.getElementById('capacity'), 'Sección capacidad eliminada');
+  ok(!document.getElementById('delivery'), 'Sección delivery eliminada');
+  ok(!document.querySelector('.landing').textContent.includes('Pedidos organizados para evitar esperas'), 'Contenido de capacidad eliminado');
+  ok(!document.querySelector('.landing').textContent.includes('Recibe tu pedido dentro del instituto'), 'Contenido de delivery eliminado');
   ok(!!document.getElementById('cta'), 'Sección CTA final presente');
   ok(document.querySelectorAll('.lp-product').length === 4, '4 productos en vista previa del menú');
 
-  // Sin emojis / pictogramas en el DOM del Landing (usar iconos SVG simples)
+  // Sin emojis / pictogramas en el DOM del Landing (usar Boxicons)
   const landingText = document.querySelector('.landing').textContent;
   const emojiRe = /[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\uFE0F]|[\u2600-\u27BF]/;
-  ok(!emojiRe.test(landingText), 'Landing sin emojis ni pictogramas (iconos SVG)');
-  ok(document.querySelectorAll('.landing svg').length >= 20, 'Landing usa iconos SVG (' + document.querySelectorAll('.landing svg').length + ')');
+  ok(!emojiRe.test(landingText), 'Landing sin emojis ni pictogramas (Boxicons)');
+  ok(document.querySelectorAll('.landing i.bx').length >= 20, 'Landing usa Boxicons (' + document.querySelectorAll('.landing i.bx').length + ')');
 
   // ACCEDER => login
   clickLogin();
