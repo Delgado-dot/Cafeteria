@@ -1412,10 +1412,22 @@ function barPayments(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+    <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(135deg,var(--primary-soft),var(--surface));border-left:4px solid var(--primary)">
+      <div>
+        <div class="tiny muted" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Resumen de hoy — ${today}</div>
+        <div style="font-size:2.4rem;font-weight:800;color:var(--primary-strong);line-height:1">${money(totalToday)}</div>
+        <div class="tiny muted" style="margin-top:4px">${validToday.length} pagos válidos · ${pct(byMethod.efectivo)}% Efectivo · ${pct(byMethod.deuna)}% DEUNA · ${pct(byMethod.transferencia)}% Transferencia</div>
+      </div>
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0"><i class="bx bx-wallet"></i></div>
+    </div>
     <div class="grid grid-3" style="margin-bottom:16px">
       <div class="stat-card"><span class="stat-ico bx bx-money success" style="font-size:2.4rem"></span><div class="st-label">Efectivo</div><div class="st-value">${money(byMethod.efectivo)}</div><div class="st-sub">${pct(byMethod.efectivo)}% del total · ${money(totalToday)} hoy</div></div>
       <div class="stat-card"><span class="stat-ico bx bx-mobile-alt primary" style="font-size:2.4rem"></span><div class="st-label">DEUNA</div><div class="st-value primary">${money(byMethod.deuna)}</div><div class="st-sub">${pct(byMethod.deuna)}% del total</div></div>
       <div class="stat-card"><span class="stat-ico bx bx-transfer-alt" style="font-size:2.4rem;color:var(--info)"></span><div class="st-label">Transferencia</div><div class="st-value" style="color:var(--info)">${money(byMethod.transferencia)}</div><div class="st-sub">${pct(byMethod.transferencia)}% del total</div></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-outline btn-sm" data-quick="history"><i class="bx bx-history" style="margin-right:4px"></i>Historial de pagos</button>
+      <button class="btn btn-outline btn-sm" data-quick="refunded"><i class="bx bx-undo" style="margin-right:4px"></i>Reembolsos</button>
     </div>
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
@@ -1495,6 +1507,20 @@ function barPayments(el) {
     $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item === button));
     renderSkeletonRows();
     setTimeout(renderRows, 350);
+  });
+  $$('[data-quick]', el).forEach((btn) => btn.onclick = () => {
+    const q = btn.dataset.quick;
+    if (q === 'history') {
+      selectedFilter = 'all';
+      $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'all'));
+      renderSkeletonRows(); setTimeout(renderRows, 350);
+      toast('Historial completo de pagos', 'info');
+    } else if (q === 'refunded') {
+      selectedFilter = 'refunded';
+      $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'refunded'));
+      renderSkeletonRows(); setTimeout(renderRows, 350);
+      if (!orders.some((o) => o.paymentStatus === 'refunded')) toast('No hay reembolsos registrados', 'info');
+    }
   });
 }
 
