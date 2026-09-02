@@ -451,6 +451,12 @@ function syncBodyClass() {
   } else {
     document.body.classList.remove('has-bottom-nav', 'is-admin');
   }
+  // Limpia toggle de adminbar si ya no estamos en adminbar (position:fixed debe ser hijo de body, se elimina al salir)
+  if (!u || u.role !== 'adminbar') {
+    document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
+    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+    document.querySelectorAll('.admin-layout.sidebar-push').forEach((el) => el.classList.remove('sidebar-push'));
+  }
 }
 window.syncBodyClass = syncBodyClass;
 
