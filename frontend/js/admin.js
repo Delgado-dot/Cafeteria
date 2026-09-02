@@ -1529,6 +1529,12 @@ const days = [];
 </div>
 
     <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Ventas por hora (hoy)</h3>
+      <div id="salesHourChart" style="display:flex;align-items:flex-end;gap:8px;height:160px;padding:12px 8px 0;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)"></div>
+      <div class="tiny muted" style="margin-top:8px;text-align:center">Agrupado por franja horaria del día actual</div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
       <h3 style="margin-bottom:16px">Productos más vendidos</h3>
       ${topProducts.length ? `
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
@@ -1543,9 +1549,10 @@ const days = [];
         </div>` : `<div style="text-align:center;padding:24px 12px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-bar-chart-alt-2"></i></div><div style="font-weight:600">Aún no hay ventas registradas</div><div class="tiny muted" style="margin-top:4px">Cuando haya movimiento, verás aquí tus productos estrella</div></div>`}
     </div>
   `;
-animateSalesMetrics(el);
+  animateSalesMetrics(el);
   renderSalesLineChart(el, days);
   renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth);
+  renderSalesHourChart(el, todayOrders);
 }
 
 function renderSalesLineChart(el, days) {
@@ -1631,6 +1638,31 @@ function renderSalesLineChart(el, days) {
       if (point) point.setAttribute('r', '5');
     });
   });
+}
+
+function renderSalesHourChart(el, todayOrders) {
+  const container = $('#salesHourChart', el);
+  if (!container) return;
+  const hours = [7,9,11,13,15,17,19];
+  const totals = hours.map((h) => {
+    return todayOrders.filter((o) => {
+      const hour = parseInt((o.time || '0:0').split(':')[0], 10);
+      return hour >= h && hour < h + 2;
+    }).reduce((s, o) => s + o.total, 0);
+  });
+  const max = Math.max(...totals, 1);
+  container.innerHTML = hours.map((h, i) => {
+    const val = totals[i];
+    const pct = (val / max) * 100;
+    const height = Math.max(8, pct);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="font-size:10px;color:var(--text-3);font-weight:600">${money(val)}</div>
+      <div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end">
+        <div style="width:100%;height:${height}%;background:linear-gradient(180deg,var(--primary),var(--primary-hover));border-radius:6px 6px 0 0;transition:height 0.6s ease;min-height:${val ? '4px' : '0'}"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text-2)">${h}h</div>
+    </div>`;
+  }).join('');
 }
  
 function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth) {
