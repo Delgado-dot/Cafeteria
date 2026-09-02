@@ -397,6 +397,8 @@
 .stat-card.tone-success { border-top: 4px solid var(--success); }
 .stat-card.tone-warning { border-top: 4px solid var(--warning); }
 .stat-card.tone-danger { border-top: 4px solid var(--danger); }
+.stat-card { border-color: var(--primary-very-light); }
+.stat-card:hover { border-color: var(--primary-light); }
 
 /* ---------- Order queue (admin) ---------- */
 .queue-list { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
