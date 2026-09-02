@@ -459,15 +459,15 @@ function barSuppliers(el) {
       wrap.innerHTML = `<div style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-store"></i></div><div style="font-weight:600">Aún no hay proveedores</div><div class="tiny muted" style="margin-top:4px">¡Agrega el primero para tener tus contactos a mano!</div></div>`;
       return;
     }
-    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${list.map(s => `
-      <div class="stat-card" style="padding:12px;display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;flex-shrink:0">${esc(s.name.charAt(0).toUpperCase())}</div>
-        <div style="flex:1;min-width:0">
-          <div class="bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
-          <div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.type)} · <i class="bx bx-phone" style="font-size:11px"></i> ${esc(s.phone)}</div>
+    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map(s => `
+      <div class="stat-card" style="padding:12px;display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${esc(s.name.charAt(0).toUpperCase())}</div>
+        <div style="flex:1 1 0%;min-width:0;overflow:hidden">
+          <div class="bold" style="font-size:14px;line-height:1.2;white-space:normal;word-break:break-word;overflow:visible;text-overflow:clip">${esc(s.name)}</div>
+          <div class="tiny muted" style="white-space:normal;word-break:break-word;line-height:1.3">${esc(s.type)} · ${esc(s.phone)}</div>
         </div>
-        <span class="badge badge-success" style="flex-shrink:0">Activo</span>
-        <div style="display:flex;gap:6px;flex-shrink:0">
+        <span class="badge badge-success" style="flex-shrink:0;align-self:center">Activo</span>
+        <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:88px">
 	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone)}" title="Llamar"><i class="bx bx-phone"></i></a>
 	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc(s.phone.replace(/\D/g,""))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
 	         <button class="btn btn-icon-supplier" data-edit-supplier="${s.id}" title="Editar"><i class="bx bx-edit-alt"></i></button>
