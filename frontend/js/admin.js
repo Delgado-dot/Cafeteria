@@ -1291,9 +1291,21 @@ function barPayments(el) {
   ];
   let selectedFilter = 'all';
 
+  const today = new Date().toISOString().slice(0, 10);
+  const validToday = orders.filter((o) => o.date === today && isValidSale(o));
+  const totalToday = validToday.reduce((s, o) => s + o.total, 0);
+  const byMethod = { efectivo: 0, deuna: 0, transferencia: 0 };
+  validToday.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
+  const pct = (v) => totalToday ? Math.round((v / totalToday) * 100) : 0;
+
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+    <div class="grid grid-3" style="margin-bottom:16px">
+      <div class="stat-card"><span class="stat-ico bx bx-money success" style="font-size:2.4rem"></span><div class="st-label">Efectivo</div><div class="st-value">${money(byMethod.efectivo)}</div><div class="st-sub">${pct(byMethod.efectivo)}% del total · ${money(totalToday)} hoy</div></div>
+      <div class="stat-card"><span class="stat-ico bx bx-mobile-alt primary" style="font-size:2.4rem"></span><div class="st-label">DEUNA</div><div class="st-value primary">${money(byMethod.deuna)}</div><div class="st-sub">${pct(byMethod.deuna)}% del total</div></div>
+      <div class="stat-card"><span class="stat-ico bx bx-transfer-alt" style="font-size:2.4rem;color:var(--info)"></span><div class="st-label">Transferencia</div><div class="st-value" style="color:var(--info)">${money(byMethod.transferencia)}</div><div class="st-sub">${pct(byMethod.transferencia)}% del total</div></div>
+    </div>
     <div class="adv-tabs">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
     </div>
