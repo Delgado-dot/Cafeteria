@@ -56,36 +56,15 @@
 }
 
 /* ============================================================
-   Admin sidebar - MÓVIL (≤768px): oculto por defecto, drawer completo
+   Admin sidebar - MÓVIL (≤768px): sidebar y toggle eliminados, solo barra inferior
    ============================================================ */
 @media (max-width: 768px) {
-  .admin-sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 130;
-    width: var(--sidebar-w);
-    transform: translateX(-100%);
-    transition: transform var(--t-med);
-    box-shadow: var(--shadow-lg);
-  }
-  .admin-sidebar.open {
-    transform: translateX(0);
-  }
-  /* Toggle sigue borde derecho del sidebar (posicionado vía JS con offsetWidth) */
-  .sidebar-toggle {
-    right: auto !important;
-  }
+  .admin-sidebar,
+  .sidebar-toggle,
+  .sb-scrim { display: none !important; }
   .admin-main {
-    transition: transform 280ms ease-out, opacity 280ms ease-out;
     margin-left: 0 !important;
-  }
-  .admin-layout.sidebar-push .admin-main {
-    transform: translateX(var(--sidebar-w)) scale(0.95);
-    opacity: 0.88;
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .sb-scrim {
-    position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med);
+    transform: none !important;
   }
   .admin-bottom-nav { display: block; }
   .admin-content { padding-bottom: 80px; }

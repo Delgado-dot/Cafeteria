@@ -218,107 +218,16 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
 
   renderCafePill($('#cafePill'));
 
-  // Toggle como hijo directo de <body> para que position:fixed sea relativo al viewport real,
-  // fuera de cualquier ancestro con transform/filter/position que cree nuevo contexto (ej. .admin-sidebar con transform)
-  // Evita duplicación: solo crea UNA instancia aunque renderBarAdmin se ejecute en cada navegación
-  let barHamburger = document.getElementById('barHamburger');
-  if (!barHamburger) {
-    barHamburger = document.createElement('button');
-    barHamburger.className = 'sidebar-toggle';
-    barHamburger.id = 'barHamburger';
-    barHamburger.title = 'Abrir menú';
-    barHamburger.innerHTML = '<i class="bx bx-chevron-right"></i>';
-    document.body.appendChild(barHamburger);
-  }
+  // Limpieza: elimina toggle/flecha huérfano de arquitecturas anteriores (ya no se usa)
+  document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
+  document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
 
   const sidebar = $('.admin-sidebar', app);
   const layout = $('.admin-layout', app);
-  const updateTogglePosition = () => {
-    if (!sidebar || !barHamburger) return;
-    // Posiciona el toggle "mordiendo" el borde derecho del sidebar según su ancho fijo en CSS
-    // Usa valores fijos (72 colapsado → 53px, 264 expandido → 245px) en vez de offsetWidth para evitar valor obsoleto durante transición
-    const SIDEBAR_W = 264;
-    const SIDEBAR_COLLAPSED_W = 72;
-    if (window.innerWidth <= 768) {
-      if (sidebar.classList.contains('open')) {
-        barHamburger.style.left = (SIDEBAR_W - 19) + 'px'; // 245px
-      } else {
-        barHamburger.style.left = '16px';
-      }
-    } else {
-      if (sidebar.classList.contains('collapsed')) {
-        barHamburger.style.left = (SIDEBAR_COLLAPSED_W - 19) + 'px'; // 53px
-      } else {
-        barHamburger.style.left = (SIDEBAR_W - 19) + 'px'; // 245px
-      }
-    }
-  };
-  const updateHamburgerIcon = () => {
-    if (!barHamburger) return;
-    let isActive;
-    if (window.innerWidth <= 768) {
-      isActive = sidebar?.classList.contains('open');
-    } else {
-      isActive = !sidebar?.classList.contains('collapsed');
-    }
-    barHamburger.innerHTML = `<i class="bx ${isActive ? 'bx-chevron-left' : 'bx-chevron-right'}"></i>`;
-    barHamburger.title = isActive ? (window.innerWidth <= 768 ? 'Cerrar menú' : 'Colapsar menú') : (window.innerWidth <= 768 ? 'Abrir menú' : 'Expandir menú');
-  };
-  // Móvil (<768px): oculto por defecto. Escritorio: expandido por defecto (respeta colapsado si había)
-  if (window.innerWidth <= 768) {
-    sidebar?.classList.remove('open');
-    layout?.classList.remove('sidebar-push');
-    const scrim = $('.sb-scrim');
-    if (scrim) scrim.remove();
-  } else {
-    sidebar?.classList.remove('open');
-    layout?.classList.remove('sidebar-push');
-    // Opcional: restaura colapsado previo si se desea persistencia
-    // if (localStorage.getItem('int_sidebar_collapsed') === 'true') sidebar?.classList.add('collapsed');
-  }
-  updateHamburgerIcon();
-  updateTogglePosition();
   const closeSidebar = () => {
-    if (window.innerWidth <= 768) {
-      sidebar?.classList.remove('open');
-    } else {
-      // En escritorio, cerrar no oculta, solo asegura estado consistente
-    }
-    layout?.classList.remove('sidebar-push');
-    const scrim = $('.sb-scrim');
-    if (scrim) scrim.remove();
-    updateHamburgerIcon();
-    updateTogglePosition();
+    // Arquitectura híbrida: sidebar móvil oculto, desktop siempre visible → no hay drawer que cerrar, solo limpia scrims huérfanos
+    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
   };
-  // Evita duplicación de listeners: onclick sobrescribe en cada render pero el botón es singleton
-  barHamburger.onclick = () => {
-    if (window.innerWidth <= 768) {
-      const isOpen = sidebar?.classList.contains('open');
-      if (isOpen) {
-        closeSidebar();
-      } else {
-        sidebar?.classList.add('open');
-        layout?.classList.add('sidebar-push');
-        if (!$('.sb-scrim')) {
-          const scrim = document.createElement('div');
-          scrim.className = 'sb-scrim';
-          scrim.addEventListener('click', closeSidebar);
-          document.body.appendChild(scrim);
-        }
-        updateHamburgerIcon();
-        updateTogglePosition();
-      }
-    } else {
-      sidebar?.classList.toggle('collapsed');
-      updateHamburgerIcon();
-      updateTogglePosition();
-    }
-  };
-  // Mantiene posición correcta al redimensionar ventana
-  window.addEventListener('resize', () => {
-    updateTogglePosition();
-    updateHamburgerIcon();
-  });
   // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
   const moreModal = $('#adminMoreModal', app);
   const MORE_ITEMS = [
