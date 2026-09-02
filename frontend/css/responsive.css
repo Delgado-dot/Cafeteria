@@ -67,13 +67,10 @@
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  /* Toggle centrado verticalmente con position:fixed */
+  /* Toggle fixed centrado verticalmente — posición fija en viewport, no se mueve con animación */
   .sidebar-toggle {
-    left: 12px !important;
-  }
-  .admin-sidebar.open ~ .sidebar-toggle,
-  .admin-layout.sidebar-push .sidebar-toggle {
-    left: calc(var(--sidebar-w) - 19px) !important;
+    left: 16px !important;
+    right: auto !important;
   }
   .admin-main {
     transition: transform 280ms ease-out, opacity 280ms ease-out;
