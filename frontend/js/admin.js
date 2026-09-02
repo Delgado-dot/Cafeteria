@@ -214,16 +214,22 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   const layout = $('.admin-layout', app);
   const updateTogglePosition = () => {
     if (!sidebar || !barHamburger) return;
-    // Posiciona el toggle "mordiendo" el borde derecho del sidebar según su ancho real
+    // Posiciona el toggle "mordiendo" el borde derecho del sidebar según su ancho fijo en CSS
+    // Usa valores fijos (72 colapsado → 53px, 264 expandido → 245px) en vez de offsetWidth para evitar valor obsoleto durante transición
+    const SIDEBAR_W = 264;
+    const SIDEBAR_COLLAPSED_W = 72;
     if (window.innerWidth <= 768) {
       if (sidebar.classList.contains('open')) {
-        barHamburger.style.left = (sidebar.offsetWidth - 19) + 'px';
+        barHamburger.style.left = (SIDEBAR_W - 19) + 'px'; // 245px
       } else {
         barHamburger.style.left = '16px';
       }
     } else {
-      // Escritorio: colapsado 72px → left 53px, expandido 264px → left 245px (usa offsetWidth real)
-      barHamburger.style.left = (sidebar.offsetWidth - 19) + 'px';
+      if (sidebar.classList.contains('collapsed')) {
+        barHamburger.style.left = (SIDEBAR_COLLAPSED_W - 19) + 'px'; // 53px
+      } else {
+        barHamburger.style.left = (SIDEBAR_W - 19) + 'px'; // 245px
+      }
     }
   };
   const updateHamburgerIcon = () => {
