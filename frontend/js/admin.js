@@ -956,7 +956,8 @@ function barProducts(el) {
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock && p.available);
 
   el.innerHTML = `
-    <div class="page-title"><h1>Productos</h1><button class="btn btn-primary" id="addProduct">+ Nuevo producto</button></div>
+    <div class="page-title"><h1>Productos</h1></div>
+    <button class="btn btn-primary btn-block" id="addProduct" style="width:100%;margin-bottom:16px">+ Agregar producto</button>
     <div class="status-banners-wrap">
       ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
       ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
@@ -1000,13 +1001,12 @@ function barProducts(el) {
         <td data-label="Prep"><span>${p.prepMin} min</span></td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
-            <div style="display:flex;align-items:center;gap:8px">
-              <button class="btn btn-outline btn-icon" title="Editar ${esc(p.name)}" aria-label="Editar ${esc(p.name)}" data-edit="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
-                <span class="ico bx bx-edit-alt" style="font-size:1.1rem;color:var(--primary)"></span>
-              </button>
-              <button class="btn btn-neutral btn-icon" title="${p.available ? 'Desactivar' : 'Activar'}" aria-label="${p.available ? 'Desactivar' : 'Activar'}" data-toggle="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
-                <span class="ico ${p.available ? 'bx bx-hide' : 'bx bx-show'}" style="font-size:1.1rem;color:${p.available ? 'var(--danger)' : 'var(--primary)'}"></span>
-              </button>
+            <div style="position:relative">
+              <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
+              <div class="dropdown-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:10">
+                <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
+                <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
+              </div>
             </div>
           </td>
       </tr>
@@ -1020,6 +1020,18 @@ function barProducts(el) {
       toast(p.name + (p.available ? ' activado.' : ' desactivado.'), 'success');
       renderBarAdmin('products');
     });
+    $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
+      e.stopPropagation();
+      const menu = document.getElementById('prodMenu-' + btn.dataset.menu);
+      if (!menu) return;
+      const isHidden = menu.style.display === 'none';
+      document.querySelectorAll('[id^="prodMenu-"]').forEach((m) => m.style.display = 'none');
+      menu.style.display = isHidden ? 'block' : 'none';
+    });
+    // Cierra menús al hacer clic fuera
+    document.addEventListener('click', () => {
+      document.querySelectorAll('[id^="prodMenu-"]').forEach((m) => m.style.display = 'none');
+    }, { once: false });
   };
 
   $('#productSearch', el).addEventListener('input', (e) => {
@@ -1295,29 +1307,52 @@ function barStock(el) {
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
 
   el.innerHTML = `
-    <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${outOfStock.length} agotados</span></div>
-    <div class="status-banners-wrap">
-      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-      ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    <div class="page-title"><h1>Stock</h1></div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="input-wrap" style="flex:1"><span class="leading-ico"><i class="bx bx-search"></i></span><input class="input" id="stockSearch" placeholder="Buscar producto..." style="padding-left:36px"></div>
+      <button class="btn btn-outline btn-sm" id="stockFilterBtn"><i class="bx bx-filter"></i> Filtros</button>
     </div>
-    <div class="grid grid-3" style="margin-bottom:20px">
-      <div class="stat-card success-card"><span class="stat-ico bx bx-check-circle success"></span><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
-      <div class="stat-card warning-card"><span class="stat-ico bx bx-error warning"></span><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
-      <div class="stat-card danger-card"><span class="stat-ico bx bx-x-circle danger"></span><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div></div>
+    <div class="adv-tabs" style="margin-bottom:16px">
+      <button class="category-chip active" data-stock-tab="todos">Todos</button>
+      <button class="category-chip" data-stock-tab="bajo">Bajo stock</button>
+      <button class="category-chip" data-stock-tab="agotados">Agotados</button>
     </div>
-    <div class="adv-tabs" style="margin-bottom:12px">
-      <button class="category-chip active" data-stock-cat="Todas">Todas <span style="opacity:0.7;font-weight:400">(${products.length})</span></button>
-      ${[...new Set(products.map((p) => p.category))].map((c) => {
-        const cnt = products.filter((p) => p.category === c).length;
-        return `<button class="category-chip" data-stock-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
-      }).join('')}
+    <div class="grid grid-3" style="gap:12px;margin-bottom:16px">
+      <div class="stat-card"><div class="st-label">Total productos</div><div class="st-value">${products.length}</div><div class="st-sub">${products.filter((p)=>p.available).length} activos</div><span class="stat-ico bx bx-package muted"></span></div>
+      <div class="stat-card warning-card"><div class="st-label">Bajo stock</div><div class="st-value warning">${lowStock.length}</div><div class="st-sub">requieren reposición</div><span class="stat-ico bx bx-error warning"></span></div>
+      <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div><div class="st-sub">sin existencias</div><span class="stat-ico bx bx-x-circle danger"></span></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Productos con bajo stock</div>
+      <div id="lowStockList" style="display:flex;flex-direction:column;gap:10px">
+        ${lowStock.length ? lowStock.slice(0,4).map((p)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer" data-low="${p.id}">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--warning-soft);display:flex;align-items:center;justify-content:center;color:var(--warning-strong)"><i class="bx bx-error"></i></div>
+            <div style="flex:1;min-width:0"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
+            <span class="badge ${p.stock <= 2 ? 'badge-danger' : 'badge-warning'}">${p.stock <= 2 ? 'Muy bajo' : 'Bajo'}</span>
+            <span class="bold tabular-nums">${p.stock}</span>
+          </div>
+        `).join('') : '<div class="tiny muted" style="text-align:center;padding:12px">Sin productos con bajo stock</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Productos agotados</div>
+      <div id="outStockList" style="display:flex;flex-direction:column;gap:10px">
+        ${outOfStock.length ? outOfStock.slice(0,4).map((p)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md)">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;color:var(--danger)"><i class="bx bx-x-circle"></i></div>
+            <div style="flex:1"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
+            <span class="badge badge-danger">Agotado</span>
+          </div>
+        `).join('') : '<div class="tiny muted" style="text-align:center;padding:12px">Ningún producto agotado</div>'}
+      </div>
     </div>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th>Última actualización</th><th></th></tr></thead>
       <tbody id="stockRows"></tbody>
     </table></div>
     <div style="margin-top:24px">
-      <h3 class="section-title">Historial de cambios</h3>
+      <h3 class="section-title">Movimientos recientes</h3>
       <div class="card" id="stockHist"></div>
     </div>`;
 
@@ -1356,6 +1391,49 @@ function barStock(el) {
     btn.classList.add('active');
     stockCat = btn.dataset.stockCat;
     renderRows();
+  });
+  // Tabs stock: Todos / Bajo / Agotados
+  $$('[data-stock-tab]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-stock-tab]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.stockTab;
+    if (tab === 'bajo') {
+      const low = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+      const tbody = $('#stockRows', el);
+      tbody.innerHTML = low.map((p) => {
+        const h = history.find((x) => x.productId === p.id);
+        const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+        const fillCls = 'background:var(--warning)';
+        return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado"><span class="badge badge-warning">Bajo</span></td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+      }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin bajo stock</td></tr>';
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
+      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+    } else if (tab === 'agotados') {
+      const out = products.filter((p) => p.stock === 0);
+      const tbody = $('#stockRows', el);
+      tbody.innerHTML = out.map((p) => `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><b>0</b></td><td data-label="Estado"><span class="badge badge-danger">Agotado</span></td><td data-label="Acciones"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin agotados</td></tr>';
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
+    } else {
+      renderRows();
+    }
+  });
+  const stockSearch = $('#stockSearch', el);
+  if (stockSearch) stockSearch.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const tbody = $('#stockRows', el);
+    const filtered = products.filter((p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
+    tbody.innerHTML = filtered.map((p) => {
+      const h = history.find((x) => x.productId === p.id);
+      const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+      const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
+      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+    }).join('');
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+  });
+  $$('[data-low]', el).forEach((item) => item.onclick = () => {
+    const p = products.find((x) => x.id === item.dataset.low);
+    if (p) { stockCat = p.category; $$('[data-stock-cat]', el).forEach((x) => x.classList.toggle('active', x.dataset.stockCat === p.category)); renderRows(); }
   });
 
   const histWrap = $('#stockHist');
@@ -1487,27 +1565,62 @@ function barPayments(el) {
   validToday.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
   const pct = (v) => totalToday ? Math.round((v / totalToday) * 100) : 0;
 
+  // Últimas transacciones para lista compacta
+  const lastTx = [...orders].sort((a,b)=> (b.date+b.time||'').localeCompare(a.date+a.time||'')).slice(0,6);
+
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
-    <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(135deg,var(--primary-soft),var(--surface));border-left:4px solid var(--primary)">
-      <div>
-        <div class="tiny muted" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Resumen de hoy — ${today}</div>
-        <div style="font-size:2.4rem;font-weight:800;color:var(--primary-strong);line-height:1">${money(totalToday)}</div>
-        <div class="tiny muted" style="margin-top:4px">${validToday.length} pagos válidos · ${pct(byMethod.efectivo)}% Efectivo · ${pct(byMethod.deuna)}% DEUNA · ${pct(byMethod.transferencia)}% Transferencia</div>
+    <div class="card" style="margin-bottom:16px;background:var(--primary);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none">
+      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.14;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;font-weight:600">Total recaudado</div>
+        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px">${money(totalToday)}</div>
+        <div style="font-size:13px;opacity:0.9">en ${validToday.length} transacciones · hoy ${today}</div>
       </div>
-      <div style="width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0"><i class="bx bx-wallet"></i></div>
     </div>
-    <div class="grid grid-3" style="margin-bottom:16px">
-      <div class="stat-card"><span class="stat-ico bx bx-money success" style="font-size:2.4rem"></span><div class="st-label">Efectivo</div><div class="st-value">${money(byMethod.efectivo)}</div><div class="st-sub">${pct(byMethod.efectivo)}% del total · ${money(totalToday)} hoy</div></div>
-      <div class="stat-card"><span class="stat-ico bx bx-mobile-alt primary" style="font-size:2.4rem"></span><div class="st-label">DEUNA</div><div class="st-value primary">${money(byMethod.deuna)}</div><div class="st-sub">${pct(byMethod.deuna)}% del total</div></div>
-      <div class="stat-card"><span class="stat-ico bx bx-transfer-alt" style="font-size:2.4rem;color:var(--info)"></span><div class="st-label">Transferencia</div><div class="st-value" style="color:var(--info)">${money(byMethod.transferencia)}</div><div class="st-sub">${pct(byMethod.transferencia)}% del total</div></div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:14px">Métodos de pago</div>
+      ${[
+        { key: 'deuna', label: 'DEUNA', icon: 'bx-mobile-alt', color: 'var(--primary)' },
+        { key: 'transferencia', label: 'Transferencia', icon: 'bx-transfer-alt', color: 'var(--info)' },
+        { key: 'efectivo', label: 'Efectivo', icon: 'bx-money', color: 'var(--success)' },
+      ].map((m) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:${m.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="bx ${m.icon}"></i></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${m.label}</div>
+            <div style="height:4px;background:var(--surface-3);border-radius:999px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${pct(byMethod[m.key])}%;background:${m.color};border-radius:999px"></div></div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:700;font-size:14px">${money(byMethod[m.key])}</div>
+            <div style="font-size:12px;color:var(--text-2)">${pct(byMethod[m.key])}%</div>
+          </div>
+        </div>
+      `).join('')}
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-      <button class="btn btn-outline btn-sm" data-quick="history"><i class="bx bx-history" style="margin-right:4px"></i>Historial de pagos</button>
-      <button class="btn btn-outline btn-sm" data-quick="refunded"><i class="bx bx-undo" style="margin-right:4px"></i>Reembolsos</button>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Últimas transacciones</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${lastTx.length ? lastTx.map((o) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span class="tiny muted" style="min-width:42px">${o.time || '--:--'}</span>
+            <span class="bold" style="min-width:70px">#${o.id}</span>
+            <span class="badge badge-primary" style="font-size:11px">${paymentMethodLabel(o.payment)}</span>
+            <span class="bold tabular-nums" style="margin-left:auto">${money(o.total)}</span>
+          </div>
+        `).join('') : '<div class="tiny muted">Sin transacciones aún</div>'}
+      </div>
     </div>
-    <div class="adv-tabs">
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Otras acciones</div>
+      <a href="#" data-quick="history" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);transition:background var(--t-fast)">
+        <span style="width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center"><i class="bx bx-history"></i></span>
+        <span style="flex:1;font-weight:600">Historial de pagos</span>
+        <span style="color:var(--text-3)">›</span>
+      </a>
+    </div>
+    <div class="adv-tabs" style="display:none">
       ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
     </div>
     <div class="table-wrap"><table class="admin-table">
