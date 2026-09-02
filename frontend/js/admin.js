@@ -356,35 +356,66 @@ function barConfigTabs(el, initialTab) {
   };
   let hasUnsavedChanges = false;
 
+  // Inicializa métodos de pago habilitados si no existen
+  if (!cfg.enabledPayments) cfg.enabledPayments = { deuna: true, transferencia: true, efectivo: true };
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
-    <div class="grid grid-2" style="align-items:start">
-      <div class="card" style="width:100%;max-width:none;margin:0">
-        <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
-          <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
-        </div>
-        <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
-          <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
-        </div>
-        <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
-        <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-        <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
-          <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar"><span class="pulse-dot"></span></span>
-          <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+    <div class="grid grid-2" style="align-items:start;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="width:100%;max-width:none;margin:0">
+          <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">General — Horarios y Estado</div></div>
+          <div style="margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de pedidos</div></div>
+          <div class="grid grid-2">
+            <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+            <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
+          </div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de receso</div></div>
+          <div class="grid grid-2">
+            <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
+            <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
+          </div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Capacidad</div></div>
+          <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos.</div></div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Estado</div></div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px">
+            <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+            <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'} btn-sm" id="btnToggleCafeStatus" style="margin-left:auto">${isOpen ? 'Cerrar cafetería' : 'Abrir cafetería'}</button>
+          </div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Métodos de pago habilitados</div></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <label class="checkbox-row"><input type="checkbox" id="payDeuna" ${cfg.enabledPayments.deuna ? 'checked' : ''}> DEUNA</label>
+            <label class="checkbox-row"><input type="checkbox" id="payTrans" ${cfg.enabledPayments.transferencia ? 'checked' : ''}> Transferencia</label>
+            <label class="checkbox-row"><input type="checkbox" id="payEfect" ${cfg.enabledPayments.efectivo ? 'checked' : ''}> Efectivo</label>
+          </div>
+          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
+            <span id="unsavedIndicator" class="unsaved-indicator" style="display:none"><span class="pulse-dot"></span></span>
+            <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+          </div>
         </div>
       </div>
-      <div class="card" style="width:100%;max-width:none;margin:0">
-        <div style="text-align:center;margin-bottom:24px">
-          <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="width:100%;max-width:none;margin:0">
+          <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Preferencias — Categorías y Notificaciones</div></div>
+          <div style="margin-bottom:14px">
+            <div style="font-weight:700;margin-bottom:8px">Categorías de productos</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${CATEGORIES.map((c) => {
+                const cnt = Store.products.filter((p) => p.category === c).length;
+                return `<span class="badge badge-primary" style="font-size:13px;padding:6px 10px">${esc(c)} · ${cnt}</span>`;
+              }).join('')}
+            </div>
+            <div class="tiny muted" style="margin-top:6px">Gestiona las categorías desde Productos.</div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-weight:700;margin-bottom:8px">Notificaciones</div>
+            <label class="checkbox-row"><input type="checkbox" checked disabled> Notificar pedidos nuevos (próximamente)</label>
+            <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
+          </div>
         </div>
-        <div style="text-align:center">
-          <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}</button>
+        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
+          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
+          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
         </div>
-        <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)"><b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
       </div>
     </div>
   `;
@@ -428,14 +459,15 @@ function barSuppliers(el) {
       wrap.innerHTML = `<div style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-store"></i></div><div style="font-weight:600">Aún no hay proveedores</div><div class="tiny muted" style="margin-top:4px">¡Agrega el primero para tener tus contactos a mano!</div></div>`;
       return;
     }
-    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${list.map(s => `
-      <div class="stat-card" style="padding:14px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.2rem"><i class="bx bx-store"></i></div>
-          <div><div class="bold">${esc(s.name)}</div><div class="tiny muted">${esc(s.type)}</div></div>
+    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${list.map(s => `
+      <div class="stat-card" style="padding:12px;display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;flex-shrink:0">${esc(s.name.charAt(0).toUpperCase())}</div>
+        <div style="flex:1;min-width:0">
+          <div class="bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
+          <div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.type)} · <i class="bx bx-phone" style="font-size:11px"></i> ${esc(s.phone)}</div>
         </div>
-        <div class="tiny" style="margin-bottom:10px"><i class="bx bx-phone" style="margin-right:4px"></i>${esc(s.phone)}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge badge-success" style="flex-shrink:0">Activo</span>
+        <div style="display:flex;gap:6px;flex-shrink:0">
 	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone)}" title="Llamar"><i class="bx bx-phone"></i></a>
 	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc(s.phone.replace(/\D/g,""))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
 	         <button class="btn btn-icon-supplier" data-edit-supplier="${s.id}" title="Editar"><i class="bx bx-edit-alt"></i></button>
@@ -627,6 +659,10 @@ function barDashboard(el) {
 
   const lowStock = Store.products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
   const outStock = Store.products.filter((p) => p.stock === 0);
+  const validSalesDash = orders.filter(isValidSale);
+  const prodSalesDash = {};
+  validSalesDash.forEach((o) => o.items.forEach((i) => { prodSalesDash[i.productId] = (prodSalesDash[i.productId] || 0) + i.qty; }));
+  const topProductsDash = Object.entries(prodSalesDash).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,qty])=> ({ product: Store.products.find((p)=>p.id===id), qty})).filter(x=>x.product);
 
   // Pedidos prioritarios: qué atender primero (urgente/prioridad, delivery o pago en revisión)
   const priorityOrders = orders
@@ -679,6 +715,21 @@ function barDashboard(el) {
       <div class="stat-card"><span class="stat-ico bx bx-cycling primary"></span><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-line-chart success"></span><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
       <div class="stat-card"><span class="stat-ico bx bx-x-circle ${outStock.length ? 'danger' : 'muted'}"></span><div class="st-label">Productos agotados</div><div class="st-value ${outStock.length ? 'danger' : ''}">${outStock.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/stock">Ir a stock</a></div></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-weight:700">Productos más vendidos</div>
+        <a href="#" class="tiny" data-goto="adminbar/products" style="color:var(--primary);font-weight:600">Ver todos los productos →</a>
+      </div>
+      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>`
+        <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
+          <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${product.emoji||productIcon(product)}</div>
+          <div style="min-width:0">
+            <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product.name)}</div>
+            <div class="tiny muted">${qty} unidades vendidas</div>
+          </div>
+        </div>
+      `).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
     </div>`;
 
   renderCapacityCard(el.querySelector('#dashCap'));
@@ -1892,6 +1943,10 @@ function barSalesHistory(el) {
  
 function barDelivery(el) {
   ensureAdminbarPresentationStyles();
+  const orders = Store.orders.filter((o) => o.delivery === 'delivery');
+  const pending = orders.filter((o) => ['queue','confirmed','prep'].includes(o.status));
+  const enCamino = orders.filter((o) => o.status === 'ready');
+  const entregado = orders.filter((o) => o.status === 'delivered');
   const cfg = Store.config;
   const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const floors = ['Piso 1', 'Piso 2', 'Piso 3'];
@@ -1900,69 +1955,47 @@ function barDelivery(el) {
   if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
 
   el.innerHTML = `
-    <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery</h1></div>
-    <div class="card" style="width:100%;max-width:none;margin:0">
-      <div style="margin:0 0 18px;padding-bottom:8px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Servicio</div></div>
-      <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
-        <label class="checkbox-row">
-          <input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}>
-          <b>Habilitar delivery interno</b>
-        </label>
-        <div class="tiny muted" style="margin-left:26px;margin-top:4px">Cobertura exclusiva dentro del edificio INTESUD.</div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Cobertura</div></div>
-      <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-        <label class="label">Días de entrega</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
-          ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
+    <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery <span class="badge badge-primary">${orders.length} pedidos</span></h1></div>
+    <p class="page-sub" style="margin-bottom:16px">Delivery interno INTESUD — por pisos, sin repartidores externos</p>
+    <div class="adv-tabs" style="margin-bottom:16px">
+      <button class="category-chip active" data-dtab="pendiente">Pendiente (${pending.length})</button>
+      <button class="category-chip" data-dtab="encamino">En camino (${enCamino.length})</button>
+      <button class="category-chip" data-dtab="entregado">Entregado (${entregado.length})</button>
+    </div>
+    <div id="deliveryArea"></div>
+    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px"><span class="ico">⚠️</span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
+  `;
+
+  let dtab = 'pendiente';
+  const renderDelivery = () => {
+    const area = $('#deliveryArea', el);
+    const list = dtab === 'pendiente' ? pending : dtab === 'encamino' ? enCamino : entregado;
+    if (!list.length) {
+      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico">📦</div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
+      return;
+    }
+    area.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map((o) => `
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
+          <span class="badge ${o.status === 'ready' ? 'badge-warning' : o.status === 'delivered' ? 'badge-success' : 'badge-info'}">${o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep' ? 'Pendiente' : o.status === 'ready' ? 'En camino' : 'Entregado'}</span>
+        </div>
+        <div class="tiny muted"><b>Estudiante:</b> ${esc(o.userName)} · <b>Piso ${esc(o.deliveryInfo?.piso || '—')}</b> Aula ${esc(o.deliveryInfo?.aula || '—')}</div>
+        <div style="font-size:var(--fs-sm)">${o.items.map((i)=>`${esc(i.name)} ×${i.qty}`).join(', ')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span class="bold tabular-nums">${money(o.total)}</span>
+          <span class="tiny muted">${o.time} · ${o.date}</span>
         </div>
       </div>
-      <div class="field" id="dlFloorsField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-        <label class="label">Pisos habilitados</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlFloors">
-          ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
-        </div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario y capacidad</div></div>
-      <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-        <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}" style="max-width: 200px"></div>
-        <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}" style="max-width: 200px"></div>
-      </div>
-      <div class="field" id="dlMaxField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-        <label class="label">Capacidad máxima simultánea</label>
-        <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Pedidos de delivery que pueden atenderse simultáneamente.</div>
-      </div>
-      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" id="dlSave">Guardar configuración</button>
-      </div>
-    </div>`;
-
-  const fieldsToToggle = ['dlDaysField', 'dlFloorsField', 'dlTimeFields', 'dlMaxField'];
-  
-  $('#dlEnabled', el).onchange = () => {
-    cfg.deliveryEnabled = $('#dlEnabled', el).checked;
-    fieldsToToggle.forEach(id => {
-      const field = $('#' + id, el);
-      if (field) {
-        field.style.opacity = cfg.deliveryEnabled ? '' : '.5';
-        field.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none';
-      }
-    });
+    `).join('')}</div>`;
   };
-
-  $('#dlSave', el).onclick = () => {
-    cfg.orderOpen = $('#dlStart', el).value || cfg.orderOpen;
-    cfg.orderClose = $('#dlEnd', el).value || cfg.orderClose;
-    cfg.deliveryMax = parseInt($('#dlMax', el).value) || cfg.deliveryMax;
-    cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
-    cfg.deliveryFloors = floors.filter((f) => $(`[data-floor="${f}"]`, el)?.checked);
-    const enabled = $('#dlEnabled', el).checked;
-    cfg.deliveryEnabled = enabled;
-    Store.config = cfg;
-    logAudit('Actualizó configuración de delivery', enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
-    toast('Configuración de delivery guardada.', 'success');
-    renderBarAdmin('delivery');
-  };
+  $$('[data-dtab]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-dtab]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    dtab = btn.dataset.dtab;
+    renderDelivery();
+  });
+  renderDelivery();
 }
 
 /* ============================================================
