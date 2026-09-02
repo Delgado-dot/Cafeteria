@@ -193,6 +193,27 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
         <div class="admin-content" id="barContent">
         </div>
       </div>
+      <nav class="admin-bottom-nav" id="adminBottomNav">
+        <div class="abn-grid">
+          ${[
+            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount },
+            { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
+            { id: 'stock', label: 'Stock', icon: 'bx-box' },
+            { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
+            { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
+          ].map((item) => {
+            const isActive = item.id === 'more'
+              ? ['dashboard','payments','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
+              : activeSidebarSection === item.id;
+            return `<a class="abn-item ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+              <span class="abn-ico bx ${item.icon}"></span>
+              <span>${item.label}</span>
+              ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
+            </a>`;
+          }).join('')}
+        </div>
+      </nav>
+      <div id="adminMoreModal" style="display:none"></div>
     </div>`;
 
   renderCafePill($('#cafePill'));
@@ -298,6 +319,57 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
     updateTogglePosition();
     updateHamburgerIcon();
   });
+  // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
+  const moreModal = $('#adminMoreModal', app);
+  const MORE_ITEMS = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'bx-grid-alt' },
+    { id: 'payments', label: 'Pagos', icon: 'bx-credit-card' },
+    { id: 'delivery', label: 'Delivery', icon: 'bx-cycling' },
+    { id: 'suppliers', label: 'Proveedores', icon: 'bx-store' },
+    { id: 'reports', label: 'Informes', icon: 'bx-bar-chart-alt-2' },
+    { id: 'config-hours', label: 'Configuración', icon: 'bx-cog' },
+  ];
+  const closeMoreModal = () => {
+    if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
+  };
+  const openMoreModal = () => {
+    if (!moreModal) return;
+    moreModal.innerHTML = `
+      <div class="admin-more-scrim"></div>
+      <div class="admin-more-sheet">
+        <div class="admin-more-header">
+          <span>Más opciones</span>
+          <button class="btn btn-ghost btn-sm" id="closeMoreBtn">✕</button>
+        </div>
+        ${MORE_ITEMS.map(item => `
+          <a class="admin-more-item ${activeSidebarSection === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
+            <span class="ami-ico bx ${item.icon}"></span>
+            <span>${item.label}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+    moreModal.style.display = 'block';
+    $('.admin-more-scrim', moreModal)?.addEventListener('click', closeMoreModal);
+    $('#closeMoreBtn', moreModal)?.addEventListener('click', closeMoreModal);
+    $$('[data-more]', moreModal).forEach(a => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMoreModal();
+      closeSidebar();
+      setRoute('adminbar/' + a.dataset.more);
+    }));
+  };
+  $$('[data-bnav]', app).forEach(a => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = a.dataset.bnav;
+    if (target === 'more') {
+      openMoreModal();
+    } else {
+      closeSidebar();
+      closeMoreModal();
+      setRoute('adminbar/' + target);
+    }
+  }));
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault(); closeSidebar(); setRoute('adminbar/' + a.dataset.bar);
   }));

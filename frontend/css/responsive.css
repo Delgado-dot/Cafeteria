@@ -51,6 +51,8 @@
   .admin-sidebar.collapsed {
     width: 72px !important;
   }
+  .admin-bottom-nav,
+  #adminMoreModal { display: none !important; }
 }
 
 /* ============================================================
@@ -85,6 +87,8 @@
   .sb-scrim {
     position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med);
   }
+  .admin-bottom-nav { display: block; }
+  .admin-content { padding-bottom: 80px; }
 }
 
 /* ============================================================
