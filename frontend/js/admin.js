@@ -798,8 +798,11 @@ function barProducts(el) {
       </div>
     </div>
     <div class="adv-tabs">
-      <button class="category-chip active" data-cat="Todas">Todas</button>
-      ${cats.map((c) => `<button class="category-chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
+      <button class="category-chip active" data-cat="Todas">Todas <span style="opacity:0.7;font-weight:400">(${products.length})</span></button>
+      ${cats.map((c) => {
+        const cnt = products.filter((p) => p.category === c).length;
+        return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
+      }).join('')}
     </div>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
@@ -1131,6 +1134,13 @@ function barStock(el) {
       <div class="stat-card warning-card"><span class="stat-ico bx bx-error warning"></span><div class="st-label">Stock bajo</div><div class="st-value warning">${lowStock.length}</div></div>
       <div class="stat-card danger-card"><span class="stat-ico bx bx-x-circle danger"></span><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div></div>
     </div>
+    <div class="adv-tabs" style="margin-bottom:12px">
+      <button class="category-chip active" data-stock-cat="Todas">Todas <span style="opacity:0.7;font-weight:400">(${products.length})</span></button>
+      ${[...new Set(products.map((p) => p.category))].map((c) => {
+        const cnt = products.filter((p) => p.category === c).length;
+        return `<button class="category-chip" data-stock-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
+      }).join('')}
+    </div>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th>Última actualización</th><th></th></tr></thead>
       <tbody id="stockRows"></tbody>
@@ -1140,9 +1150,11 @@ function barStock(el) {
       <div class="card" id="stockHist"></div>
     </div>`;
 
+  let stockCat = 'Todas';
   const renderRows = () => {
+    const list = stockCat === 'Todas' ? products : products.filter((p) => p.category === stockCat);
     const tbody = $('#stockRows', el);
-    tbody.innerHTML = products.map((p) => {
+    tbody.innerHTML = list.map((p) => {
       const h = history.find((x) => x.productId === p.id);
       const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
       const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
@@ -1168,6 +1180,12 @@ function barStock(el) {
     $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
     $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
   };
+  $$('[data-stock-cat]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-stock-cat]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    stockCat = btn.dataset.stockCat;
+    renderRows();
+  });
 
   const histWrap = $('#stockHist');
   if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
