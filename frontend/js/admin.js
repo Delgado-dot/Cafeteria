@@ -2353,3 +2353,42 @@ function confirmToggleState(toOpen, btn) {
   });
 }
 window.confirmToggleState = confirmToggleState;
+
+/* ============================================================
+   Resize handler - Recalcula layout responsive con debounce
+   ============================================================ */
+let adminResizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(adminResizeTimeout);
+  adminResizeTimeout = setTimeout(() => {
+    const isMobile = window.innerWidth <= 768;
+    const isAdmin = document.body.classList.contains('is-admin') || window.location.hash.includes('adminbar');
+    if (!isAdmin) return;
+    // Recalcula visibilidad de sidebar/bottom nav (CSS media queries ya manejan display, pero asegura padding y topbar)
+    const content = document.querySelector('.admin-content');
+    if (content) {
+      content.style.paddingBottom = isMobile ? '80px' : '';
+    }
+    const topbar = document.querySelector('.admin-topbar');
+    if (topbar) {
+      const pill = document.getElementById('cafePill');
+      if (pill) {
+        pill.style.flexShrink = '0';
+        pill.style.whiteSpace = 'nowrap';
+      }
+      // Fuerza reflow para evitar badge cortado al rotar
+      topbar.style.display = 'none';
+      // eslint-disable-next-line no-unused-expressions
+      topbar.offsetHeight;
+      topbar.style.display = '';
+    }
+    // Limpia estados de drawer huérfanos al cambiar breakpoint sin recargar
+    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+    document.querySelectorAll('.admin-layout.sidebar-push').forEach((el) => el.classList.remove('sidebar-push'));
+    if (!isMobile) {
+      document.querySelectorAll('.admin-sidebar.open').forEach((el) => el.classList.remove('open'));
+      const moreModal = document.getElementById('adminMoreModal');
+      if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
+    }
+  }, 180);
+});
