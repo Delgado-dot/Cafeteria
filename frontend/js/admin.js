@@ -522,6 +522,26 @@ function barReports(el) {
       <button class="category-chip" data-rpt="resumen">Resumen</button>
     </div>
     <div id="rptContent"></div>
+    <div class="grid grid-3" style="gap:14px;margin-top:20px">
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
+        <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
+        <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
+        <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+    </div>
   `;
 
   const rptContent = $('#rptContent', el);
