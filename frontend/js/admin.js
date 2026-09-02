@@ -201,10 +201,11 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount, center: true },
             { id: 'stock', label: 'Stock', icon: 'bx-box' },
             { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
-          ].map((item) => {
+          ].map((item, idx) => {
             const isActive = item.id === 'more'
               ? ['payments','sales-dashboard','sales-history','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
               : activeSidebarSection === item.id;
+            const isAdjacent = idx === 1 || idx === 3;
             if (item.center) {
               return `<a class="abn-item center ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
                 <span class="abn-circle"><i class="bx ${item.icon}"></i></span>
@@ -212,7 +213,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
                 ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
               </a>`;
             }
-            return `<a class="abn-item ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+            return `<a class="abn-item ${isAdjacent ? 'adjacent' : ''} ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
               <span class="abn-ico bx ${item.icon}"></span>
               <span>${item.label}</span>
               ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
