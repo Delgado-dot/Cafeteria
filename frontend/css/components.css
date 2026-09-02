@@ -380,7 +380,12 @@
 /* ---------- Stat cards (dashboard) ---------- */
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--sp-5); box-shadow: var(--shadow-xs), var(--shadow-sm); position: relative; overflow: hidden; transition: box-shadow var(--t-med), transform var(--t-med), border-color var(--t-fast); }
 .stat-card:hover { box-shadow: var(--shadow-sm), var(--shadow-md); border-color: var(--border-strong); transform: translateY(-2px); }
-.stat-card .stat-ico { position: absolute; top: 16px; right: 16px; font-size: 1.9rem; opacity: 0.14; }
+.stat-card .stat-ico { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 3.2rem; opacity: 0.11; pointer-events: none; }
+.stat-card .stat-ico.primary { color: var(--primary); }
+.stat-card .stat-ico.warning { color: var(--warning); }
+.stat-card .stat-ico.danger { color: var(--danger); }
+.stat-card .stat-ico.success { color: var(--success); }
+.stat-card .stat-ico.muted { color: var(--text-3); }
 .stat-label { font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
 .stat-value { font-size: 2rem; font-weight: var(--fw-extrabold); color: var(--text); margin-top: 4px; line-height: 1.1; }
 .stat-value.primary { color: var(--primary); }
