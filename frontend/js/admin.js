@@ -157,8 +157,6 @@ function renderBarAdmin(page, params) {
   const prepCount = Store.orders.filter((o) => o.status === 'prep').length;
   const readyCount = Store.orders.filter((o) => o.status === 'ready').length;
 
-  // Limpia toggle previo si quedó de navegación anterior (asegura hijo directo de body, fuera de ancestros con transform)
-  document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
@@ -201,12 +199,16 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
 
   // Toggle como hijo directo de <body> para que position:fixed sea relativo al viewport real,
   // fuera de cualquier ancestro con transform/filter/position que cree nuevo contexto (ej. .admin-sidebar con transform)
-  const barHamburger = document.createElement('button');
-  barHamburger.className = 'sidebar-toggle';
-  barHamburger.id = 'barHamburger';
-  barHamburger.title = 'Abrir menú';
-  barHamburger.innerHTML = '<i class="bx bx-chevron-right"></i>';
-  document.body.appendChild(barHamburger);
+  // Evita duplicación: solo crea UNA instancia aunque renderBarAdmin se ejecute en cada navegación
+  let barHamburger = document.getElementById('barHamburger');
+  if (!barHamburger) {
+    barHamburger = document.createElement('button');
+    barHamburger.className = 'sidebar-toggle';
+    barHamburger.id = 'barHamburger';
+    barHamburger.title = 'Abrir menú';
+    barHamburger.innerHTML = '<i class="bx bx-chevron-right"></i>';
+    document.body.appendChild(barHamburger);
+  }
 
   const sidebar = $('.admin-sidebar', app);
   const layout = $('.admin-layout', app);
@@ -235,7 +237,8 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
     if (scrim) scrim.remove();
     updateHamburgerIcon();
   };
-  barHamburger?.addEventListener('click', () => {
+  // Evita duplicación de listeners: onclick sobrescribe en cada render pero el botón es singleton
+  barHamburger.onclick = () => {
     if (window.innerWidth <= 768) {
       const isOpen = sidebar?.classList.contains('open');
       if (isOpen) {
@@ -252,7 +255,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
         updateHamburgerIcon();
       }
     }
-  });
+  };
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault(); closeSidebar(); setRoute('adminbar/' + a.dataset.bar);
   }));
