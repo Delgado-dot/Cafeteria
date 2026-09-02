@@ -168,12 +168,12 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
             </a>`).join('')}
         </nav>
-        <button class="sidebar-toggle" id="barHamburger" title="Colapsar menú"><i class="bx bx-chevron-left"></i></button>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
           <div class="tiny muted">Administradora de cafetería</div>
         </div>
       </aside>
+      <button class="sidebar-toggle" id="barHamburger" title="Abrir menú"><i class="bx bx-chevron-right"></i></button>
       <div class="admin-main">
         <div class="admin-topbar">
           <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
@@ -203,40 +203,35 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   const barHamburger = $('#barHamburger', app);
   const updateHamburgerIcon = () => {
     if (!barHamburger) return;
-    const isCollapsed = sidebar?.classList.contains('collapsed');
-    barHamburger.innerHTML = `<i class="bx ${isCollapsed ? 'bx-chevron-right' : 'bx-chevron-left'}"></i>`;
-    barHamburger.title = isCollapsed ? 'Expandir menú' : 'Colapsar menú';
+    const isOpen = sidebar?.classList.contains('open');
+    barHamburger.innerHTML = `<i class="bx ${isOpen ? 'bx-chevron-left' : 'bx-chevron-right'}"></i>`;
+    barHamburger.title = isOpen ? 'Cerrar menú' : 'Abrir menú';
   };
-  // Persistencia: guarda colapsado/expandido en localStorage
-  if (localStorage.getItem('int_sidebar_collapsed') === 'true') sidebar?.classList.add('collapsed');
-  // En móvil, nunca ocultar por completo: inicia en solo íconos si no hay preferencia explícita de expandido
-  if (window.innerWidth <= 900 && !sidebar?.classList.contains('collapsed') && !sidebar?.classList.contains('open') && localStorage.getItem('int_sidebar_collapsed') !== 'false') {
-    sidebar?.classList.add('collapsed');
+  // Móvil (<768px): oculto por defecto, sin persistencia. Escritorio: siempre visible fijo
+  if (window.innerWidth <= 768) {
+    sidebar?.classList.remove('open');
+    layout?.classList.remove('sidebar-push');
+    const scrim = $('.sb-scrim');
+    if (scrim) scrim.remove();
+  } else {
+    sidebar?.classList.remove('open');
+    sidebar?.classList.remove('collapsed');
+    layout?.classList.remove('sidebar-push');
   }
   updateHamburgerIcon();
   const closeSidebar = () => {
-    if (window.innerWidth <= 900) {
-      if (sidebar && !sidebar.classList.contains('collapsed')) {
-        sidebar.classList.add('collapsed');
-        sidebar.classList.remove('open');
-        layout?.classList.remove('sidebar-push');
-        const scrim = $('.sb-scrim');
-        if (scrim) scrim.remove();
-        localStorage.setItem('int_sidebar_collapsed', 'true');
-        updateHamburgerIcon();
-      }
-    } else {
-      sidebar?.classList.remove('open');
-      layout?.classList.remove('sidebar-push');
-      const scrim = $('.sb-scrim');
-      if (scrim) scrim.remove();
-    }
+    sidebar?.classList.remove('open');
+    layout?.classList.remove('sidebar-push');
+    const scrim = $('.sb-scrim');
+    if (scrim) scrim.remove();
+    updateHamburgerIcon();
   };
   barHamburger?.addEventListener('click', () => {
-    if (window.innerWidth <= 900) {
-      const isCollapsed = sidebar?.classList.contains('collapsed');
-      if (isCollapsed) {
-        sidebar?.classList.remove('collapsed');
+    if (window.innerWidth <= 768) {
+      const isOpen = sidebar?.classList.contains('open');
+      if (isOpen) {
+        closeSidebar();
+      } else {
         sidebar?.classList.add('open');
         layout?.classList.add('sidebar-push');
         if (!$('.sb-scrim')) {
@@ -245,20 +240,8 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
           scrim.addEventListener('click', closeSidebar);
           document.body.appendChild(scrim);
         }
-        localStorage.setItem('int_sidebar_collapsed', 'false');
-      } else {
-        sidebar?.classList.add('collapsed');
-        sidebar?.classList.remove('open');
-        layout?.classList.remove('sidebar-push');
-        const scrim = $('.sb-scrim');
-        if (scrim) scrim.remove();
-        localStorage.setItem('int_sidebar_collapsed', 'true');
+        updateHamburgerIcon();
       }
-      updateHamburgerIcon();
-    } else {
-      sidebar?.classList.toggle('collapsed');
-      localStorage.setItem('int_sidebar_collapsed', sidebar?.classList.contains('collapsed'));
-      updateHamburgerIcon();
     }
   });
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {

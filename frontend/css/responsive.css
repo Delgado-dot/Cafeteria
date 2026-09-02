@@ -36,31 +36,48 @@
   .menu-filters { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
   .menu-filter-btn { white-space: nowrap; }
 
-  /* Admin sidebar → drawer + collapsed icons (spec: nunca se oculta por completo) */
-  .hamburger { display: flex; }
+  .admin-content { padding: var(--sp-4); }
+}
+
+/* ============================================================
+   Admin sidebar - ESCRITORIO (≥769px): fijo siempre visible, sin toggle
+   ============================================================ */
+@media (min-width: 769px) {
+  .admin-sidebar {
+    position: sticky; top: 0; height: 100vh; z-index: 130;
+    width: var(--sidebar-w) !important;
+    transform: none !important;
+  }
+  .sidebar-toggle {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   Admin sidebar - MÓVIL (≤768px): oculto por defecto, drawer completo
+   ============================================================ */
+@media (max-width: 768px) {
   .admin-sidebar {
     position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 130;
-    width: 72px;
-    transform: none;
-    transition: width var(--t-med);
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+    transition: transform var(--t-med);
     box-shadow: var(--shadow-lg);
-    overflow-x: hidden;
   }
-  .admin-sidebar.collapsed {
-    width: 72px;
-    transform: none;
-  }
-  .admin-sidebar:not(.collapsed) {
-    width: var(--sidebar-w);
-  }
-  /* compat: .open equivale a expandido */
   .admin-sidebar.open {
-    width: var(--sidebar-w);
-    transform: none;
+    transform: translateX(0);
+  }
+  /* Toggle centrado verticalmente con position:fixed */
+  .sidebar-toggle {
+    left: 12px !important;
+  }
+  .admin-sidebar.open ~ .sidebar-toggle,
+  .admin-layout.sidebar-push .sidebar-toggle {
+    left: calc(var(--sidebar-w) - 19px) !important;
   }
   .admin-main {
-    transition: transform 280ms ease-out, opacity 280ms ease-out, margin-left var(--t-med);
-    margin-left: 72px;
+    transition: transform 280ms ease-out, opacity 280ms ease-out;
+    margin-left: 0 !important;
   }
   .admin-layout.sidebar-push .admin-main {
     transform: translateX(var(--sidebar-w)) scale(0.95);
@@ -68,10 +85,10 @@
     border-radius: var(--r-lg);
     overflow: hidden;
     pointer-events: none;
-    margin-left: 0;
   }
-  .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
-  .admin-content { padding: var(--sp-4); }
+  .sb-scrim {
+    position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med);
+  }
 }
 
 /* ============================================================
