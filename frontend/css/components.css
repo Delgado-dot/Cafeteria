@@ -318,7 +318,7 @@
   display: none;
 }
 .sb-brand { display: flex; align-items: center; gap: 11px; padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid rgba(255,255,255,0.15); height: var(--header-h); flex-shrink: 0; color: #fff; }
-.sb-brand .brand-name { font-weight: var(--fw-bold); color: #fff; font-size: var(--fs-md); line-height: 1.1; }
+.sb-brand .brand-name { font-family: 'Lobster', cursive; font-weight: 400; color: #fff; font-size: var(--fs-md); line-height: 1.1; letter-spacing: 0.02em; }
 .sb-brand .brand-sub { display: block; font-size: var(--fs-xs); color: rgba(255,255,255,0.78); font-weight: var(--fw-medium); }
 
 .sb-nav { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-3); }
