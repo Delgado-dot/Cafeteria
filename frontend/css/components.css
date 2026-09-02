@@ -599,3 +599,21 @@
 .stock-history-date-header td { font-weight: var(--fw-semibold); color: var(--text); padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
 .stock-delta-positive { color: var(--success); }
 .stock-delta-negative { color: var(--danger); }
+
+/* Tipografía combinada - Lobster para botones y badges cortos (agregado Persona A Adminbar) */
+.btn {
+  font-family: 'Lobster', cursive;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+.badge,
+.status-chip,
+.priority-tag,
+.sb-badge,
+.category-chip,
+.cat-chip,
+.status-banner {
+  font-family: 'Lobster', cursive;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}

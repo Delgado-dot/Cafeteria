@@ -121,6 +121,14 @@ h2 { font-size: var(--fs-xl); }
 h3 { font-size: var(--fs-lg); }
 h4 { font-size: var(--fs-md); }
 
+/* Tipografía combinada - Berkshire Swash para títulos principales (agregado Persona A Adminbar) */
+.page-title h1,
+h1 {
+  font-family: 'Berkshire Swash', cursive;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
 /* Scrollbar */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-thumb { background: #c5d1cf; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
