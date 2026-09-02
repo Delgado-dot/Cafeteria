@@ -268,27 +268,29 @@
   box-shadow: 4px 0 14px rgba(16,30,29,0.08);
 }
 .sidebar-toggle {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  border: none;
+  border: 2px solid #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: 1.32rem;
   cursor: pointer;
   flex-shrink: 0;
-  margin: var(--sp-3) auto;
-  box-shadow: 0 2px 6px rgba(16,30,29,0.15);
-  transition: background var(--t-fast), box-shadow var(--t-fast);
+  margin: 14px auto;
+  box-shadow: 0 4px 14px rgba(16,30,29,0.24);
+  transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+  /* flujo normal pero sobresale ligeramente del borde derecho via transform */
+  transform: translateX(10px);
 }
 .sidebar-toggle:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 12px rgba(16,30,29,0.22);
+  box-shadow: 0 6px 18px rgba(16,30,29,0.32);
+  transform: translateX(10px) scale(1.04);
 }
-.sidebar-toggle:hover { background: var(--primary-hover); }
 .admin-sidebar.collapsed {
   width: 72px;
 }

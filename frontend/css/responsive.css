@@ -36,22 +36,39 @@
   .menu-filters { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
   .menu-filter-btn { white-space: nowrap; }
 
-  /* Admin sidebar → drawer */
+  /* Admin sidebar → drawer + collapsed icons (spec: nunca se oculta por completo) */
   .hamburger { display: flex; }
   .admin-sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%);
-    transition: transform var(--t-med); box-shadow: var(--shadow-lg); width: var(--sidebar-w); height: 100vh;
+    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 130;
+    width: 72px;
+    transform: none;
+    transition: width var(--t-med);
+    box-shadow: var(--shadow-lg);
+    overflow-x: hidden;
   }
-  .admin-sidebar.open { transform: translateX(0); }
+  .admin-sidebar.collapsed {
+    width: 72px;
+    transform: none;
+  }
+  .admin-sidebar:not(.collapsed) {
+    width: var(--sidebar-w);
+  }
+  /* compat: .open equivale a expandido */
+  .admin-sidebar.open {
+    width: var(--sidebar-w);
+    transform: none;
+  }
+  .admin-main {
+    transition: transform 280ms ease-out, opacity 280ms ease-out, margin-left var(--t-med);
+    margin-left: 72px;
+  }
   .admin-layout.sidebar-push .admin-main {
     transform: translateX(var(--sidebar-w)) scale(0.95);
     opacity: 0.88;
     border-radius: var(--r-lg);
     overflow: hidden;
     pointer-events: none;
-  }
-  .admin-main {
-    transition: transform 280ms ease-out, opacity 280ms ease-out;
+    margin-left: 0;
   }
   .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
   .admin-content { padding: var(--sp-4); }
