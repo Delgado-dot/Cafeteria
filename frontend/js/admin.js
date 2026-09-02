@@ -196,15 +196,22 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       <nav class="admin-bottom-nav" id="adminBottomNav">
         <div class="abn-grid">
           ${[
-            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount },
+            { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
             { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
+            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount, center: true },
             { id: 'stock', label: 'Stock', icon: 'bx-box' },
-            { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
             { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
           ].map((item) => {
             const isActive = item.id === 'more'
-              ? ['dashboard','payments','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
+              ? ['payments','sales-dashboard','sales-history','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
               : activeSidebarSection === item.id;
+            if (item.center) {
+              return `<a class="abn-item center ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+                <span class="abn-circle"><i class="bx ${item.icon}"></i></span>
+                <span class="abn-label">${item.label}</span>
+                ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
+              </a>`;
+            }
             return `<a class="abn-item ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
               <span class="abn-ico bx ${item.icon}"></span>
               <span>${item.label}</span>
@@ -231,8 +238,8 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
   const moreModal = $('#adminMoreModal', app);
   const MORE_ITEMS = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'bx-grid-alt' },
     { id: 'payments', label: 'Pagos', icon: 'bx-credit-card' },
+    { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
     { id: 'delivery', label: 'Delivery', icon: 'bx-cycling' },
     { id: 'suppliers', label: 'Proveedores', icon: 'bx-store' },
     { id: 'reports', label: 'Informes', icon: 'bx-bar-chart-alt-2' },

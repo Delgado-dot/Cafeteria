@@ -353,7 +353,28 @@
 }
 .admin-bottom-nav .abn-item .abn-ico { font-size: 20px; line-height: 1; }
 .admin-bottom-nav .abn-item.active { color: var(--primary); background: var(--primary-soft); }
+.admin-bottom-nav .abn-item.active:not(.center) .abn-ico { color: var(--primary); }
 .admin-bottom-nav .abn-item .abn-badge { position: absolute; top: 2px; left: 50%; margin-left: 10px; background: var(--danger); color: #fff; font-size: 10px; min-width: 16px; height: 16px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; font-weight: var(--fw-bold); }
+/* Centro elevado Pedidos */
+.admin-bottom-nav .abn-item.center {
+  flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px;
+  background: transparent !important; margin: 0 2px; padding-top: 0;
+}
+.admin-bottom-nav .abn-item.center .abn-circle {
+  width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+  box-shadow: 0 6px 18px rgba(64,128,126,0.38), 0 3px 8px rgba(16,30,29,0.18);
+  border: 3px solid var(--surface); margin-top: -18px;
+  transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+}
+.admin-bottom-nav .abn-item.center:hover .abn-circle { background: var(--primary-hover); transform: translateY(-2px); }
+.admin-bottom-nav .abn-item.center.active .abn-circle {
+  background: var(--primary); box-shadow: 0 8px 24px rgba(64,128,126,0.45), 0 0 0 4px var(--primary-glass);
+  transform: scale(1.04);
+}
+.admin-bottom-nav .abn-item.center .abn-label { font-size: 10px; color: var(--text-2); font-weight: var(--fw-semibold); }
+.admin-bottom-nav .abn-item.center.active .abn-label { color: var(--primary); font-weight: var(--fw-bold); }
+.admin-bottom-nav .abn-item.center .abn-badge { top: -2px; margin-left: 14px; }
 
 /* Modal "Más" */
 .admin-more-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 145; animation: fadeIn var(--t-med); }
