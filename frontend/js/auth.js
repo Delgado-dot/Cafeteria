@@ -24,17 +24,16 @@ const Auth = {
   logout() { this.clear(); logAudit('Cerró sesión', ''); },
 };
 
-/* ---------- Iconos SVG (login/forgot, evita emojis) ---------- */
-const AUTH_SVG_ATTRS = 'viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+/* ---------- Iconos compartidos con Admin Bar ---------- */
 const AUTH_ICO = {
-  cup: (w, h) => `<svg ${AUTH_SVG_ATTRS} width="${w}" height="${h}"><path d="M17 8h1a3 3 0 0 1 0 6h-1"/><path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>`,
-  user: `<svg ${AUTH_SVG_ATTRS}><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>`,
-  eye: `<svg ${AUTH_SVG_ATTRS}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
-  phone: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>`,
-  scooter: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17L9 8h4l2 5h4"/></svg>`,
-  roles: `<svg ${AUTH_SVG_ATTRS} width="15" height="15"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.6.8 2.6 2.4 3 5"/></svg>`,
-  lock: (w, h) => `<svg ${AUTH_SVG_ATTRS} width="${w}" height="${h}"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
-  done: `<svg ${AUTH_SVG_ATTRS} width="44" height="44" style="color:var(--success)"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.8 2.8L16 9.5"/></svg>`,
+  cup: (w = 18) => `<i class="bx bx-coffee" aria-hidden="true" style="font-size:${w}px"></i>`,
+  user: '<i class="bx bx-user" aria-hidden="true"></i>',
+  eye: '<i class="bx bx-show" aria-hidden="true"></i>',
+  phone: '<i class="bx bx-phone" aria-hidden="true"></i>',
+  scooter: '<i class="bx bx-cycling" aria-hidden="true"></i>',
+  roles: '<i class="bx bx-group" aria-hidden="true"></i>',
+  lock: (w = 18) => `<i class="bx bx-lock-alt" aria-hidden="true" style="font-size:${w}px"></i>`,
+  done: '<i class="bx bx-check-circle" aria-hidden="true" style="font-size:44px;color:var(--success)"></i>',
 };
 window.AUTH_ICO = AUTH_ICO;
 

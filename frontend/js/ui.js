@@ -10,7 +10,7 @@ function esc(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const money = (v) => '$' + Number(v).toFixed(2);
+const money = (v) => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function toast(msg, type = 'info') {
   const wrap = $('.toast-wrap') || (() => {
@@ -36,7 +36,14 @@ function modal(html, { wide = false, title = '', sub = '' } = {}) {
       ${title ? `<div class="modal-header"><div><div class="modal-title">${title}</div>${sub ? `<div class="modal-sub">${sub}</div>` : ''}</div><button class="modal-close" data-mclose title="Cerrar">×</button></div>` : ''}
       <div class="modal-body">${html}</div>
     </div>`;
-  const close = () => overlay.remove();
+  const close = () => {
+    document.removeEventListener('keydown', handleEscape);
+    overlay.remove();
+  };
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', handleEscape);
   $('[data-mclose]', overlay)?.addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   document.body.appendChild(overlay);

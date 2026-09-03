@@ -34,15 +34,38 @@
   .menu-filters { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
   .menu-filter-btn { white-space: nowrap; }
 
-  /* Admin sidebar → drawer */
-  .hamburger { display: flex; }
-  .admin-sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%);
-    transition: transform var(--t-med); box-shadow: var(--shadow-lg); width: var(--sidebar-w); height: 100vh;
-  }
-  .admin-sidebar.open { transform: translateX(0); }
-  .sb-scrim { position: fixed; inset: 0; background: rgba(16,30,29,0.45); z-index: 125; animation: fadeIn var(--t-med); }
   .admin-content { padding: var(--sp-4); }
+}
+
+/* ============================================================
+   Admin sidebar - ESCRITORIO (≥769px): fijo, colapsable
+   ============================================================ */
+@media (min-width: 769px) {
+  .admin-sidebar {
+    position: sticky; top: 0; height: 100vh; z-index: 130;
+    width: var(--sidebar-w) !important;
+    transform: none !important;
+  }
+  .admin-sidebar.collapsed {
+    width: 72px !important;
+  }
+  .admin-bottom-nav,
+  #adminMoreModal { display: none !important; }
+}
+
+/* ============================================================
+   Admin sidebar - MÓVIL (≤768px): solo barra inferior
+   ============================================================ */
+@media (max-width: 768px) {
+  .admin-sidebar,
+  .sidebar-toggle,
+  .sb-scrim { display: none !important; }
+  .admin-main {
+    margin-left: 0 !important;
+    transform: none !important;
+  }
+  .admin-bottom-nav { display: block; }
+  .admin-content { padding-bottom: 80px; }
 }
 
 /* ============================================================
@@ -84,6 +107,52 @@
   .progress-steps .ps-label { display: none; }
 
   .stat-value { font-size: 1.6rem; }
+
+  /* Grid 2/3/4 colapsan a 1 columna en móvil estrecho para formularios Producto/Delivery/Horarios */
+  .grid.grid-2 { grid-template-columns: 1fr; gap: var(--sp-3); }
+  body.is-admin .grid.grid-3,
+  body.is-admin .grid.grid-4 { grid-template-columns: 1fr; gap: var(--sp-3); }
+  body.is-admin .admin-table td { flex-wrap: wrap; gap: 6px; }
+
+  /* Admin tables → cards compactas (reemplaza formato etiqueta:valor roto) */
+  body.is-admin .admin-table thead { display: none; }
+  body.is-admin .admin-table tbody { display: block; }
+  body.is-admin .admin-table { border: none; background: transparent; box-shadow: none; }
+  body.is-admin .table-wrap { border: none; background: transparent; box-shadow: none; padding: 0; }
+  body.is-admin .admin-table tr {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: 12px 14px; margin-bottom: 12px; box-shadow: var(--shadow-xs);
+    position: relative; width: 100%; max-width: 100%;
+  }
+  body.is-admin .admin-table td { display: contents; }
+  body.is-admin .admin-table td[data-label="Pedido"] { order: 1; flex: 1 1 auto; font-weight: var(--fw-bold); font-size: var(--fs-md); }
+  body.is-admin .admin-table td[data-label="Total"],
+  body.is-admin .admin-table td[data-label="Monto"] { order: 1; flex: 0 0 auto; font-weight: var(--fw-bold); font-size: var(--fs-md); text-align: right; margin-left: auto; }
+  body.is-admin .admin-table td[data-label="Usuario"] { order: 2; flex: 1 1 100%; font-size: var(--fs-sm); color: var(--text-2); }
+  body.is-admin .admin-table td[data-label="Método"],
+  body.is-admin .admin-table td[data-label="Método pago"],
+  body.is-admin .admin-table td[data-label="Estado"],
+  body.is-admin .admin-table td[data-label="Estado pago"],
+  body.is-admin .admin-table td[data-label="Tipo"] { order: 3; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+  body.is-admin .admin-table td[data-label="Fecha"],
+  body.is-admin .admin-table td[data-label="Fecha/hora"] { order: 4; flex: 1 1 100%; font-size: 11px; color: var(--text-3); }
+  body.is-admin .admin-table td[data-label="Acciones"] { position: absolute; top: 10px; right: 10px; order: 5; }
+  body.is-admin .admin-table td[data-label="Acciones"] .btn { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; }
+  body.is-admin .admin-table td[data-label="Acciones"] .btn span.ico { font-size: 16px; }
+  body.is-admin .admin-table td[data-label="Producto"] { order: 1; flex: 1 1 auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  body.is-admin .admin-table td[data-label="Producto"] img { width: 48px !important; height: 48px !important; border-radius: 10px !important; }
+  body.is-admin .admin-table td[data-label="Precio"] { order: 1; flex: 0 0 auto; margin-left: auto; align-self: center; }
+  body.is-admin .admin-table td[data-label="Categoría"] { display: none; }
+  body.is-admin .admin-table td[data-label="Stock"],
+  body.is-admin .admin-table td[data-label="Stock actual"] { order: 2; flex: 0 0 auto; }
+  body.is-admin .admin-table td[data-label="Prep"] { order: 2; flex: 0 0 auto; }
+  body.is-admin .admin-table td[data-label="Cantidad"],
+  body.is-admin .admin-table td[data-label="Stock resultante"],
+  body.is-admin .admin-table td[data-label="Última actualización"] { order: 3; flex: 0 0 auto; font-weight: var(--fw-bold); }
+  body.is-admin .admin-table td[data-label="Última actualización"] { font-size: 11px; color: var(--text-3); font-weight: var(--fw-normal); }
+  body.is-admin .admin-table td[data-label="Stock mínimo"] { display: none; }
+  body.is-admin .admin-table .badge { font-size: 11px; padding: 3px 8px; }
 
   /* Tablas scroll horizontal (ya manejado con .table-wrap) */
   .admin-topbar { padding: 0 var(--sp-3); gap: var(--sp-2); }

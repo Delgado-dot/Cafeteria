@@ -24,16 +24,26 @@
 
 /* ---------- Base cliente — color que combina, ya no blanco plano ---------- */
 body.has-bottom-nav .app {
-  background-color: #e8f0ef;
-  background-image:
-    radial-gradient(760px 460px at 12% 8%, rgba(64,128,126,0.14), transparent 62%),
-    radial-gradient(620px 380px at 94% 14%, rgba(64,128,126,0.10), transparent 64%),
-    radial-gradient(880px 520px at 50% 100%, rgba(64,128,126,0.07), transparent 72%),
-    linear-gradient(180deg, #eef6f5 0%, #e0ece9 100%);
-  background-attachment: fixed;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: transparent;
 }
-body.has-bottom-nav .app::before { display: none; }
+body.has-bottom-nav .app::before {
+  content: '';
+  position: fixed;
+  inset: -14px;
+  z-index: -1;
+  background: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat;
+  filter: blur(7px);
+  transform: scale(1.03);
+}
 body.has-bottom-nav .app > * { position: relative; }
+body.has-bottom-nav .app { font-family: "Arvo", serif; }
+body.has-bottom-nav .app h1,
+body.has-bottom-nav .app h2,
+body.has-bottom-nav .app h3,
+body.has-bottom-nav .app h4 { font-family: "Playfair Display", serif; }
 
 /* ---------- HEADER — oscuro refinado ---------- */
 .user-header {
@@ -43,7 +53,9 @@ body.has-bottom-nav .app > * { position: relative; }
 }
 .user-header .brand .brand-name { color: #fff; letter-spacing: -0.015em; }
 .user-header .brand .brand-sub { color: #9bb3b1; font-weight: 500; }
-.user-header .brand-mark { background: #fff; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+.user-header .brand-mark { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.user-header .header-icon-btn,
+.user-header .header-icon-btn:hover { background: transparent; border: 0; box-shadow: none; color: #d8e6e5; }
 .header-search .input { background: rgba(255,255,255,0.09); color: #fff; border-color: rgba(255,255,255,0.14); }
 .header-search .input::placeholder { color: #9bb3b1; }
 .header-search .ico { color: #9bb3b1; }
@@ -53,7 +65,8 @@ body.has-bottom-nav .app > * { position: relative; }
 .user-chip .chip-info.bold { color: #fff; }
 .user-chip .chip-info { color: #9bb3b1; }
 .user-chip:hover { background: rgba(255,255,255,0.08); }
-.avatar { background: var(--grad-teal); }
+/* Avatar del cliente (los avatares de admin no deben verse afectados) */
+body.has-bottom-nav .avatar { background: var(--grad-teal); }
 /* Barra inferior — estética como 2da imagen pero mejorada, bien ubicada en móvil y desktop */
 body.has-bottom-nav .mobile-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
@@ -100,19 +113,8 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .home-hero {
   position: relative; overflow: hidden;
   border-radius: 0 0 28px 28px;
-  background: #0e1e1d; min-height: 520px;
+  background: transparent; min-height: 520px;
   display: grid; place-items: stretch;
-}
-.home-hero .hh-photo {
-  position: absolute; inset: 0;
-  background: url("../assets/images/panda-hero.png") center 24% / cover no-repeat;
-}
-.home-hero .hh-photo::after {
-  content: ''; position: absolute; inset: 0;
-  /* deja ver el letrero INTESUD arriba — oscuro solo abajo/izquierda donde va el texto */
-  background:
-    linear-gradient(180deg, rgba(10,22,21,0.08) 0%, rgba(10,22,21,0.06) 38%, rgba(10,22,21,0.45) 72%, rgba(10,22,21,0.78) 100%),
-    linear-gradient(90deg, rgba(10,22,21,0.52) 0%, rgba(10,22,21,0.34) 34%, rgba(10,22,21,0.08) 58%, rgba(10,22,21,0) 78%);
 }
 .home-hero .hh-inner {
   position: relative; z-index: 2;
@@ -168,42 +170,10 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 }
 .home-hero .hh-status .dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 4px rgba(255,255,255,0.18); }
 
-/* Panel preparación — barra inferior integrada, estructura completamente nueva */
-.home-hero .hh-panel {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
-  display: grid; grid-template-columns: 1.1fr auto 1.1fr; gap: 18px; align-items: center;
-  background: rgba(12,23,22,0.86); backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255,255,255,0.10);
-  padding: 14px clamp(18px, 3.5vw, 28px);
-  border-radius: 0;
-  max-width: none; width: 100%; box-shadow: none;
-}
-.home-hero .hh-panel .hp-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.home-hero .hh-panel .hp-label {
-  font-size: 0.64rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #8ec5c0; white-space: nowrap;
-}
-.home-hero .hh-panel .hp-track { flex: 1; height: 6px; background: rgba(255,255,255,0.14); border-radius: 999px; overflow: hidden; min-width: 90px; }
-.home-hero .hh-panel .hp-fill { height: 100%; background: linear-gradient(90deg, #7fcfc8, #3aa99f); border-radius: 999px; transition: width var(--t-slow); }
-.home-hero .hh-panel .hp-nums { display: flex; gap: 14px; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.72); font-weight: 600; white-space: nowrap; }
-.home-hero .hh-panel .hp-nums b { color: #fff; font-size: 0.95rem; font-weight: 900; }
-.home-hero .hh-panel .hp-facts {
-  display: flex; gap: 18px; align-items: center; justify-content: flex-end; flex-wrap: wrap;
-  margin: 0; padding: 0; border: none; font-size: 0.78rem; color: rgba(255,255,255,0.70);
-}
-.home-hero .hh-panel .hp-facts span { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.home-hero .hh-panel .hp-facts b { color: #fff; font-weight: 800; font-size: 0.84rem; }
-.home-hero .hh-panel .hp-dot { width: 7px; height: 7px; border-radius: 50%; background: #7fcfc8; box-shadow: 0 0 0 4px rgba(127,207,200,0.18); flex-shrink: 0; }
-
-/* Móvil: hero apilado, panel en barra inferior compacta */
+/* Móvil: hero apilado */
 @media (max-width: 900px) {
   .home-hero { min-height: auto; }
-  .home-hero .hh-inner { grid-template-columns: 1fr; min-height: auto; gap: 20px; padding-bottom: 88px; }
-  .home-hero .hh-photo { background-position: center 28%; }
-  .home-hero .hh-photo::after {
-    background: linear-gradient(180deg, rgba(10,22,21,0.45) 0%, rgba(10,22,21,0.72) 100%);
-  }
-  .home-hero .hh-panel { grid-template-columns: 1fr; gap: 10px; padding: 12px 16px; }
-  .home-hero .hh-panel .hp-facts { justify-content: flex-start; gap: 14px; }
+  .home-hero .hh-inner { grid-template-columns: 1fr; min-height: auto; gap: 20px; padding-bottom: 28px; }
 }
 
 /* ============================================================
@@ -226,22 +196,22 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .cat-banner-left { display: flex; align-items: center; gap: 18px; }
 .cat-s {
   width: 78px; height: 78px; flex-shrink: 0;
-  background: linear-gradient(145deg, #14b8a6, #0f5e58); color: #e0fffe;
-  border-radius: 22px; display: grid; place-items: center;
+  background: transparent; color: #e0fffe;
+  border: 0; border-radius: 0; display: grid; place-items: center;
   font-size: 3.2rem; font-weight: 900; font-style: italic; line-height: 1;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: none;
   text-shadow: 0 2px 8px rgba(0,0,0,0.35); transform: rotate(-6deg);
 }
+.cat-s img { width: 64%; height: 64%; object-fit: contain; }
 .cat-titles { }
 .cat-title { line-height: 0.95; }
+.cat-title { font-family: "Playfair Display", serif; }
 .cat-t-white { color: #fff; font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; }
 .cat-t-teal { color: #2ec5b8; font-size: 1.85rem; font-weight: 900; letter-spacing: -0.02em; }
 .cat-sub { color: rgba(255,255,255,0.85); font-size: 0.78rem; margin-top: 6px; display: flex; align-items: center; gap: 8px; }
 .cat-sub-line { display: inline-block; width: 28px; height: 2px; background: #2ec5b8; border-radius: 2px; }
 .cat-banner-deco {
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  font-size: 3.2rem; opacity: 0.07; letter-spacing: 12px; pointer-events: none;
-  filter: grayscale(1) brightness(2);
+  display: none;
 }
 .cat-pills {
   position: relative; z-index: 1;
@@ -323,16 +293,6 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   border-bottom: 1px solid #eef2f1;
 }
 .product-media::before, .product-media::after { display: none; } /* waves now via spans */
-.pc-wave { position: absolute; bottom: 0; pointer-events: none; border-radius: 50% 50% 0 0; }
-.pc-wave-1 { left: -14px; width: 62%; height: 76px; background: #0e9a8a; transform: rotate(-2deg); z-index: 0; }
-.pc-wave-2 { left: 38%; width: 42%; height: 48px; background: #5ecfbf; opacity: 0.55; border-radius: 50% 50% 0 0 / 80% 80% 0 0; transform: rotate(-1deg); z-index: 0; }
-.pc-wave-3 { right: -10px; width: 38%; height: 38px; background: #c8ece9; opacity: 0.9; z-index: 0; }
-.pc-dots { position: absolute; width: 42px; height: 32px; opacity: 0.22; z-index: 0; pointer-events: none;
-  background-image: radial-gradient(circle, #0e9a8a 1.1px, transparent 1.1px);
-  background-size: 8px 8px;
-}
-.pc-dots-l { top: 18px; left: 14px; }
-.pc-dots-r { top: 22px; right: 18px; width: 36px; height: 28px; opacity: 0.14; }
 .product-media .p-cat {
   position: absolute; top: 11px; left: 11px; z-index: 3;
   background: #fff; border: 1px solid #d0ece9; color: #0e7a6e;
@@ -367,17 +327,54 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
   margin-top: -24px; margin-bottom: -40px;
   padding: 24px 18px 40px;
-  background:
-    radial-gradient(700px 400px at 20% 10%, rgba(255,255,255,0.42), transparent 62%),
-    linear-gradient(180deg, #cfece6 0%, #b8ddd4 100%);
+  background: transparent;
   min-height: calc(100vh - var(--header-h) + 40px);
 }
 .menu-page::before { display: none; }
 .menu-page > * { position: relative; z-index: 1; max-width: 1240px; margin-left: auto; margin-right: auto; }
 @media (min-width: 901px) { .menu-page { margin-top: -32px; padding: 28px 18px 40px; } }
 @media (max-width: 900px) {
-  .menu-page { background-attachment: scroll; background-position: center center; }
+  .menu-page { background: transparent; }
   .menu-page::before { background: rgba(255,255,255,0.16); }
+}
+
+/* Cristal compartido con Landing para las superficies del Panel Cliente. */
+body.has-bottom-nav .card,
+body.has-bottom-nav .product-card,
+body.has-bottom-nav .order-card,
+body.has-bottom-nav .cat-banner,
+body.has-bottom-nav .cat-pill-card,
+body.has-bottom-nav .menu-side,
+body.has-bottom-nav .menu-side-list .cat-pill,
+body.has-bottom-nav .orders-overview,
+body.has-bottom-nav .summary-card,
+body.has-bottom-nav .capacity-card,
+body.has-bottom-nav .select-card,
+body.has-bottom-nav .file-drop {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+body.has-bottom-nav .product-media,
+body.has-bottom-nav .cat-pill-card .cp-ico,
+body.has-bottom-nav .menu-side-list .cat-pill .cp-ico {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.has-bottom-nav .product-card .product-name,
+body.has-bottom-nav .product-card .product-desc,
+body.has-bottom-nav .menu-side .menu-side-title,
+body.has-bottom-nav .menu-side .menu-side-hint,
+body.has-bottom-nav .menu-lead .ml-title,
+body.has-bottom-nav .menu-lead .ml-sub,
+body.has-bottom-nav .reco-title,
+body.has-bottom-nav .reco-btn,
+body.has-bottom-nav .cat-pill-card .cp-name,
+body.has-bottom-nav .cat-pill-card .cp-count {
+  color: #fff;
 }
 
 /* ============================================================
@@ -401,7 +398,6 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 }
 .menu-side-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
 .menu-side-title { font-weight: 900; color: var(--ink); font-size: 0.92rem; letter-spacing: -0.01em; }
-.menu-side-hint { color: var(--muted); font-size: 0.72rem; font-weight: 700; background: var(--teal-50); border: 1px solid var(--teal-100); padding: 3px 8px; border-radius: 999px; }
 .menu-side-list { display: flex; flex-direction: column; gap: 8px; }
 .menu-side-list .cat-pill {
   width: 100%; display: flex; align-items: center; gap: 10px;
@@ -446,7 +442,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 /* ============================================================
    DETALLE DE PRODUCTO — coherente con nuevo sistema
    ============================================================ */
-.prod-detail .product-media { background: linear-gradient(140deg, #f6f0e8 0%, #e8e0d1 100%); color: var(--teal-700); }
+.prod-detail .product-media { background: rgba(0, 0, 0, 0.25); color: #fff; }
 .prod-detail h1 { color: var(--ink); }
 .prod-detail .muted { color: var(--muted); }
 .prod-detail .qty-stepper { border-radius: 12px; border-color: var(--line-strong); }
@@ -454,20 +450,21 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .prod-detail #btnAdd { background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(64,128,126,0.28); }
 .prod-detail #btnAdd:disabled { background: var(--muted-2); box-shadow: none; }
 
-/* ---------- Textos generales cliente ---------- */
-.page-title h1, .section-title { color: var(--ink); }
-.page-sub { color: var(--muted); }
-.page .btn-outline { color: var(--teal-700); border-color: var(--line-strong); }
-.page .btn-outline:hover:not(:disabled) { background: var(--teal-50); }
-.page .alert { border-radius: 14px; }
-.page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
+/* ---------- Textos generales cliente ----------
+   (Prefijados con body.has-bottom-nav para NO alterar el panel admin) */
+body.has-bottom-nav .page-title h1, body.has-bottom-nav .section-title { color: var(--ink); }
+body.has-bottom-nav .page-sub { color: var(--muted); }
+body.has-bottom-nav .page .btn-outline { color: var(--teal-700); border-color: var(--line-strong); }
+body.has-bottom-nav .page .btn-outline:hover:not(:disabled) { background: var(--teal-50); }
+body.has-bottom-nav .page .alert { border-radius: 14px; }
+body.has-bottom-nav .page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
 
-.grid-2 .card, .grid-3 .card, .grid-4 .card {
+body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-bottom-nav .grid-4 .card {
   border-radius: 18px; border-color: var(--line); background: #fff; box-shadow: 0 4px 14px rgba(17,28,27,0.06);
 }
-.card .card-title { color: var(--ink); }
-.card .card-sub { color: var(--muted); }
-.card .kv dt { color: var(--muted); } .card .kv dd { color: var(--ink); }
+body.has-bottom-nav .card .card-title { color: var(--ink); }
+body.has-bottom-nav .card .card-sub { color: var(--muted); }
+body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .card .kv dd { color: var(--ink); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -479,3 +476,180 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   .home-hero h1 { font-size: 2rem; }
   .home-hero .hh-btn.ghost { display: none; }
 }
+
+  /* Refuerzo final del cristal para evitar overrides de reglas históricas. */
+  body.has-bottom-nav .card,
+  body.has-bottom-nav .product-card,
+  body.has-bottom-nav .order-card,
+  body.has-bottom-nav .cat-banner,
+  body.has-bottom-nav .cat-pill-card,
+  body.has-bottom-nav .menu-side,
+  body.has-bottom-nav .menu-side-list .cat-pill,
+  body.has-bottom-nav .orders-overview,
+  body.has-bottom-nav .summary-card,
+  body.has-bottom-nav .capacity-card,
+  body.has-bottom-nav .select-card,
+  body.has-bottom-nav .file-drop {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  }
+  body.has-bottom-nav .prod-detail .product-media { background: rgba(0, 0, 0, 0.25); }
+
+  /* Pedidos: separación constante y lectura clara sobre el cristal. */
+  body.has-bottom-nav #currentOrders,
+  body.has-bottom-nav #historyOrders {
+    display: grid;
+    gap: var(--sp-5);
+  }
+
+  body.has-bottom-nav .card,
+  body.has-bottom-nav .product-card,
+  body.has-bottom-nav .order-card,
+  body.has-bottom-nav .cat-banner,
+  body.has-bottom-nav .cat-pill-card,
+  body.has-bottom-nav .menu-side,
+  body.has-bottom-nav .menu-side-list .cat-pill,
+  body.has-bottom-nav .orders-overview,
+  body.has-bottom-nav .summary-card,
+  body.has-bottom-nav .capacity-card,
+  body.has-bottom-nav .select-card,
+  body.has-bottom-nav .file-drop {
+    color: #FFFFFF;
+  }
+
+  body.has-bottom-nav .card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .product-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .order-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .cat-banner :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .cat-pill-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .menu-side :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .orders-overview :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .summary-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .capacity-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .select-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
+  body.has-bottom-nav .file-drop :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li) {
+    color: #FFFFFF;
+  }
+
+  /* Contraste de iconos y badges con superficies claras. */
+  body.has-bottom-nav .product-card .product-media { color: var(--teal-700); }
+  body.has-bottom-nav .product-media .p-cat { color: #0e7a6e; }
+  body.has-bottom-nav .product-media .p-cat i { color: #0e7a6e; }
+  body.has-bottom-nav .product-card .prep-tag { color: #5a6b69; }
+  body.has-bottom-nav .ci-media,
+  body.has-bottom-nav .select-card .sc-ico,
+  body.has-bottom-nav .security-icon { color: var(--teal-700); }
+  body.has-bottom-nav .menu-side-hint { color: var(--muted); }
+  body.has-bottom-nav .badge-primary { color: var(--teal-700); }
+  body.has-bottom-nav .badge-success { color: var(--success-strong); }
+  body.has-bottom-nav .badge-warning { color: var(--warning-strong); }
+  body.has-bottom-nav .badge-danger { color: var(--danger-strong); }
+  body.has-bottom-nav .badge-info { color: var(--info); }
+  body.has-bottom-nav .badge-neutral { color: var(--neutral); }
+  body.has-bottom-nav .badge-outline { color: var(--text-2); }
+  body.has-bottom-nav .alert.success { color: var(--success-strong); }
+  body.has-bottom-nav .alert.warning { color: var(--warning-strong); }
+  body.has-bottom-nav .alert.danger { color: var(--danger-strong); }
+  body.has-bottom-nav .alert.info { color: var(--info); }
+  body.has-bottom-nav .alert.neutral { color: var(--neutral); }
+
+  /* Jerarquía de texto directo en paneles principales. */
+  body.has-bottom-nav .page-title h1,
+  body.has-bottom-nav .section-title,
+  body.has-bottom-nav .card > .card-header .card-title,
+  body.has-bottom-nav .card > .card-header .card-sub,
+  body.has-bottom-nav .profile-hero > div > h2,
+  body.has-bottom-nav .order-card > .order-head .order-num,
+  body.has-bottom-nav .order-card > .order-glance .order-glance-label {
+    color: #FFFFFF;
+  }
+
+  /* Separa el aviso de demanda del panel de capacidad en Mi carrito. */
+  body.has-bottom-nav #cartCapacity { margin-top: var(--sp-4); }
+
+  /* Historial: número destacado y fecha en una etiqueta visible. */
+  body.has-bottom-nav .order-card-history > div:first-child .order-num {
+    color: var(--primary-light);
+  }
+  body.has-bottom-nav .order-card-history > div:first-child .badge-outline {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #FFFFFF;
+    margin-left: 6px;
+  }
+
+  /* Notificaciones: mismo cristal del resto del Panel Cliente. */
+  body.has-bottom-nav .toast {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-left-width: 4px;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    color: #FFFFFF;
+  }
+  body.has-bottom-nav .toast .t-ico,
+  body.has-bottom-nav .toast > span:not(.t-ico) {
+    color: #FFFFFF;
+  }
+
+  /* Selector de cantidad: controles verdes y valor negro sobre blanco. */
+  body.has-bottom-nav .qty-stepper {
+    background: transparent;
+    border-color: var(--teal);
+  }
+  body.has-bottom-nav .qty-stepper > button {
+    background: var(--teal);
+    color: #fff;
+  }
+  body.has-bottom-nav .qty-stepper > button:hover:not(:disabled) {
+    background: var(--teal-600);
+    color: #fff;
+  }
+  body.has-bottom-nav .qty-stepper > button:disabled {
+    background: var(--teal-600);
+    color: rgba(255, 255, 255, 0.7);
+  }
+  body.has-bottom-nav .qty-stepper .qty-val {
+    min-height: 34px;
+    background: #fff;
+    color: #111c1b;
+  }
+
+  /* Pedidos y perfil: botones visibles con la paleta existente. */
+  body.has-bottom-nav .order-card [data-detail],
+  body.has-bottom-nav .order-card [data-history-detail],
+  body.has-bottom-nav [data-detail-cancel],
+  body.has-bottom-nav #btnEditProfile,
+  body.has-bottom-nav #btnChangePass {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+  }
+  body.has-bottom-nav .order-card [data-detail]:hover:not(:disabled),
+  body.has-bottom-nav .order-card [data-history-detail]:hover:not(:disabled),
+  body.has-bottom-nav [data-detail-cancel]:hover:not(:disabled),
+  body.has-bottom-nav #btnEditProfile:hover:not(:disabled),
+  body.has-bottom-nav #btnChangePass:hover:not(:disabled) {
+    background: var(--teal-600);
+    border-color: var(--teal-600);
+    color: #fff;
+  }
+  body.has-bottom-nav .order-card [data-cancel],
+  body.has-bottom-nav #btnLogout {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+  body.has-bottom-nav .order-card [data-cancel]:hover:not(:disabled),
+  body.has-bottom-nav #btnLogout:hover:not(:disabled) {
+    background: var(--danger-strong);
+    border-color: var(--danger-strong);
+    color: #fff;
+  }
+

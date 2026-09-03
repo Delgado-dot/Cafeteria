@@ -91,6 +91,11 @@ const DEFAULT_ORDERS = [
 
 const ROLE_LABELS = { user: 'Usuario institucional', adminbar: 'Administradora bar', admindev: 'Administrador desarrollador' };
 
+const DEFAULT_SUPPLIERS = [
+  { id: 's1', name: 'Distribuciones Andinas', type: 'Bebidas', phone: '0991234567' },
+  { id: 's2', name: 'Panadería La Unión', type: 'Panadería', phone: '0987654321' },
+];
+
 const PERMISSION_MATRIX = [
   { fn: 'Inicio', user: '✓', adminbar: '✓', admindev: '✓' },
   { fn: 'Menú', user: '✓', adminbar: '✓', admindev: '✓' },
@@ -141,9 +146,11 @@ const Store = {
   set audit(v) { this._cache['int_audit'] = v; this.save('int_audit', v); },
   get stockHistory() { return this._get('int_stockHistory', [], 'int_stockHistory'); },
   set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
+  get suppliers() { return this._get('int_suppliers', DEFAULT_SUPPLIERS, 'int_suppliers'); },
+  set suppliers(v) { this._cache['int_suppliers'] = v; this.save('int_suppliers', v); },
   reset() {
     this._cache = {};
-    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory'].forEach((k) => localStorage.removeItem(k));
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers'].forEach((k) => localStorage.removeItem(k));
   },
 };
 
