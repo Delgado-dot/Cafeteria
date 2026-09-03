@@ -1696,11 +1696,26 @@ function barPayments(el) {
             <span class="badge badge-primary" style="font-size:11px">${paymentMethodLabel(o.payment)}</span>
             <span class="badge ${badgeCls}" style="font-size:11px;margin-left:auto">${sInfo ? sInfo.label : 'Pendiente'}</span>
           </div>
-          ${['transferencia','deuna'].includes(o.payment) ? `<button class="btn btn-ghost" data-voucher="${o.id}" style="position:absolute;bottom:10px;right:10px;width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--surface-3)" title="Ver comprobante"><i class="bx bx-show" style="font-size:16px;color:var(--text-2)"></i></button>` : ''}
+          <div style="position:absolute;bottom:8px;right:10px;display:flex;gap:6px">
+            ${['transferencia','deuna'].includes(o.payment) ? `<button class="btn btn-ghost" data-voucher="${o.id}" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--surface-3)" title="Ver comprobante"><i class="bx bx-printer" style="font-size:15px;color:var(--text-2)"></i></button>` : ''}
+            ${o.paymentStatus !== 'refunded' ? `<button class="btn btn-ghost" data-refund="${o.id}" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--danger-soft);color:var(--danger)" title="Reembolsar"><i class="bx bx-undo" style="font-size:16px"></i></button>` : ''}
+          </div>
         </div>
         `;
       }).join('') : `<div style="text-align:center;padding:20px" class="tiny muted">No hay pagos para mostrar</div>`;
       $$('[data-voucher]', mobileContainer).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
+      $$('[data-refund]', mobileContainer).forEach((b) => b.onclick = () => {
+        const order = orders.find((x) => x.id === b.dataset.refund);
+        if (!order) return;
+        confirmDialog('Confirmar reembolso', `¿Confirmar reembolso de ${order.id} por ${money(order.total)}?`, 'Confirmar', true).then((ok) => {
+          if (!ok) return;
+          order.paymentStatus = 'refunded';
+          saveOrders();
+          logAudit('Reembolsó pago', order.id);
+          toast(`Pedido #${order.id} reembolsado`, 'success');
+          renderBarAdmin('payments');
+        });
+      });
     }
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
