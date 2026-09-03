@@ -46,7 +46,7 @@ body.is-auth .login-card .ig-btn {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.52);
 }
-body.is-auth .login-card .input::placeholder { color: #71817f; opacity: 1; }
+body.is-auth .login-card .input::placeholder { color: #667572; opacity: 1; }
 body.is-auth .login-card code { background: rgba(255, 255, 255, 0.14) !important; color: #fff; }
 body.is-auth .login-card a { color: #9ee2dc !important; }
 body.is-auth .login-logo { background: rgba(255, 255, 255, 0.96); }

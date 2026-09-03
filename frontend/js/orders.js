@@ -2,8 +2,8 @@
    orders.js — Pedidos del usuario, seguimiento, cancelación
    ============================================================ */
 
-const ORDER_FLOW = ['queue', 'confirmed', 'prep', 'ready', 'delivered'];
-const ORDER_FLOW_LABEL = { queue: 'En cola', confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
+const ORDER_FLOW = OrderWorkflow.getFlow();
+const ORDER_FLOW_LABEL = Object.fromEntries(ORDER_FLOW.map((status) => [status, OrderWorkflow.getLabel(status)]));
 
 function myOrders() {
   const u = currentUser();
@@ -141,22 +141,15 @@ function historyCard(o) {
 }
 
 function orderEta(o) {
-  if (o.status === 'ready') return 'Retira ahora';
-  if (o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep') return `${o.prepMin || '—'} min`;
-  return o.eta || ORDER_FLOW_LABEL[o.status] || '—';
+  return OrderWorkflow.getCustomerEta(o);
 }
 
 function orderStateMessage(o) {
-  const messages = {
-    queue: 'Tu pedido está en cola', confirmed: 'Pedido confirmado', prep: 'Estamos preparando tu pedido',
-    ready: '¡Tu pedido está listo!', delivered: 'Pedido entregado', cancelled: 'Pedido cancelado',
-    nopickup: 'Pedido no retirado', refunded: 'Reembolso procesado',
-  };
-  return messages[o.status] || 'Estado actualizado';
+  return OrderWorkflow.getCustomerMessage(o);
 }
 
 function showOrderDetail(o) {
-  const isTerminal = ['cancelled', 'nopickup', 'refunded'].includes(o.status);
+  const isTerminal = OrderWorkflow.isTerminal(o.status);
   const flowIndex = Math.max(0, ORDER_FLOW.indexOf(o.status));
   const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${ORDER_FLOW.map((status, index) => {
     const cls = index < flowIndex ? 'done' : index === flowIndex ? 'current' : 'pending';
@@ -325,4 +318,3 @@ function initials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
 window.initials = initials;
-

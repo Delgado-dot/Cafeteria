@@ -884,12 +884,8 @@ function queueOrderCard(o, tab) {
   if (o.status === 'prep') extraCls += ' state-prep';
   if (o.status === 'queue' && (needsPayment || isDelivery)) extraCls += ' priority';
 
-  let actionBtns = '';
-  if (o.status === 'queue') actionBtns = `<button class="btn btn-success btn-sm" data-act="confirm">Confirmar</button>`;
-  else if (o.status === 'confirmed') actionBtns = `<button class="btn btn-warning btn-sm" data-act="prep">Iniciar preparación</button>`;
-  else if (o.status === 'prep') actionBtns = `<button class="btn btn-success btn-sm" data-act="ready">Marcar listo</button>`;
-  else if (o.status === 'ready') actionBtns = `<button class="btn btn-success btn-sm" data-act="delivered">Entregar</button>`;
-  if (['queue', 'confirmed'].includes(o.status)) actionBtns += `<button class="btn btn-danger-outline btn-sm" data-act="cancel">Cancelar</button>`;
+  const actionBtns = OrderWorkflow.getAvailableActions(o.status).map((action) =>
+    `<button class="btn ${action.cls} btn-sm" data-act="${action.id}">${action.button}</button>`).join('');
 
   return `
     <div class="queue-order${extraCls}" data-id="${o.id}">
@@ -923,21 +919,17 @@ function bindQueueActions(area) {
       if (act === 'cancel') {
         confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${order.id}?`, 'Cancelar pedido', true).then((ok) => {
           if (!ok) return;
-          order.status = 'cancelled'; order.eta = 'Cancelado';
-          order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
+          OrderWorkflow.transition(order, 'cancel');
           saveOrders(); logAudit('Canceló pedido', order.id); toast('Pedido cancelado.', 'success');
           renderBarAdmin('orders');
         });
         return;
       }
-      const next = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
-      order.status = next;
-      order.eta = { confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' }[next];
-      order.paymentStatus = act === 'delivered' && order.paymentStatus === 'pending' ? 'paid' : order.paymentStatus;
+      const transition = OrderWorkflow.transition(order, act);
+      if (!transition.ok) { toast(transition.message, 'error'); return; }
       if (act === 'delivered' && order.delivery === 'delivery') logAudit('Entregó pedido', order.id);
       saveOrders(); logAudit('Cambió estado de pedido', `${order.id} → ${order.eta}`);
-      const label = { confirm: 'Confirmado', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
-      toast('# ' + order.id + ' ' + label + '.', 'success');
+      toast('# ' + order.id + ' ' + transition.label + '.', 'success');
       renderBarAdmin('orders');
     };
   });

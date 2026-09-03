@@ -94,7 +94,7 @@ function renderLogin() {
   const setErr = (field, msg) => {
     const inp = $('#li_' + field); const err = $('#li_' + field + 'Err');
     if (inp) inp.classList.toggle('err', !!msg);
-    err.textContent = msg || '';
+    if (err) err.textContent = msg || '';
   };
 
   $('#li_email').addEventListener('input', () => setErr('email', ''));

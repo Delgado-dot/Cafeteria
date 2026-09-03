@@ -26,22 +26,22 @@
   --border-strong: #d3dddb;
   --text: #16201f;
   --text-2: #5c6b69;
-  --text-3: #8a9795;
+  --text-3: #667572;
   --text-on-primary: #ffffff;
 
   /* Estados funcionales */
-  --success: #22a06b;
-  --success-strong: #178a5a;
+  --success: #147a4e;
+  --success-strong: #0f633e;
   --success-soft: #e6f6ee;
-  --warning: #e09a16;
-  --warning-strong: #c07d08;
+  --warning: #9a6500;
+  --warning-strong: #7a4f00;
   --warning-soft: #fdf4e1;
-  --danger: #d94b4b;
-  --danger-strong: #bd3232;
+  --danger: #b83232;
+  --danger-strong: #982626;
   --danger-soft: #fcecec;
-  --info: #3b7cc3;
+  --info: #285f9e;
   --info-soft: #e8f1fb;
-  --neutral: #778583;
+  --neutral: #5f6d6b;
   --neutral-soft: #eef1f1;
 
   /* Radios */
@@ -533,4 +533,3 @@ body.is-adminbar .admin-content h2,
 body.is-adminbar .admin-content h3,
 body.is-adminbar .admin-content .card-title,
 body.is-adminbar .admin-content .section-title { font-family: "Playfair Display", serif; }
-

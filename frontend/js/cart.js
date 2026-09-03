@@ -394,61 +394,62 @@ function estimatedTime() {
 }
 window.estimatedTime = estimatedTime;
 
+/* Fachada del caso de uso: coordina validación, creación y persistencia. */
+const OrderCheckoutFacade = {
+  validate({ delivery, payment, deliveryInfo, voucher }) {
+    if (capacityInfo().stateCls === 'danger') return { ok: false, message: 'La capacidad está completa. No se puede confirmar el pedido.', type: 'error' };
+    if (delivery === 'delivery' && !deliveryInfo) return { ok: false, message: 'Selecciona el piso y el aula para el delivery interno.', type: 'warning' };
+    if (payment === 'transferencia' && !voucher) return { ok: false, message: 'Carga el comprobante de transferencia (simulado).', type: 'warning', target: '#fu' };
+    return { ok: true };
+  },
+
+  createOrder({ delivery, payment, deliveryInfo }) {
+    const user = currentUser();
+    const now = new Date();
+    return {
+      id: nextOrderNumber(), userEmail: user.email, userName: user.name,
+      date: now.toISOString().slice(0, 10),
+      time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+      items: Cart.items.map((item) => ({ productId: item.productId, qty: item.qty, name: item.name, price: item.price })),
+      total: Cart.total(), status: 'queue', priority: 'normal',
+      delivery: delivery === 'delivery' ? 'delivery' : 'pickup',
+      deliveryInfo: delivery === 'delivery' ? deliveryInfo : null,
+      payment, paymentStatus: 'pending', prepMin: estimatedTime(), eta: 'En cola', note: '',
+    };
+  },
+
+  commit(order) {
+    const orders = Store.orders;
+    orders.unshift(order);
+    Store.orders = orders;
+
+    const products = Store.products;
+    order.items.forEach((item) => {
+      const product = products.find((candidate) => candidate.id === item.productId);
+      if (product) product.stock = Math.max(0, product.stock - item.qty);
+    });
+    Store.products = products;
+
+    const config = Store.config;
+    config.currentCapacity = Math.min(config.capacity, config.currentCapacity + 1);
+    Store.config = config;
+    logAudit('Realizó pedido', order.id);
+    Cart.clear();
+    return order;
+  },
+};
+
 function confirmOrder() {
   const delivery = $('[data-d].active') ? $('[data-d].active').dataset.d : 'pickup';
   const pay = window._payMethod || 'deuna';
-  const cap = capacityInfo();
-  if (cap.stateCls === 'danger') { toast('La capacidad está completa. No se puede confirmar el pedido.', 'error'); return; }
-
-  if (delivery === 'delivery') {
-    if (!window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
+  const checkout = { delivery, payment: pay, deliveryInfo: window._deliveryInfo, voucher: window._voucher };
+  const validation = OrderCheckoutFacade.validate(checkout);
+  if (!validation.ok) {
+    toast(validation.message, validation.type);
+    if (validation.target) $(validation.target)?.classList.add('err');
+    return;
   }
-  if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia (simulado).', 'warning'); $('#fu')?.classList.add('err'); return; }
-
-  const user = currentUser();
-  const num = nextOrderNumber();
-  const prep = estimatedTime();
-  const now = new Date();
-  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-
-  let paymentStatus = 'pending';
-  if (pay === 'efectivo') paymentStatus = 'pending';
-
-  const order = {
-    id: num,
-    userEmail: user.email, userName: user.name,
-    date: now.toISOString().slice(0, 10), time,
-    items: Cart.items.map((i) => ({ productId: i.productId, qty: i.qty, name: i.name, price: i.price })),
-    total: Cart.total(),
-    status: 'queue',
-    priority: 'normal',
-    delivery: delivery === 'delivery' ? 'delivery' : 'pickup',
-    deliveryInfo: delivery === 'delivery' ? window._deliveryInfo : null,
-    payment: pay,
-    paymentStatus: pay === 'efectivo' ? 'pending' : 'pending',
-    prepMin: prep, eta: 'En cola', note: '',
-  };
-
-  const orders = Store.orders;
-  orders.unshift(order);
-  Store.orders = orders;
-
-  // decrement stock
-  const products = Store.products;
-  order.items.forEach((i) => {
-    const p = products.find((x) => x.id === i.productId);
-    if (p) p.stock = Math.max(0, p.stock - i.qty);
-  });
-  Store.products = products;
-
-  // increment capacity (simulado)
-  const cfg = Store.config;
-  cfg.currentCapacity = Math.min(cfg.capacity, cfg.currentCapacity + 1);
-  Store.config = cfg;
-
-  logAudit('Realizó pedido', num);
-
-  Cart.clear();
+  const order = OrderCheckoutFacade.commit(OrderCheckoutFacade.createOrder(checkout));
   renderConfirmation(order);
 }
 
@@ -481,4 +482,3 @@ function renderConfirmation(order) {
       </div>
     </div>`;
 }
-
