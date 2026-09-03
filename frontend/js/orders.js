@@ -1,21 +1,197 @@
 /* ============================================================
-   orders.js — Pedidos del usuario, seguimiento, cancelación
+   orders.js — Pedidos del usuario, seguimiento, cancelación y perfil
    ============================================================ */
 
-const ORDER_FLOW = ['queue', 'confirmed', 'prep', 'ready', 'delivered'];
-const ORDER_FLOW_LABEL = { queue: 'En cola', confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
+/* ------------------------------------------------------------
+   INTERNAL SERVICES (Private Logic)
+   ------------------------------------------------------------ */
 
-function myOrders() {
-  const u = currentUser();
-  if (!u) return [];
-  return Store.orders.filter((o) => o.userEmail === u.email);
+const OrderService = {
+  get FLOW() { return ['queue', 'confirmed', 'prep', 'ready', 'delivered']; },
+  get FLOW_LABEL() { return { queue: 'En cola', confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' }; },
+
+  nextNumber() {
+    const orders = Store.orders;
+    let max = 0;
+    orders.forEach((o) => {
+      const n = parseInt((o.id.match(/\d+/) || [0])[0]);
+      if (n > max) max = n;
+    });
+    return 'PED-' + String(max + 1).padStart(3, '0');
+  },
+
+  getUserOrders() {
+    const u = currentUser();
+    if (!u) return [];
+    return Store.orders.filter((o) => o.userEmail === u.email);
+  },
+
+  cancelOrder(order) {
+    if (!['queue', 'confirmed'].includes(order.status)) {
+      return { ok: false, msg: 'Solo puedes cancelar mientras no esté en preparación.' };
+    }
+
+    order.status = 'cancelled';
+    order.eta = 'Cancelado';
+    order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
+
+    Store.orders = Store.orders;
+    logAudit('Canceló pedido', order.id);
+    return { ok: true };
+  },
+
+  getEta(o) {
+    if (o.status === 'ready') return 'Retira ahora';
+    if (['queue', 'confirmed', 'prep'].includes(o.status)) return `${o.prepMin || '—'} min`;
+    return o.eta || this.FLOW_LABEL[o.status] || '—';
+  },
+
+  getStateMessage(o) {
+    const messages = {
+      queue: 'Tu pedido está en cola', confirmed: 'Pedido confirmado', prep: 'Estamos preparando tu pedido',
+      ready: '¡Tu pedido está listo!', delivered: 'Pedido entregado', cancelled: 'Pedido cancelado',
+      nopickup: 'Pedido no retirado', refunded: 'Reembolso procesado',
+    };
+    return messages[o.status] || 'Estado actualizado';
+  },
+};
+
+const ProfileService = {
+  getUserData(email) {
+    return Store.users.find((x) => x.email === email) || {};
+  },
+
+  updateProfile(userData) {
+    const u = currentUser();
+    if (!u) return { ok: false };
+
+    const user = this.getUserData(u.email);
+    user.name = userData.name || user.name;
+    user.cargo = userData.cargo;
+    user.aula = userData.aula;
+
+    const sess = Auth.current();
+    sess.name = user.name;
+    Auth.set(sess);
+    Store.users = Store.users;
+    return { ok: true };
+  },
+
+  changePassword(email, oldPass, newPass) {
+    if (PASSWORDS[email] !== oldPass) {
+      return { ok: false, msg: 'La contraseña actual no es correcta.' };
+    }
+    if (newPass.length < 6) {
+      return { ok: false, msg: 'La contraseña debe tener al menos 6 caracteres.' };
+    }
+    PASSWORDS[email] = newPass;
+    logAudit('Cambió su contraseña', '');
+    return { ok: true };
+  }
+};
+
+/* ------------------------------------------------------------
+   UI COMPONENTS (Pure Rendering)
+   ------------------------------------------------------------ */
+
+function orderTrackingCard(o) {
+  const card = document.createElement('div');
+  card.className = `order-card order-card-active state-${o.status}`;
+  const flowIdx = OrderService.FLOW.indexOf(o.status);
+  const current = o.status === 'cancelled' ? -1 : flowIdx >= 0 ? flowIdx : 0;
+  const showFlow = !['cancelled', 'nopickup'].includes(o.status);
+
+  let timeline = '';
+  if (showFlow) {
+    timeline = `<div class="timeline">` + OrderService.FLOW.map((st, i) => {
+      const label = OrderService.FLOW_LABEL[st];
+      let cls = 'pending';
+      if (i < current) cls = 'done';
+      else if (i === current) cls = 'current';
+      const icon = i < current ? clientIcon('check') : (i === current ? clientIcon('clock') : '');
+      const isLast = i === OrderService.FLOW.length - 1;
+      return `<div class="tl-step ${cls}">
+          <div class="tl-dot">${icon}</div>
+          <div class="tl-body"><div class="tl-label">${label}</div>
+            ${i === current ? `<div class="tl-time">Estado actual</div>` : ''}
+          </div>
+          ${isLast ? '' : '<div class="tl-rail"></div>'}
+        </div>`;
+    }).join('') + `</div>`;
+  } else {
+    timeline = `<div class="alert ${o.status === 'cancelled' ? 'danger' : 'warning'}" style="margin-top:10px"><span class="a-ico">${clientIcon(o.status === 'cancelled' ? 'danger' : 'clock')}</span><div><div class="a-title">${o.status === 'cancelled' ? 'Pedido cancelado' : 'Pedido no retirado'}</div>${o.status === 'cancelled' ? (o.note || 'El pedido fue cancelado.') : (o.paymentStatus === 'refunded' ? 'Se procesó un reembolso.' : 'El pedido no fue retirado en el receso.')}</div></div>`;
+  }
+
+  card.innerHTML = `
+    <div class="order-head">
+      <div>
+        <div class="order-num">#${o.id}</div>
+        <div class="order-meta">${fmtDate(o.date)} · ${o.time || '—'}</div>
+      </div>
+      ${statusMeta(o.status)}
+    </div>
+    <div class="order-glance">
+      <div>
+        <div class="order-glance-label">${OrderService.getStateMessage(o)}</div>
+        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' · ')}</div>
+      </div>
+      <div class="order-eta">
+        <span class="tiny muted">TIEMPO ESTIMADO</span>
+        <strong>${OrderService.getEta(o)}</strong>
+      </div>
+    </div>
+    ${timeline}
+    <div class="order-card-actions">
+      <button class="btn btn-outline btn-sm" data-detail>Ver detalle</button>
+      ${['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-cancel>Cancelar pedido</button>' : ''}
+    </div>
+  `;
+
+  $('[data-detail]', card).onclick = () => showOrderDetail(o);
+
+  const cancelBtn = $('[data-cancel]', card);
+  if (cancelBtn) {
+    cancelBtn.onclick = async () => {
+      const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido? Solo puedes cancelar mientras no esté en preparación.', 'Cancelar pedido', true);
+      if (!ok) return;
+      const res = OrderService.cancelOrder(o);
+      if (res.ok) {
+        toast('Pedido cancelado.', 'success');
+        renderOrders();
+      } else {
+        toast(res.msg, 'warning');
+      }
+    };
+  }
+  return card;
 }
-window.myOrders = myOrders;
+
+function historyCard(o) {
+  return `
+    <div class="order-card order-card-history" data-order-detail="${esc(o.id)}">
+      <div>
+        <div class="order-num" style="font-size:var(--fs-md)">#${o.id} <span class="badge badge-outline">${fmtDate(o.date)} · ${o.time}</span></div>
+        <div class="small muted" style="margin-top:6px">${o.items.slice(0, 3).map((i) => esc(i.name)).join(', ')}${o.items.length > 3 ? \` +\${o.items.length - 3} más\` : ''}</div>
+      </div>
+      <div class="order-history-meta">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${statusMeta(o.status)}
+          ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso</span>' : ''}
+        </div>
+        <div class="bold" style="color:var(--primary-strong)">${money(o.total)}</div>
+      </div>
+      <button class="btn btn-outline btn-sm" data-history-detail="${esc(o.id)}">Detalle</button>
+    </div>`;
+}
+
+/* ------------------------------------------------------------
+   PAGES & MODALS
+   ------------------------------------------------------------ */
 
 function renderOrders(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
-  const orders = myOrders();
+  const orders = OrderService.getUserOrders();
 
   const active = orders.filter((o) => ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const history = orders.filter((o) => ['delivered', 'cancelled', 'nopickup', 'refunded'].includes(o.status));
@@ -49,123 +225,19 @@ function renderOrders(el) {
     });
   }
 }
-
-function orderTrackingCard(o) {
-  const card = document.createElement('div');
-  card.className = `order-card order-card-active state-${o.status}`;
-  const flowIdx = ORDER_FLOW.indexOf(o.status);
-  const current = o.status === 'cancelled' ? -1 : flowIdx >= 0 ? flowIdx : 0;
-  const showFlow = !['cancelled', 'nopickup'].includes(o.status);
-
-  let timeline = '';
-  if (showFlow) {
-    timeline = `<div class="timeline">` + ORDER_FLOW.map((st, i) => {
-      const label = ORDER_FLOW_LABEL[st];
-      let cls = 'pending';
-      if (i < current) cls = 'done';
-      else if (i === current) cls = 'current';
-      const icon = i < current ? clientIcon('check') : (i === current ? clientIcon('clock') : '');
-      const isLast = i === ORDER_FLOW.length - 1;
-      return `<div class="tl-step ${cls}">
-          <div class="tl-dot">${icon}</div>
-          <div class="tl-body"><div class="tl-label">${label}</div>
-            ${i === current ? `<div class="tl-time">Estado actual</div>` : ''}
-          </div>
-          ${isLast ? '' : '<div class="tl-rail"></div>'}
-        </div>`;
-    }).join('') + `</div>`;
-  } else {
-    timeline = `<div class="alert ${o.status === 'cancelled' ? 'danger' : 'warning'}" style="margin-top:10px"><span class="a-ico">${clientIcon(o.status === 'cancelled' ? 'danger' : 'clock')}</span><div><div class="a-title">${o.status === 'cancelled' ? 'Pedido cancelado' : 'Pedido no retirado'}</div>${o.status === 'cancelled' ? (o.note || 'El pedido fue cancelado.') : (o.paymentStatus === 'refunded' ? 'Se procesó un reembolso.' : 'El pedido no fue retirado en el receso.')}</div></div>`;
-  }
-
-  card.innerHTML = `
-    <div class="order-head">
-      <div>
-        <div class="order-num">#${o.id}</div>
-        <div class="order-meta">${fmtDate(o.date)} · ${o.time || '—'}</div>
-      </div>
-      ${statusMeta(o.status)}
-    </div>
-    <div class="order-glance">
-      <div>
-        <div class="order-glance-label">${orderStateMessage(o)}</div>
-        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' · ')}</div>
-      </div>
-      <div class="order-eta">
-        <span class="tiny muted">TIEMPO ESTIMADO</span>
-        <strong>${orderEta(o)}</strong>
-      </div>
-    </div>
-    ${timeline}
-    <div class="order-card-actions">
-      <button class="btn btn-outline btn-sm" data-detail>Ver detalle</button>
-      ${['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-cancel>Cancelar pedido</button>' : ''}
-    </div>
-  `;
-
-  $('[data-detail]', card).onclick = () => showOrderDetail(o);
-
-  const cancelBtn = $('[data-cancel]', card);
-  if (cancelBtn) {
-    cancelBtn.onclick = async () => {
-      const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido? Solo puedes cancelar mientras no esté en preparación.', 'Cancelar pedido', true);
-      if (!ok) return;
-      o.status = 'cancelled';
-      o.eta = 'Cancelado';
-      o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
-      Store.orders = Store.orders;
-      logAudit('Canceló pedido', o.id);
-      toast('Pedido cancelado.', 'success');
-      renderOrders();
-    };
-  }
-  return card;
-}
-
-function historyCard(o) {
-  return `
-    <div class="order-card order-card-history" data-order-detail="${esc(o.id)}">
-      <div>
-        <div class="order-num" style="font-size:var(--fs-md)">#${o.id} <span class="badge badge-outline">${fmtDate(o.date)} · ${o.time}</span></div>
-        <div class="small muted" style="margin-top:6px">${o.items.slice(0, 3).map((i) => esc(i.name)).join(', ')}${o.items.length > 3 ? ` +${o.items.length - 3} más` : ''}</div>
-      </div>
-      <div class="order-history-meta">
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          ${statusMeta(o.status)}
-          ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso</span>' : ''}
-        </div>
-        <div class="bold" style="color:var(--primary-strong)">${money(o.total)}</div>
-      </div>
-      <button class="btn btn-outline btn-sm" data-history-detail="${esc(o.id)}">Detalle</button>
-    </div>`;
-}
-
-function orderEta(o) {
-  if (o.status === 'ready') return 'Retira ahora';
-  if (o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep') return `${o.prepMin || '—'} min`;
-  return o.eta || ORDER_FLOW_LABEL[o.status] || '—';
-}
-
-function orderStateMessage(o) {
-  const messages = {
-    queue: 'Tu pedido está en cola', confirmed: 'Pedido confirmado', prep: 'Estamos preparando tu pedido',
-    ready: '¡Tu pedido está listo!', delivered: 'Pedido entregado', cancelled: 'Pedido cancelado',
-    nopickup: 'Pedido no retirado', refunded: 'Reembolso procesado',
-  };
-  return messages[o.status] || 'Estado actualizado';
-}
+window.renderOrders = renderOrders;
 
 function showOrderDetail(o) {
   const isTerminal = ['cancelled', 'nopickup', 'refunded'].includes(o.status);
-  const flowIndex = Math.max(0, ORDER_FLOW.indexOf(o.status));
-  const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${ORDER_FLOW.map((status, index) => {
+  const flowIndex = Math.max(0, OrderService.FLOW.indexOf(o.status));
+  const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${OrderService.FLOW.map((status, index) => {
     const cls = index < flowIndex ? 'done' : index === flowIndex ? 'current' : 'pending';
-    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? clientIcon('check') : index === flowIndex ? clientIcon('clock') : ''}</div><div class="tl-body"><div class="tl-label">${ORDER_FLOW_LABEL[status]}</div>${index === flowIndex ? `<div class="tl-time">${orderStateMessage(o)}</div>` : ''}</div>${index === ORDER_FLOW.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
+    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? clientIcon('check') : index === flowIndex ? clientIcon('clock') : ''}</div><div class="tl-body"><div class="tl-label">${OrderService.FLOW_LABEL[status]}</div>${index === flowIndex ? `<div class="tl-time">${OrderService.getStateMessage(o)}</div>` : ''}</div>${index === OrderService.FLOW.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
   }).join('')}</div>`;
-  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${clientIcon(o.status === 'nopickup' ? 'clock' : 'back')}</span><div><div class="a-title">${orderStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
+  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${clientIcon(o.status === 'nopickup' ? 'clock' : 'back')}</span><div><div class="a-title">${OrderService.getStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
   const d = drawer(`
     <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
-    <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
+    <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${OrderService.getEta(o)}`}</div>
     ${terminal}${progress}
     <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
     <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
@@ -173,31 +245,23 @@ function showOrderDetail(o) {
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
     const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
     if (!ok) return;
-    o.status = 'cancelled'; o.eta = 'Cancelado'; o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
-    logAudit('Canceló pedido', o.id); d.close(); toast('Pedido cancelado.', 'success'); renderOrders();
+    const res = OrderService.cancelOrder(o);
+    if (res.ok) {
+      toast('Pedido cancelado.', 'success');
+      d.close();
+      renderOrders();
+    } else {
+      toast(res.msg, 'warning');
+    }
   });
 }
 window.showOrderDetail = showOrderDetail;
 
-function saveOrders() { Store.orders = Store.orders; }
-
-function fmtDate(d) {
-  if (!d) return '';
-  try {
-    const dt = new Date(d + 'T00:00:00');
-    return dt.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
-  } catch (e) { return d; }
-}
-window.fmtDate = fmtDate;
-
-/* ============================================================
-   PERFIL
-   ============================================================ */
 function renderProfile(el) {
   const app = el || $('#mainContent') || $('#app');
   const u = currentUser();
   if (!u) return route('login');
-  const user = Store.users.find((x) => x.email === u.email) || { name: u.name, email: u.email, cargo: u.cargo, aula: u.aula, registeredAt: '—' };
+  const user = ProfileService.getUserData(u.email);
 
   app.innerHTML = `
     <div class="page-title"><div><h1>Mi perfil</h1><p class="page-sub">Tus datos y la seguridad de tu cuenta.</p></div></div>
@@ -250,21 +314,22 @@ function renderProfile(el) {
       </div>`);
     $('[data-close]', ov).onclick = () => ov.remove();
     $('[data-save]', ov).onclick = () => {
-      user.name = $('#epName', ov).value || user.name;
-      user.cargo = $('#epCargo', ov).value;
-      user.aula = $('#epAula', ov).value;
-      const sess = Auth.current();
-      sess.name = user.name;
-      Auth.set(sess);
-      Store.users = Store.users;
-      toast('Perfil actualizado.', 'success');
-      ov.remove();
-      renderProfile();
+      const res = ProfileService.updateProfile({
+        name: $('#epName', ov).value,
+        cargo: $('#epCargo', ov).value,
+        aula: $('#epAula', ov).value,
+      });
+      if (res.ok) {
+        toast('Perfil actualizado.', 'success');
+        ov.remove();
+        renderProfile();
+      }
     };
   };
 
   $('#btnChangePass').onclick = () => changePasswordModal();
 }
+window.renderProfile = renderProfile;
 
 function changePasswordModal() {
   const ov = modal(`
@@ -282,21 +347,22 @@ function changePasswordModal() {
     const a = $('#cpOld', ov).value, b = $('#cpNew', ov).value, c = $('#cpNew2', ov).value;
     const err = $('#cpErr', ov);
     if (!a || !b || !c) { err.textContent = 'Completa todos los campos.'; return; }
-    if (PASSWORDS[currentUser().email] !== a) { err.textContent = 'La contraseña actual no es correcta.'; return; }
-    if (b.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
     if (b !== c) { err.textContent = 'Las contraseñas no coinciden.'; return; }
-    PASSWORDS[currentUser().email] = b;
-    toast('Contraseña actualizada.', 'success');
-    logAudit('Cambió su contraseña', '');
-    ov.remove();
+    const res = ProfileService.changePassword(currentUser().email, a, b);
+    if (res.ok) {
+      toast('Contraseña actualizada.', 'success');
+      ov.remove();
+    } else {
+      err.textContent = res.msg;
+    }
   };
 }
+window.changePasswordModal = changePasswordModal;
 
-/* Perfil en modal — para roles administrativos (sin salir del propio panel) */
 function renderProfileModal() {
   const u = currentUser();
   if (!u) return route('login');
-  const user = Store.users.find((x) => x.email === u.email) || {};
+  const user = ProfileService.getUserData(u.email);
   const ov = modal(`
     <div class="card" style="display:flex;gap:16px;align-items:center;margin-bottom:16px;box-shadow:none;padding:16px">
       <div class="avatar lg">${esc(initials(u.name))}</div>
@@ -325,4 +391,3 @@ function initials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
 window.initials = initials;
-
