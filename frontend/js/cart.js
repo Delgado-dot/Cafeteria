@@ -28,7 +28,7 @@ const Cart = {
     } else {
       this.items.push({
         productId: product.id, qty, name, price: product.price + (addons?.reduce((s, a) => s + a.price, 0) || 0),
-        basePrice: product.price, addons: addons || [], note: note || '', emoji: productIcon(product), prepMin: product.prepMin,
+        basePrice: product.price, addons: addons || [], note: note || '', emoji: clientProductIcon(product), prepMin: product.prepMin,
       });
     }
     this.save();
@@ -90,7 +90,7 @@ function renderCapacityCard(container) {
       </div>
       <div class="bar-track bar-lg"><div class="${cls}" style="width:${info.pct}%"></div></div>
       <div class="capacity-num"><span id="capText">${info.used} / ${info.total} pedidos</span><b>${info.pct}%</b></div>
-      ${info.warnMsg ? `<div class="alert warning" style="margin-top:12px;padding:8px 12px"><span class="a-ico">⚠️</span><div>${info.warnMsg}</div></div>` : ''}
+      ${info.warnMsg ? `<div class="alert warning" style="margin-top:12px;padding:8px 12px"><span class="a-ico">${clientIcon('warning')}</span><div>${info.warnMsg}</div></div>` : ''}
     </div>`;
 }
 window.renderCapacityCard = renderCapacityCard;
@@ -126,11 +126,11 @@ function renderCart(el) {
   let banner = '';
   if (!canOrder) {
     const s = cafeStatus();
-    banner = `<div class="alert danger"><span class="a-ico">⛔</span><div><div class="a-title">Cafetería cerrada.</div>Puedes revisar tu carrito, pero no se aceptan pedidos en este momento<br>(Receso: ${s.breakStart} - ${s.breakEnd} o fuera del horario ${s.orderOpen}-${s.orderClose}).</div></div>`;
+    banner = `<div class="alert danger"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Cafetería cerrada.</div>Puedes revisar tu carrito, pero no se aceptan pedidos en este momento<br>(Receso: ${s.breakStart} - ${s.breakEnd} o fuera del horario ${s.orderOpen}-${s.orderClose}).</div></div>`;
   } else if (cap.stateCls === 'warning') {
-    banner = `<div class="alert warning"><span class="a-ico">⚠️</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
+    banner = `<div class="alert warning"><span class="a-ico">${clientIcon('warning')}</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
   } else if (cap.stateCls === 'danger') {
-    banner = `<div class="alert danger"><span class="a-ico">📋</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta nuevamente más tarde.</div></div>`;
+    banner = `<div class="alert danger"><span class="a-ico">${clientIcon('capacity')}</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta nuevamente más tarde.</div></div>`;
   }
 
   app.innerHTML = `
@@ -156,7 +156,7 @@ function renderCart(el) {
 
   const itemsWrap = $('#cartItems');
   if (!Cart.items.length) {
-    itemsWrap.innerHTML = emptyState('🛒', 'Tu carrito está vacío', 'Agrega productos desde el menú para continuar.');
+    itemsWrap.innerHTML = emptyState(clientIcon('cart'), 'Tu carrito está vacío', 'Agrega productos desde el menú para continuar.');
   }
 
   Cart.items.forEach((item) => {
@@ -164,7 +164,7 @@ function renderCart(el) {
     const row = document.createElement('div');
     row.className = 'cart-item';
     row.innerHTML = `
-      <div class="ci-media">${item.emoji || '🍽️'}</div>
+      <div class="ci-media">${clientProductIcon(product)}</div>
       <div class="ci-body">
         <div class="ci-name">${esc(item.name)}</div>
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
@@ -203,9 +203,9 @@ function renderCheckout(el) {
   const cfg = Store.config;
   const deliveryOn = cfg.deliveryEnabled && canPlaceOrder();
   const payOptions = [
-    { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: '📱' },
-    { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: '🏦' },
-    { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: '💵' },
+    { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: clientIcon('mobile') },
+    { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: clientIcon('transfer') },
+    { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: clientIcon('cash') },
   ];
 
   app.innerHTML = `
@@ -214,7 +214,7 @@ function renderCheckout(el) {
     <p class="page-sub">Verifica el resumen antes de confirmar.</p>
 
     <div class="progress-steps">
-      <div class="ps-step done"><div class="ps-circle">✓</div><div class="ps-label">Carrito</div></div>
+      <div class="ps-step done"><div class="ps-circle">${clientIcon('check')}</div><div class="ps-label">Carrito</div></div>
       <div class="ps-step current"><div class="ps-circle">2</div><div class="ps-label">Confirmar</div></div>
       <div class="ps-step"><div class="ps-circle">3</div><div class="ps-label">Realizado</div></div>
     </div>
@@ -261,9 +261,9 @@ function renderCheckout(el) {
       <div class="sc-ico">${icon}</div>
       <div><div class="sc-name">${name}</div><div class="sc-desc">${desc}</div></div>
     </div>`;
-  let dHtml = mkDelivery('pickup', 'Retiro en cafetería', 'Retiras tu pedido durante el receso 10:00 - 10:15.', '🏪');
-  if (deliveryOn) dHtml += mkDelivery('delivery', 'Delivery interno', 'Entrega dentro del edificio INTESUD.', '🛵');
-  deliveryWrap.innerHTML = (deliveryOn ? '' : `<div class="alert neutral" style="margin-bottom:12px"><span class="a-ico">🚫</span><div><div class="a-title">Delivery no disponible.</div>No se aceptan pedidos de delivery en este momento.</div></div>`) + dHtml;
+  let dHtml = mkDelivery('pickup', 'Retiro en cafetería', 'Retiras tu pedido durante el receso 10:00 - 10:15.', clientIcon('pickup'));
+  if (deliveryOn) dHtml += mkDelivery('delivery', 'Delivery interno', 'Entrega dentro del edificio INTESUD.', clientIcon('delivery'));
+  deliveryWrap.innerHTML = (deliveryOn ? '' : `<div class="alert neutral" style="margin-bottom:12px"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Delivery no disponible.</div>No se aceptan pedidos de delivery en este momento.</div></div>`) + dHtml;
 
   deliveryWrap.querySelectorAll('[data-d]').forEach((el) => {
     el.onclick = () => {
@@ -280,7 +280,7 @@ function renderCheckout(el) {
     const pisos = cfg2.deliveryDays && cfg2.deliveryDays.length ? [1, 2, 3] : [1, 2, 3];
     let state = { piso: '1', aula: '' };
     detail.innerHTML = `
-      <div class="alert info"><span class="a-ico">🛵</span><div><div class="a-title">Delivery interno.</div>Selecciona el piso y el aula dentro del edificio. Cobertura: Piso 1 - 3.</div></div>
+      <div class="alert info"><span class="a-ico">${clientIcon('delivery')}</span><div><div class="a-title">Delivery interno.</div>Selecciona el piso y el aula dentro del edificio. Cobertura: Piso 1 - 3.</div></div>
       <div class="floor-selector" id="floorTabs"></div>
       <div class="aula-grid" id="aulaGrid"></div>
       <div id="aulaConfirm" style="margin-top:14px;display:none" class="alert success"></div>`;
@@ -320,7 +320,7 @@ function renderCheckout(el) {
       const box = $('#aulaConfirm');
       if (state.aula) {
         box.style.display = 'block';
-        box.innerHTML = `<span class="a-ico">📍</span><div><div class="a-title">Delivery interno.</div>Piso: <b>${state.piso}</b> · Aula: <b>${state.aula}</b></div>`;
+        box.innerHTML = `<span class="a-ico">${clientIcon('location')}</span><div><div class="a-title">Delivery interno.</div>Piso: <b>${state.piso}</b> · Aula: <b>${state.aula}</b></div>`;
         window._deliveryInfo = { piso: state.piso, aula: state.aula };
       } else { box.style.display = 'none'; delete window._deliveryInfo; }
     }
@@ -349,32 +349,32 @@ function renderCheckout(el) {
     const detail = $('#payDetail');
     if (method === 'deuna') {
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">📱</span><div><div class="a-title">Pago con DEUNA.</div>Escanea el código QR para pagar <b>${money(Cart.total())}</b>. Se validará en línea y se mostrará en el estado del pedido.</div></div>
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con DEUNA.</div>Escanea el código QR para pagar <b>${money(Cart.total())}</b>. Se validará en línea y se mostrará en el estado del pedido.</div></div>
         <div class="qr-box"><div class="qr-pattern"></div></div>
         <div style="text-align:center" class="muted small" style="margin-top:10px">Código QR simulado — Total: <b>${money(Cart.total())}</b></div>`;
     } else if (method === 'transferencia') {
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">🏦</span><div><div class="a-title">Transferencia.</div>Realiza una transferencia por <b>${money(Cart.total())}</b> y adjunta el comprobante (simulado).</div></div>
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('transfer')}</span><div><div class="a-title">Transferencia.</div>Realiza una transferencia por <b>${money(Cart.total())}</b> y adjunta el comprobante (simulado).</div></div>
         <div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)">
           <div class="muted small">Banco Sudamericano · Cta. ahorros</div>
           <div class="bold" style="font-size:1.15rem">220 456 7890 1</div>
-          <div class="muted small">Titular: BAR INTESUD</div>
+          <div class="muted small">Titular: Bar INTESUD</div>
           <div class="muted small">Cédula/RUC: 0999999999001</div>
         </div>
         <div style="margin-top:12px">
           <label class="label">Comprobante (simulado)</label>
-          <div class="file-drop" id="fu"><div class="fd-ico">📎</div><div>Haz clic para cargar tu comprobante</div><div class="tiny">PNG, JPG o PDF — máx 2MB</div></div>
+          <div class="file-drop" id="fu"><div class="fd-ico">${clientIcon('clip')}</div><div>Haz clic para cargar tu comprobante</div><div class="tiny">PNG, JPG o PDF — máx 2MB</div></div>
           <div class="tiny muted" id="fuName" style="margin-top:6px"></div>
         </div>`;
       const fu = $('#fu');
       fu.onclick = () => {
         fu.classList.add('success');
-        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">✅</span><div style="color:var(--success)">Comprobante cargado (simulado)</div>`;
+        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante cargado (simulado)</div>`;
         window._voucher = true;
       };
     } else if (method === 'efectivo') {
       detail.innerHTML = `
-        <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">💵</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b></div></div>
+        <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">${clientIcon('cash')}</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b></div></div>
         <div class="capacity-card"><div style="text-align:center"><span class="badge badge-warning">Pendiente de pago</span></div><div class="muted small" style="text-align:center;margin-top:8px">Abona tu pedido al retirarlo en la cafetería. Total: <b>${money(Cart.total())}</b></div></div>`;
     }
   }
@@ -463,7 +463,7 @@ function renderConfirmation(order) {
   const app = $('#mainContent') || $('#app');
   app.innerHTML = `
     <div class="card" style="text-align:center;padding:44px 24px;max-width:560px;margin:0 auto">
-      <div style="font-size:3.4rem;margin-bottom:8px">🎉</div>
+      <div style="font-size:3.4rem;margin-bottom:8px">${clientIcon('celebrate')}</div>
       <h1 style="color:var(--success)">¡Pedido realizado!</h1>
       <p class="muted" style="margin:6px 0 18px">Tu pedido está en cola y comenzará a prepararse.</p>
       <div style="font-size:1.6rem;font-weight:800;color:var(--primary-strong)" id="confNum">${order.id}</div>

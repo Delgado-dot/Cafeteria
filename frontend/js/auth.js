@@ -24,24 +24,28 @@ const Auth = {
   logout() { this.clear(); logAudit('Cerró sesión', ''); },
 };
 
+/* ---------- Iconos compartidos con Admin Bar ---------- */
+const AUTH_ICO = {
+  cup: (w = 18) => `<i class="bx bx-coffee" aria-hidden="true" style="font-size:${w}px"></i>`,
+  user: '<i class="bx bx-user" aria-hidden="true"></i>',
+  eye: '<i class="bx bx-show" aria-hidden="true"></i>',
+  phone: '<i class="bx bx-phone" aria-hidden="true"></i>',
+  scooter: '<i class="bx bx-cycling" aria-hidden="true"></i>',
+  roles: '<i class="bx bx-group" aria-hidden="true"></i>',
+  lock: (w = 18) => `<i class="bx bx-lock-alt" aria-hidden="true" style="font-size:${w}px"></i>`,
+  done: '<i class="bx bx-check-circle" aria-hidden="true" style="font-size:44px;color:var(--success)"></i>',
+};
+window.AUTH_ICO = AUTH_ICO;
+
 /* ---------- Render login ---------- */
 function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
   <div class="login-screen">
-    <div class="login-brand">
-      <div class="brand-logo-badge"><img class="brand-logo-image" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
-      <h1>BAR INTESUD</h1>
-      <p>Instituto Tecnológico Superior Sudamericano — Pedidos en línea para el receso, con delivery interno y gestión del bar.</p>
-      <div class="brand-tags">
-        <span>📱 Pedidos en línea</span>
-        <span>🛵 Delivery interno</span>
-        <span>👨‍🏫 Roles y permisos</span>
-      </div>
-    </div>
     <div class="login-section">
       <div class="login-card">
-        <div class="login-head">
+        <div class="login-head login-brand-head">
+          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
           <h2>Iniciar sesión</h2>
           <p>Ingresa con tu cuenta institucional</p>
         </div>
@@ -50,9 +54,9 @@ function renderLogin() {
           <div class="field">
             <label class="label" for="li_email">Usuario o correo</label>
             <div class="input-wrap">
-              <span class="leading-ico">👤</span>
+              <span class="leading-ico">${AUTH_ICO.user}</span>
               <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar">✕</button>
+              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
             </div>
             <div class="input-err-msg" id="li_emailErr"></div>
           </div>
@@ -60,7 +64,7 @@ function renderLogin() {
             <label class="label" for="li_pass">Contraseña</label>
             <div class="input-group">
               <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar">👁</button>
+              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
             </div>
             <div class="input-err-msg" id="li_passErr"></div>
           </div>
@@ -139,7 +143,7 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge">🔐</div>
+      <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
     </div>
@@ -241,7 +245,7 @@ function recoverStep(step, ctx = { email: '' }) {
     title.textContent = '¡Contraseña actualizada!';
     sub.textContent = 'Tu contraseña ha sido restablecida correctamente.';
     body.innerHTML = `
-      <div class="empty-state" style="padding:20px 0"><div class="icon">✅</div></div>
+      <div class="empty-state" style="padding:20px 0">${AUTH_ICO.done}</div>
       <button class="btn btn-primary btn-block" id="rvDone">Ir a iniciar sesión</button>`;
     $('#rvDone').onclick = () => route('login');
   }

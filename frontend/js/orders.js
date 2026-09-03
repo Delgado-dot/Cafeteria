@@ -34,14 +34,14 @@ function renderOrders(el) {
     </div>`;
 
   const activeWrap = $('#currentOrders');
-  if (!active.length) activeWrap.innerHTML = emptyState('📭', 'No tienes pedidos activos', 'Cuando realices un pedido, aparecerá aquí.');
+  if (!active.length) activeWrap.innerHTML = emptyState(clientIcon('empty'), 'No tienes pedidos activos', 'Cuando realices un pedido, aparecerá aquí.');
 
   active.sort((a, b) => (b.time || '').localeCompare(a.time || '')).forEach((o) => {
     activeWrap.appendChild(orderTrackingCard(o));
   });
 
   const histWrap = $('#historyOrders');
-  if (!history.length) histWrap.innerHTML = emptyState('🗂️', 'Sin historial', 'No hay pedidos anteriores.');
+  if (!history.length) histWrap.innerHTML = emptyState(clientIcon('orders'), 'Sin historial', 'No hay pedidos anteriores.');
   else {
     histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
     $$('[data-history-detail]', histWrap).forEach((button) => {
@@ -64,7 +64,7 @@ function orderTrackingCard(o) {
       let cls = 'pending';
       if (i < current) cls = 'done';
       else if (i === current) cls = 'current';
-      const icon = i < current ? '✓' : (i === current ? '●' : '');
+      const icon = i < current ? clientIcon('check') : (i === current ? clientIcon('clock') : '');
       const isLast = i === ORDER_FLOW.length - 1;
       return `<div class="tl-step ${cls}">
           <div class="tl-dot">${icon}</div>
@@ -75,7 +75,7 @@ function orderTrackingCard(o) {
         </div>`;
     }).join('') + `</div>`;
   } else {
-    timeline = `<div class="alert ${o.status === 'cancelled' ? 'danger' : 'warning'}" style="margin-top:10px"><span class="a-ico">${o.status === 'cancelled' ? '✕' : '⏰'}</span><div><div class="a-title">${o.status === 'cancelled' ? 'Pedido cancelado' : 'Pedido no retirado'}</div>${o.status === 'cancelled' ? (o.note || 'El pedido fue cancelado.') : (o.paymentStatus === 'refunded' ? 'Se procesó un reembolso.' : 'El pedido no fue retirado en el receso.')}</div></div>`;
+    timeline = `<div class="alert ${o.status === 'cancelled' ? 'danger' : 'warning'}" style="margin-top:10px"><span class="a-ico">${clientIcon(o.status === 'cancelled' ? 'danger' : 'clock')}</span><div><div class="a-title">${o.status === 'cancelled' ? 'Pedido cancelado' : 'Pedido no retirado'}</div>${o.status === 'cancelled' ? (o.note || 'El pedido fue cancelado.') : (o.paymentStatus === 'refunded' ? 'Se procesó un reembolso.' : 'El pedido no fue retirado en el receso.')}</div></div>`;
   }
 
   card.innerHTML = `
@@ -160,12 +160,12 @@ function showOrderDetail(o) {
   const flowIndex = Math.max(0, ORDER_FLOW.indexOf(o.status));
   const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${ORDER_FLOW.map((status, index) => {
     const cls = index < flowIndex ? 'done' : index === flowIndex ? 'current' : 'pending';
-    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? '✓' : index === flowIndex ? '●' : ''}</div><div class="tl-body"><div class="tl-label">${ORDER_FLOW_LABEL[status]}</div>${index === flowIndex ? `<div class="tl-time">${orderStateMessage(o)}</div>` : ''}</div>${index === ORDER_FLOW.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
+    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? clientIcon('check') : index === flowIndex ? clientIcon('clock') : ''}</div><div class="tl-body"><div class="tl-label">${ORDER_FLOW_LABEL[status]}</div>${index === flowIndex ? `<div class="tl-time">${orderStateMessage(o)}</div>` : ''}</div>${index === ORDER_FLOW.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
   }).join('')}</div>`;
-  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${o.status === 'nopickup' ? '⏰' : '↩'}</span><div><div class="a-title">${orderStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
+  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${clientIcon(o.status === 'nopickup' ? 'clock' : 'back')}</span><div><div class="a-title">${orderStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
   const d = drawer(`
     <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
-    <div class="detail-eta">${o.status === 'ready' ? '✓ Retira tu pedido en cafetería' : `⏱ ${orderEta(o)}`}</div>
+    <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
     ${terminal}${progress}
     <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
     <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
@@ -227,8 +227,8 @@ function renderProfile(el) {
     <div class="card profile-security">
       <div class="card-header"><div><div class="card-title">Seguridad</div><div class="small muted">Administra el acceso a tu cuenta.</div></div></div>
       <div class="card-body">
-        <div class="security-row"><span class="security-icon">🔒</span><div><b>Contraseña</b><div class="small muted">Mantén tu cuenta protegida.</div></div><button class="btn btn-outline btn-sm" id="btnChangePass">Cambiar</button></div>
-        <div class="security-row"><span class="security-icon">⏻</span><div><b>Sesión actual</b><div class="small muted">Cierra sesión si terminas de usar este equipo.</div></div><button class="btn btn-danger-outline btn-sm" id="btnLogout">Cerrar sesión</button></div>
+        <div class="security-row"><span class="security-icon">${clientIcon('lock')}</span><div><b>Contraseña</b><div class="small muted">Mantén tu cuenta protegida.</div></div><button class="btn btn-outline btn-sm" id="btnChangePass">Cambiar</button></div>
+        <div class="security-row"><span class="security-icon">${clientIcon('logout')}</span><div><b>Sesión actual</b><div class="small muted">Cierra sesión si terminas de usar este equipo.</div></div><button class="btn btn-danger-outline btn-sm" id="btnLogout">Cerrar sesión</button></div>
       </div>
     </div></div>`;
 

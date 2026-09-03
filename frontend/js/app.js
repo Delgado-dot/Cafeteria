@@ -6,6 +6,32 @@
 function currentUser() { return Auth.current(); }
 window.currentUser = currentUser;
 
+function clientIcon(name, extra = '') {
+  const icons = {
+    search: 'bx-search', cart: 'bx-cart', user: 'bx-user', orders: 'bx-receipt', lock: 'bx-lock-alt',
+    logout: 'bx-log-out', home: 'bx-grid-alt', menu: 'bx-food-menu', warning: 'bx-error', danger: 'bx-error-circle',
+    capacity: 'bx-gauge', food: 'bx-restaurant', clock: 'bx-time', empty: 'bx-package', delivery: 'bx-cycling',
+    pickup: 'bx-store', location: 'bx-map', mobile: 'bx-mobile-alt', transfer: 'bx-transfer-alt', cash: 'bx-money',
+    clip: 'bx-paperclip', check: 'bx-check-circle', celebrate: 'bx-party', back: 'bx-arrow-back',
+  };
+  return `<i class="bx ${icons[name] || icons.food}" aria-hidden="true" ${extra}></i>`;
+}
+window.clientIcon = clientIcon;
+
+function clientCatIcon(category) {
+  const icons = {
+    Hamburguesas: 'food', 'Hot Dogs': 'food', Sándwiches: 'food', 'Papas y Salchipapas': 'food',
+    Bebidas: 'food', Snacks: 'food',
+  };
+  return clientIcon(icons[category] || 'food');
+}
+window.clientCatIcon = clientCatIcon;
+
+function clientProductIcon(product) {
+  return clientCatIcon(product.category);
+}
+window.clientProductIcon = clientProductIcon;
+
 function route(r) {
   setRoute(r);
   window.scrollTo(0, 0);
@@ -55,13 +81,22 @@ function handleRoute() {
   let r = (window.location.hash || '#home').replace('#', '');
   params.product = null;
 
+  // Cada ruta parte de un estado visual limpio. Antes, al cerrar sesion,
+  // el login/landing heredaba clases del panel anterior y algunos textos
+  // quedaban blancos sobre superficies claras.
+  document.body.classList.remove('is-landing', 'is-auth');
+  syncBodyClass();
+
   // Páginas públicas
+  if (r === 'landing') return renderLanding();
   if (r === 'login') {
     if (user) { setRoute(homeRouteFor(user.role)); return; }
+    document.body.classList.add('is-auth');
     return renderLogin();
   }
   if (r === 'forgot') {
     if (user) { setRoute(homeRouteFor(user.role)); return; }
+    document.body.classList.add('is-auth');
     return renderForgot();
   }
 
@@ -73,7 +108,9 @@ function handleRoute() {
     r = 'product';
   }
 
-  if (!user) return renderLogin();
+  // Sin sesión: el Landing público es la puerta de entrada del sistema.
+  // El login se alcanza desde el botón "ACCEDER" del Landing.
+  if (!user) return renderLanding();
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {
@@ -81,7 +118,25 @@ function handleRoute() {
     return;
   }
 
-  if (r.startsWith('adminbar')) return renderBarAdmin(r.split('/')[1] || 'dashboard');
+  if (r.startsWith('adminbar')) {
+    const section = r.split('/')[1];
+    if (section === 'payment-detail') {
+      return renderBarAdmin('payment-detail', r.split('/')[2]);
+    }
+    if (section === 'sales-dashboard') {
+      return renderBarAdmin('sales-dashboard');
+    }
+    if (section === 'sales-history') {
+      return renderBarAdmin('sales-history');
+    }
+    if (section === 'config-hours') {
+      return renderBarAdmin('config-hours');
+    }
+    if (section === 'config-status') {
+      return renderBarAdmin('config-status');
+    }
+    return renderBarAdmin(section || 'dashboard');
+  }
   if (r.startsWith('admindev')) return renderDevAdmin(r.split('/')[1] || 'dashboard');
 
   renderUserShell(r);
@@ -97,17 +152,16 @@ function renderUserShell(page) {
   const header = `
     <div class="app">
       <header class="user-header">
-        <button class="user-menu-toggle" id="userMenuToggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark"><img class="brand-mark-image" src="assets/bar-intesud-logo.png" alt=""></span>
-          <span class="brand-name">BAR INTESUD<span class="brand-sub">Pedidos en línea</span></span>
+          <span class="brand-mark"><img class="brand-mark-img" src="assets/intesud-white-mark.png" alt="Logo INTESUD"></span>
+          <span class="brand-name">Bar INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
           <div class="header-search">
-            <span class="ico">🔍</span>
+            <span class="ico">${clientIcon('search')}</span>
             <input class="input" id="headerSearch" placeholder="Buscar producto..." autocomplete="off">
           </div>
-          <button class="header-icon-btn" onclick="setRoute('cart')" title="Carrito">🛒<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
+          <button class="header-icon-btn" onclick="setRoute('cart')" title="Carrito">${clientIcon('cart')}<span class="bubble ${cartCount ? 'show' : ''}" id="cartBubble">${cartCount}</span></button>
           <div class="user-chip" id="userMenu">
             <div class="avatar">${esc(initials(user.name))}</div>
             <span class="chip-info bold" style="font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
@@ -117,27 +171,15 @@ function renderUserShell(page) {
                 <div class="bold small">${esc(user.name)}</div>
                 <div class="tiny muted">${esc(user.email)}</div>
               </div>
-              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">👤</span>Mi perfil</a>
-              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">🧾</span>Mis pedidos</a>
-              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">🔒</span>Cambio de contraseña</a>
+              <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico">${clientIcon('user')}</span>Mi perfil</a>
+              <a class="dropdown-item" href="#" data-link="orders"><span class="dm-ico">${clientIcon('orders')}</span>Mis pedidos</a>
+              <a class="dropdown-item" href="#" data-link="changepass"><span class="dm-ico">${clientIcon('lock')}</span>Cambio de contraseña</a>
               <div class="dropdown-sep"></div>
-              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">⏻</span>Cerrar sesión</a>
+              <a class="dropdown-item danger" href="#" id="btnUserLogout"><span class="dm-ico">${clientIcon('logout')}</span>Cerrar sesión</a>
             </div>
           </div>
         </div>
       </header>
-      <div class="user-sidebar-scrim" id="userSidebarScrim"></div>
-      <aside class="user-sidebar" id="userSidebar" aria-label="Navegación principal">
-        <div class="user-sidebar-head"><span>Menú</span><button class="user-sidebar-close" id="userSidebarClose" type="button" aria-label="Cerrar menú">×</button></div>
-        <nav class="user-sidebar-nav">
-          <a href="#" data-side-nav="home"><span>⌂</span>Inicio</a>
-          <a href="#" data-side-nav="menu"><span>🍔</span>Menú</a>
-          <a href="#" data-side-nav="cart"><span>🛒</span>Carrito${cartCount ? `<b>${cartCount}</b>` : ''}</a>
-          <a href="#" data-side-nav="orders"><span>🧾</span>Mis pedidos</a>
-          <a href="#" data-side-nav="profile"><span>👤</span>Mi perfil</a>
-        </nav>
-        <div class="user-sidebar-foot"><button class="user-sidebar-logout" id="btnSidebarLogout" type="button">⏻ Cerrar sesión</button></div>
-      </aside>
       <main class="page${page === 'product' ? ' page-wide' : page === 'cart' ? ' page-narrow' : page === 'checkout' ? ' page-narrow' : ''}" id="mainContent"></main>
       <nav class="mobile-nav" id="mobileNav"></nav>
     </div>`;
@@ -156,19 +198,6 @@ function renderUserShell(page) {
   document.body.onclick = () => { ud.style.display = 'none'; };
   $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
-
-  const sidebar = $('#userSidebar');
-  const sidebarScrim = $('#userSidebarScrim');
-  const toggleSidebar = (open) => {
-    sidebar.classList.toggle('open', open);
-    sidebarScrim.classList.toggle('open', open);
-    $('#userMenuToggle').setAttribute('aria-expanded', String(open));
-  };
-  $('#userMenuToggle').onclick = (e) => { e.stopPropagation(); toggleSidebar(!sidebar.classList.contains('open')); };
-  $('#userSidebarClose').onclick = () => toggleSidebar(false);
-  sidebarScrim.onclick = () => toggleSidebar(false);
-  $$('[data-side-nav]', sidebar).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.sideNav); });
-  $('#btnSidebarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
 
   // header search → go to menu with query
   const hs = $('#headerSearch');
@@ -196,8 +225,8 @@ function renderUserShell(page) {
 function renderMobileNav(page, app) {
   const nav = $('#mobileNav', app);
   const items = [
-    ['home', '🏠', 'Inicio'], ['menu', '🍔', 'Menú'],
-    ['cart', '🛒', 'Carrito'], ['orders', '🧾', 'Pedidos'],
+    ['home', clientIcon('home'), 'Inicio'], ['menu', clientIcon('menu'), 'Menú'],
+    ['cart', clientIcon('cart'), 'Carrito'], ['orders', clientIcon('orders'), 'Pedidos'],
   ];
   const cartCount = Cart.count();
   nav.innerHTML = `<div class="mn-grid">` + items.map(([k, ico, l]) => `
@@ -218,52 +247,68 @@ function userHome(el) {
 
   let statusBanner = '';
   if (!open) {
-    statusBanner = `<div class="alert danger"><span class="a-ico">⛔</span><div><div class="a-title">Cafetería cerrada.</div>Puedes ver el menú, pero no se aceptan pedidos en este momento<br>(Receso: ${cfg.breakStart} - ${cfg.breakEnd}).</div></div>`;
+    statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Cafetería cerrada.</div>Puedes ver el menú, pero no se aceptan pedidos en este momento<br>(Receso: ${cfg.breakStart} - ${cfg.breakEnd}).</div></div>`;
   } else if (cap.stateCls === 'warning') {
-    statusBanner = `<div class="alert warning"><span class="a-ico">⚠️</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
+    statusBanner = `<div class="alert warning"><span class="a-ico">${clientIcon('warning')}</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
   } else if (cap.stateCls === 'danger') {
-    statusBanner = `<div class="alert danger"><span class="a-ico">📋</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta más tarde.</div></div>`;
+    statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('capacity')}</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta más tarde.</div></div>`;
   }
 
   el.innerHTML = `
-    <div class="page-title"><h1>¡Hola, ${esc(currentUser().name.split(' ')[0])}! 👋</h1>
-      <span class="badge ${open ? 'badge-success' : 'badge-danger'}">${open ? '● ABIERTA' : '● CERRADA'}</span>
+    <div class="page-welcome">
+      <div class="home-hero">
+        <span class="hh-photo"></span>
+        <div class="hh-inner">
+          <div class="hh-copy">
+            <span class="hh-eyebrow">${clientIcon('food')} Bar INTESUD</span>
+            <div class="hh-welcome">BIENVENIDO ESTUDIANTE</div>
+            <h1>Tu comida, <span class="hl">lista para el receso</span>.</h1>
+            <p class="hh-sub">Pídelo en segundos y recógelo calientito en la bar o que te lo lleven a tu aula.</p>
+            <div class="hh-actions">
+              <a class="hh-btn" href="#" data-nav2="menu">${clientIcon('menu')} Ver el menú</a>
+              <a class="hh-btn ghost" href="#" data-nav2="cart">${clientIcon('cart')} Mi pedido</a>
+            </div>
+            <div class="hh-status">
+              <span class="dot" style="background:${open ? '#7df0b0' : '#ffb0a8'}"></span>
+              ${open ? 'Abierto · aceptando pedidos' : 'Cerrado ahora — mira el menú igual'}
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-    <p class="page-sub">Pide tu almuerzo o snack y retíralo durante el receso.</p>
 
     ${statusBanner}
 
-    <div class="grid grid-2" style="margin-bottom:12px;grid-template-columns:1.4fr 1fr">
-      <div class="card card-hover">
-        <div class="card-header">
-          <div><div class="card-title">Estado actual</div><div class="card-sub">Horario de la cafetería</div></div>
-          <span class="badge ${cap.stateCls === 'danger' ? 'badge-danger' : cap.stateCls === 'warning' ? 'badge-warning' : 'badge-success'}">${cap.state}</span>
+    <div class="cat-banner">
+      <div class="cat-banner-inner">
+        <div class="cat-banner-left">
+          <div class="cat-s"><img src="assets/intesud-white-mark.png" alt="Logo oficial INTESUD"></div>
+          <div class="cat-titles">
+            <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
+            <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
+          </div>
         </div>
-        <div class="card-body" style="display:grid;gap:10px;font-size:var(--fs-md)">
-          <div class="kv"><dt>Pedidos hasta</dt><dd>${cfg.orderClose}</dd></div>
-          <div class="kv"><dt>Receso de entrega</dt><dd>${cfg.breakStart} - ${cfg.breakEnd}</dd></div>
-          <div class="kv"><dt>Horario de pedidos</dt><dd>${cfg.orderOpen} - ${cfg.orderClose}</dd></div>
-        </div>
+        <div class="cat-banner-deco" aria-hidden="true"></div>
       </div>
-      <div id="homeCap"></div>
+      <div class="cat-pills">
+        ${CATEGORIES.map((c) => {
+          const n = products.filter((p) => p.category === c).length;
+          return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${clientCatIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+        }).join('')}
+      </div>
     </div>
 
-    <h2 class="section-title">Categorías</h2>
-    <div class="grid grid-3" style="margin-bottom:8px">
-      ${CATEGORIES.map((c) => `<a class="cat-card" href="#" data-cat="${esc(c)}"><span class="cc-ico">${catIcon(c)}</span><div><div class="cc-name">${esc(c)}</div><div class="cc-count">${products.filter((p) => p.category === c).length} productos</div></div></a>`).join('')}
+    <div class="reco-head">
+      <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
+      <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
     </div>
+    <div class="reco-grid" id="featuredGrid"></div>`;
 
-    <div class="flex justify-between items-center" style="margin:26px 0 14px">
-      <h2 class="section-title" style="margin:0">Productos destacados</h2>
-      <a class="btn btn-outline btn-sm" href="#" data-nav="menu">Ver menú completo →</a>
-    </div>
-    <div class="grid grid-4" id="featuredGrid"></div>`;
-
-  const capWrap = $('#homeCap');
-  if (capWrap) renderCapacityCard(capWrap);
+  $$('[data-nav2]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav2); });
 
   const featuredEl = $('#featuredGrid');
-  if (!featured.length) featuredEl.innerHTML = emptyState('🍽️', 'Sin productos', 'No hay productos disponibles por ahora.');
+  if (!featured.length) featuredEl.innerHTML = emptyState(clientIcon('empty'), 'Sin productos', 'No hay productos disponibles por ahora.');
   featured.forEach((p) => featuredEl.appendChild(productCard(p, 'featured')));
 
   $$('[data-cat]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); sessionStorage.setItem('int_cat', a.dataset.cat); setRoute('menu'); });
@@ -276,8 +321,10 @@ function productCard(p, size = '') {
   card.className = 'product-card' + (soldOut ? ' disabled' : '');
   card.innerHTML = `
     <div class="product-media">
-      ${catIcon(p.category) ? `<span class="p-cat badge badge-primary">${catIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>` : ''}
-      ${productIcon(p)}
+      <span class="pc-dots"></span>
+      <span class="pc-wave"></span>
+      <span class="p-emoji">${clientProductIcon(p)}</span>
+      ${clientCatIcon(p.category) ? `<span class="p-cat badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>` : ''}
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
     </div>
     <div class="product-body">
@@ -285,7 +332,7 @@ function productCard(p, size = '') {
       <div class="product-desc">${esc(p.desc)}</div>
       <div class="product-foot">
         <span class="product-price">${money(p.price)}</span>
-        <span class="prep-tag">⏱ ${p.prepMin} min</span>
+        <span class="prep-tag">${clientIcon('clock')} ${p.prepMin} min</span>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">Ver</button>
@@ -318,30 +365,43 @@ function userMenuPage(el) {
   sessionStorage.removeItem('int_cat');
 
   el.innerHTML = `
-    <div class="page-title"><h1>Menú</h1><span class="badge badge-primary" id="menuCount"></span></div>
-    <p class="page-sub">Elige lo que quieras y agrégalo a tu carrito.</p>
-
-    <div class="menu-layout">
-      <aside class="menu-filters" id="menuFilters"></aside>
-      <div>
-        <div class="input-wrap" style="margin-bottom:18px;max-width:360px">
-          <span class="leading-ico">🔍</span>
-          <input class="input" id="menuSearch" placeholder="Buscar producto..." value="${esc(search)}">
-          ${search ? '' : ''}
+    <div class="menu-page">
+      <div class="menu-lead">
+        <div>
+          <div class="ml-title">Nuestro <span>menú</span></div>
+          <div class="ml-sub">Todo rico y recién preparado en la cafetería.</div>
         </div>
-        <div class="chips-scroll" style="margin-bottom:20px" id="menuChips"></div>
-        <div id="menuGrid" class="grid grid-4"></div>
+        <span class="ml-badge" id="menuCount"></span>
+      </div>
+
+      <div class="menu-layout">
+        <aside class="menu-side">
+          <div class="menu-side-head">
+            <span class="menu-side-title">Categorías</span>
+          </div>
+          <div id="menuChips" class="menu-side-list"></div>
+        </aside>
+        <div class="menu-main">
+          <div class="menu-toolbar">
+            <div class="mt-search">
+              <span class="leading-ico">${clientIcon('search')}</span>
+              <input class="input" id="menuSearch" placeholder="Buscar en el menú..." value="${esc(search)}">
+            </div>
+          </div>
+          <div id="menuGrid" class="grid grid-3"></div>
+        </div>
       </div>
     </div>`;
 
-  const renderFilters = () => {
-    const wrap = $('#menuFilters');
+  const renderChips = () => {
+    const wrap = $('#menuChips');
     const cats = ['Todas', ...CATEGORIES];
     const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
     wrap.innerHTML = cats.map((c) => `
-      <button class="menu-filter-btn ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-        ${c === 'Todas' ? '🍽️' : catIcon(c)} ${esc(c)}
-        <span class="mf-count">${countFor(c)}</span>
+      <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
+        <span class="cp-ico">${clientCatIcon(c)}</span>
+        <span class="cp-name">${esc(c)}</span>
+        <span class="cp-badge">${countFor(c)}</span>
       </button>`).join('');
     $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
       $$('[data-cat]', wrap).forEach((x) => x.classList.remove('active'));
@@ -356,15 +416,15 @@ function userMenuPage(el) {
     if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
     if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
     const grid = $('#menuGrid');
-    $('#menuCount').textContent = list.length + ' productos';
-    $('#menuCount').classList.toggle('badge-primary', list.length > 0);
-    if (!list.length) { grid.innerHTML = emptyState('🔍', 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
+    const mc = $('#menuCount');
+    if (mc) mc.textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
+    if (!list.length) { grid.innerHTML = emptyState(clientIcon('search'), 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
     grid.innerHTML = '';
     list.forEach((p) => grid.appendChild(productCard(p)));
   };
 
   $('#menuSearch').addEventListener('input', (e) => { search = e.target.value; render(); });
-  renderFilters();
+  renderChips();
   render();
 }
 
@@ -390,12 +450,12 @@ function userProductPage(el) {
     <div class="card card-flush" style="overflow:hidden">
       <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
         <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
-          ${productIcon(p)}
+          ${clientProductIcon(p)}
           ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
         </div>
         <div style="padding:var(--sp-6)">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <span class="badge badge-primary">${catIcon(p.category)} ${esc(p.category)}</span>
+            <span class="badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>
             ${p.stock === 0 ? '<span class="badge badge-danger">AGOTADO</span>' : p.stock <= p.minStock ? '<span class="badge badge-warning">Stock bajo</span>' : `<span class="badge badge-success">Disponible · ${p.stock} restantes</span>`}
           </div>
           <h1>${esc(p.name)}</h1>
@@ -421,7 +481,7 @@ function userProductPage(el) {
 
           <div class="field"><label class="label">Observaciones</label><textarea class="input" id="prodNote" placeholder="Ej: sin cebolla, extra salsa..."></textarea></div>
 
-          ${!canPlaceOrder() ? `<div class="alert danger" style="margin:14px 0"><span class="a-ico">⛔</span><div><div class="a-title">La cafetería está cerrada.</div>Puedes ver el menú pero no realizar pedidos.</div></div>` : ''}
+          ${!canPlaceOrder() ? `<div class="alert danger" style="margin:14px 0"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">La cafetería está cerrada.</div>Puedes ver el menú pero no realizar pedidos.</div></div>` : ''}
 
           <button class="btn btn-primary btn-lg btn-block" id="btnAdd" ${soldOut || !canPlaceOrder() ? 'disabled' : ''}>
             ${soldOut ? 'Producto agotado' : 'Agregar al carrito'}
@@ -448,15 +508,19 @@ function userProductPage(el) {
 
 /* ---------- Inicialización ---------- */
 function syncBodyClass() {
+  // El Landing público no convive con las clases de shell internas.
+  document.body.classList.remove('is-landing');
   const u = currentUser();
   if (u && (u.role === 'adminbar' || u.role === 'admindev')) {
     document.body.classList.add('is-admin');
+    document.body.classList.toggle('is-adminbar', u.role === 'adminbar');
+    document.body.classList.toggle('is-admindev', u.role === 'admindev');
     document.body.classList.remove('has-bottom-nav');
   } else if (u) {
     document.body.classList.add('has-bottom-nav');
-    document.body.classList.remove('is-admin');
+    document.body.classList.remove('is-admin', 'is-adminbar', 'is-admindev');
   } else {
-    document.body.classList.remove('has-bottom-nav', 'is-admin');
+    document.body.classList.remove('has-bottom-nav', 'is-admin', 'is-adminbar', 'is-admindev');
   }
 }
 window.syncBodyClass = syncBodyClass;

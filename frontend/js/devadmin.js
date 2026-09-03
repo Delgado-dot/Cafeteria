@@ -5,7 +5,6 @@
 const DEV_SECTIONS = {
   dashboard: { label: 'Dashboard', icon: '🏠' },
   users: { label: 'Usuarios', icon: '👥' },
-  finance: { label: 'Finanzas', icon: '💰' },
   roles: { label: 'Roles y permisos', icon: '🔐' },
   cafe: { label: 'Información de cafetería', icon: '🏪' },
   config: { label: 'Configuración general', icon: '⚙️' },
@@ -75,7 +74,6 @@ function renderDevAdmin(page) {
   const renderers = {
     dashboard: devDashboard,
     users: devUsers,
-    finance: devFinance,
     roles: devRoles,
     cafe: devCafe,
     config: devConfig,
@@ -121,7 +119,7 @@ function devDashboard(el) {
           <div class="kv"><dt>Receso</dt><dd class="bold small">${cfg.breakStart} - ${cfg.breakEnd}</dd></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-          ${[['users', '👥', 'Usuarios'], ['finance', '💰', 'Finanzas'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría']].map(([k, ic, l]) =>
+          ${[['users', '👥', 'Usuarios'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría']].map(([k, ic, l]) =>
             `<a href="#" class="btn btn-outline" data-goto="${k}">${ic} ${l}</a>`).join('')}
         </div>
       </div>
@@ -165,7 +163,6 @@ function devUsers(el) {
           <td>
             <button class="btn btn-outline btn-sm" data-edit="${u.id}">Editar</button>
             <button class="btn btn-neutral btn-sm" data-toggle="${u.id}">${u.active ? 'Desactivar' : 'Activar'}</button>
-            <button class="btn btn-danger-outline btn-sm" data-delete="${u.id}">Eliminar</button>
           </td>
         </tr>`).join('')}</tbody></table></div>`;
 
@@ -179,48 +176,8 @@ function devUsers(el) {
   });
 
   $$('[data-edit]', el).forEach((b) => b.onclick = () => userFormModal(users.find((x) => x.id === b.dataset.edit)));
-  $$('[data-delete]', el).forEach((b) => b.onclick = async () => {
-    const u = users.find((x) => x.id === b.dataset.delete);
-    if (u.id === currentUser().id) return toast('No puedes eliminar tu propia cuenta mientras tienes la sesión abierta.', 'warning');
-    if (!await confirmDialog('Eliminar usuario', `¿Eliminar definitivamente a ${u.name}?`, 'Eliminar usuario', true)) return;
-    Store.users = users.filter((x) => x.id !== u.id);
-    delete PASSWORDS[u.email];
-    logAudit('Eliminó usuario', u.name);
-    toast('Usuario eliminado.', 'success');
-    renderDevAdmin('users');
-  });
   $('#addUser').onclick = () => userFormModal(null);
 }
-
-function financeTotals(list) {
-  const income = list.filter((x) => x.type === 'income').reduce((s, x) => s + Number(x.amount), 0);
-  const cost = list.filter((x) => x.type === 'cost').reduce((s, x) => s + Number(x.amount), 0);
-  const expense = list.filter((x) => x.type === 'expense').reduce((s, x) => s + Number(x.amount), 0);
-  return { income, cost, expense, profit: income - cost - expense };
-}
-
-function devFinance(el) {
-  const list = Store.finance.slice().sort((a, b) => b.date.localeCompare(a.date));
-  const totals = financeTotals(list);
-  const cards = [['income', 'Ingresos', totals.income, 'Cobros registrados'], ['cost', 'Costos', totals.cost, 'Insumos y mercadería'], ['expense', 'Gastos', totals.expense, 'Operación y servicios'], ['profit', 'Ganancia neta', totals.profit, 'Ingresos − costos − gastos']];
-  const cardOrder = Store.load('int_finance_card_order', []);
-  cards.sort((a, b) => (cardOrder.indexOf(a[0]) + 5) % 5 - (cardOrder.indexOf(b[0]) + 5) % 5);
-  const dates = [...new Set(list.map((x) => x.date))].sort().slice(-7);
-  const series = dates.map((date) => ({ date, ...financeTotals(list.filter((x) => x.date === date)) }));
-  const chartMax = Math.max(...series.flatMap((x) => [x.income, x.cost + x.expense]), 1);
-  el.innerHTML = `<div class="page-title"><div><h1>Finanzas</h1><p class="page-sub">Control centralizado de ingresos, costos, gastos y utilidad.</p></div><button class="btn" id="addFinance">+ Registrar movimiento</button></div><div class="finance-cards" id="financeCards">${cards.map(([type, label, value, sub]) => `<div class="stat-card finance-card tone-${type === 'income' ? 'success' : type === 'profit' ? 'primary' : type === 'cost' ? 'warning' : 'danger'}" data-fin-card="${type}" draggable="true"><span class="drag-handle" title="Arrastra para reordenar">⠿</span><div class="st-label">${label}</div><div class="st-value ${type === 'income' || type === 'profit' ? 'success' : type === 'cost' ? 'warning' : 'danger'}">${money(value)}</div><div class="st-sub">${sub}</div></div>`).join('')}</div><div class="grid grid-2" style="gap:20px;margin:20px 0"><div class="card"><div class="card-header"><div><div class="card-title">Ingresos vs. egresos</div><div class="card-sub">Pasa el cursor por cada barra para consultar el valor.</div></div></div><div class="finance-chart">${series.map((x) => `<div class="finance-col"><div class="finance-bars"><span class="finance-bar income" title="Ingresos: ${money(x.income)}" style="height:${Math.max(4, x.income / chartMax * 100)}%"></span><span class="finance-bar out" title="Costos y gastos: ${money(x.cost + x.expense)}" style="height:${Math.max(4, (x.cost + x.expense) / chartMax * 100)}%"></span></div><span>${x.date.slice(5)}</span></div>`).join('')}</div><div class="chart-key"><span><i class="income"></i> Ingresos</span><span><i class="out"></i> Costos y gastos</span></div></div><div class="card"><div class="card-header"><div><div class="card-title">Distribución de egresos</div><div class="card-sub">Monto registrado por categoría.</div></div></div><div class="finance-breakdown">${['cost', 'expense'].map((type) => { const amount = totals[type]; const pct = amount / Math.max(totals.cost + totals.expense, 1) * 100; return `<div><div class="breakdown-label"><span>${type === 'cost' ? 'Costos' : 'Gastos'}</span><b>${money(amount)}</b></div><div class="bar-track"><div class="bar-fill ${type === 'cost' ? '' : 'danger'}" style="width:${pct}%"></div></div></div>`; }).join('')}</div></div></div><div class="card"><div class="card-header"><div><div class="card-title">Movimientos financieros</div><div class="card-sub">Los cambios se guardan en este navegador.</div></div><select class="input finance-filter" id="financeType"><option value="">Todos</option><option value="income">Ingresos</option><option value="cost">Costos</option><option value="expense">Gastos</option></select></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th></th></tr></thead><tbody id="financeRows"></tbody></table></div></div>`;
-  const renderRows = () => { const type = $('#financeType', el).value; const visible = type ? list.filter((x) => x.type === type) : list; $('#financeRows', el).innerHTML = visible.length ? visible.map((x) => `<tr><td>${x.date}</td><td><span class="badge ${x.type === 'income' ? 'badge-success' : x.type === 'cost' ? 'badge-warning' : 'badge-danger'}">${x.type === 'income' ? 'Ingreso' : x.type === 'cost' ? 'Costo' : 'Gasto'}</span></td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td class="bold">${money(x.amount)}</td><td><button class="btn btn-outline btn-sm" data-fin-edit="${x.id}">Editar</button> <button class="btn btn-danger-outline btn-sm" data-fin-delete="${x.id}">Eliminar</button></td></tr>`).join('') : '<tr><td colspan="6" class="muted">No hay movimientos para este filtro.</td></tr>'; $$('[data-fin-edit]', el).forEach((b) => b.onclick = () => financeFormModal(Store.finance.find((x) => x.id === b.dataset.finEdit))); $$('[data-fin-delete]', el).forEach((b) => b.onclick = async () => { const item = Store.finance.find((x) => x.id === b.dataset.finDelete); if (await confirmDialog('Eliminar movimiento', `¿Eliminar el movimiento “${item.description}”?`, 'Eliminar', true)) { Store.finance = Store.finance.filter((x) => x.id !== item.id); logAudit('Eliminó movimiento financiero', item.description); toast('Movimiento eliminado.', 'success'); renderDevAdmin('finance'); } }); };
-  $('#financeType', el).onchange = renderRows; $('#addFinance', el).onclick = () => financeFormModal(null); renderRows(); initDraggableFinanceCards($('#financeCards', el));
-}
-
-function financeFormModal(item) {
-  const editing = !!item;
-  const ov = modal(`<h3>${editing ? 'Editar movimiento' : 'Registrar movimiento'}</h3><div class="grid grid-2"><div class="field"><label class="label">Tipo</label><select class="input" id="ffType"><option value="income" ${item?.type === 'income' ? 'selected' : ''}>Ingreso</option><option value="cost" ${item?.type === 'cost' ? 'selected' : ''}>Costo</option><option value="expense" ${item?.type === 'expense' ? 'selected' : ''}>Gasto</option></select></div><div class="field"><label class="label">Fecha</label><input class="input" id="ffDate" type="date" value="${item?.date || new Date().toISOString().slice(0, 10)}"></div></div><div class="field"><label class="label">Categoría</label><input class="input" id="ffCategory" value="${esc(item?.category || '')}"></div><div class="field"><label class="label">Descripción</label><input class="input" id="ffDescription" value="${esc(item?.description || '')}"></div><div class="field"><label class="label">Monto (USD)</label><input class="input" id="ffAmount" type="number" min="0.01" step="0.01" value="${item?.amount || ''}"><div class="input-err-msg" id="ffErr"></div></div><div style="display:flex;justify-content:flex-end;gap:10px"><button class="btn btn-neutral" data-cancel>Cancelar</button><button class="btn" data-save>${editing ? 'Guardar cambios' : 'Registrar'}</button></div>`, { wide: true });
-  $('[data-cancel]', ov).onclick = () => ov.remove();
-  $('[data-save]', ov).onclick = () => { const category = $('#ffCategory', ov).value.trim(); const description = $('#ffDescription', ov).value.trim(); const amount = Number($('#ffAmount', ov).value); if (!category || !description || !(amount > 0)) return $('#ffErr', ov).textContent = 'Completa categoría, descripción y un monto válido.'; const movement = { id: item?.id || 'f' + Date.now(), type: $('#ffType', ov).value, date: $('#ffDate', ov).value, category, description, amount }; const all = Store.finance; if (editing) Object.assign(item, movement); else all.push(movement); Store.finance = all; logAudit(editing ? 'Editó movimiento financiero' : 'Registró movimiento financiero', description); ov.remove(); toast(editing ? 'Movimiento actualizado.' : 'Movimiento registrado.', 'success'); renderDevAdmin('finance'); };
-}
-
-function initDraggableFinanceCards(container) { let dragged; $$('.finance-card', container).forEach((card) => { card.addEventListener('dragstart', () => { dragged = card; card.classList.add('dragging'); }); card.addEventListener('dragend', () => card.classList.remove('dragging')); card.addEventListener('dragover', (e) => e.preventDefault()); card.addEventListener('drop', (e) => { e.preventDefault(); if (dragged && dragged !== card) { container.insertBefore(dragged, card); Store.save('int_finance_card_order', $$('.finance-card', container).map((x) => x.dataset.finCard)); } }); }); }
 
 function userFormModal(u) {
   const isEdit = !!u;
@@ -307,7 +264,7 @@ function devCafe(el) {
     <div class="card">
       <h3 style="margin-bottom:14px">Datos de la cafetería</h3>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Nombre del establecimiento</label><input class="input" id="cfName" value="BAR INTESUD"></div>
+        <div class="field"><label class="label">Nombre del establecimiento</label><input class="input" id="cfName" value="Cafetería INTESUD"></div>
         <div class="field"><label class="label">Descripción</label><input class="input" id="cfDesc" value="Cafetería y bar del Instituto Tecnológico Superior Sudamericano"></div>
       </div>
       <button class="btn" id="cfSave">Guardar información</button>
@@ -334,7 +291,7 @@ function devConfig(el) {
     <div class="card">
       <h3 style="margin-bottom:14px">Parámetros del sistema</h3>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Nombre del sistema</label><input class="input" id="gcName" value="BAR INTESUD — Pedidos en línea"></div>
+        <div class="field"><label class="label">Nombre del sistema</label><input class="input" id="gcName" value="Cafetería INTESUD — Pedidos en línea"></div>
         <div class="field"><label class="label">Capacidad máxima de preparación</label><input class="input" type="number" id="gcCap" value="${cfg.capacity}"></div>
       </div>
       <div class="field"><label class="checkbox-row"><input type="checkbox" id="gcDelivery" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label></div>
