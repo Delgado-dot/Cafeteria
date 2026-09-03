@@ -319,7 +319,6 @@ function productCard(p, size = '') {
   const soldOut = !p.available || p.stock === 0;
   const card = document.createElement('div');
   card.className = 'product-card' + (soldOut ? ' disabled' : '');
-  card.setAttribute('data-cat', p.category);
   card.innerHTML = `
     <div class="product-media">
       <span class="pc-dots"></span>
@@ -327,13 +326,6 @@ function productCard(p, size = '') {
       <span class="p-emoji">${clientProductIcon(p)}</span>
       ${clientCatIcon(p.category) ? `<span class="p-cat badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>` : ''}
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
-      <span class="pc-dots pc-dots-l" aria-hidden="true"></span>
-      <span class="pc-dots pc-dots-r" aria-hidden="true"></span>
-      <span class="p-emoji">${productIcon(p)}</span>
-      <span class="pc-wave pc-wave-1"></span>
-      <span class="pc-wave pc-wave-2"></span>
-      <span class="pc-wave pc-wave-3"></span>
-      ${p.stock > 0 && p.stock <= p.minStock ? `<span class="low-stock-tag">Quedan ${p.stock}</span>` : ''}
     </div>
     <div class="product-body">
       <div class="product-name">${esc(p.name)}</div>
@@ -343,8 +335,8 @@ function productCard(p, size = '') {
         <span class="prep-tag">${clientIcon('clock')} ${p.prepMin} min</span>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">👁 Ver</button>
-        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} ${canPlaceOrder() ? '' : 'disabled'} data-add="${p.id}">${soldOut ? 'Agotado' : '🛒 Agregar'}</button>
+        <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">Ver</button>
+        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} ${canPlaceOrder() ? '' : 'disabled'} data-add="${p.id}">${soldOut ? 'Agotado' : '+ Agregar'}</button>
       </div>
     </div>`;
 
