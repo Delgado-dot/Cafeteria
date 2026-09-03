@@ -112,9 +112,25 @@
   background: linear-gradient(140deg, var(--primary-soft), #dcecea);
   display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 3.4rem;
 }
+.product-media.has-img { background: var(--surface-2); padding: 0; }
+.product-media.has-img .p-media-wrap { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; }
+.product-media .p-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.product-media.has-img .p-emoji { display: none; }
+.product-media .p-media-wrap { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.product-media .p-fallback { display: flex; align-items: center; justify-content: center; font-size: 3.4rem; width: 100%; height: 100%; }
 .product-media .p-cat { position: absolute; top: 10px; left: 10px; z-index: 2; }
-.product-media .sold-flag { position: absolute; inset: 0; background: rgba(255,255,255,0.6); backdrop-filter: blur(1px); display: flex; align-items: center; justify-content: center; z-index: 1; }
+.product-media .sold-flag { position: absolute; inset: 0; background: rgba(255,255,255,0.6); backdrop-filter: blur(1px); display: flex; align-items: center; justify-content: center; z-index: 3; }
 .product-media .sold-flag span { background: var(--danger); color: #fff; font-weight: var(--fw-bold); font-size: var(--fs-sm); letter-spacing: 0.05em; padding: 7px 18px; border-radius: var(--r-pill); box-shadow: var(--shadow-md); }
+
+/* Detalle de producto - imagen grande */
+.product-media-detail-wrap { background: var(--surface-2); border-right: 1px solid var(--border); }
+.product-media-detail-wrap .p-detail-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; max-height: 420px; }
+.product-media-detail-wrap .p-fallback { font-size: 5rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--primary); }
+
+/* Carrito - imagen */
+.ci-media.has-img { padding: 0; background: #fff; overflow: hidden; }
+.ci-media .ci-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ci-media .ci-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 1.6rem; }
 
 .product-body { padding: 14px 15px 15px; display: flex; flex-direction: column; flex: 1; }
 .product-name { font-weight: var(--fw-bold); font-size: var(--fs-md); line-height: 1.25; }
@@ -494,3 +510,209 @@
 
 /* Rellenos varios */
 .stock-bar .fill, .bar-fill { transition: width var(--t-med); }
+<<<<<<< Updated upstream
+=======
+
+/* ============================================================
+   PANEL CLIENTE — Pedidos / perfil (identidad BAR INTESUD)
+   ============================================================ */
+/* Resumen de pedidos */
+.orders-overview { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 16px; margin: 18px 0 24px; border: 1px solid var(--primary); border-radius: var(--r-lg); background: var(--primary-softer); }
+.orders-overview-num { color: var(--primary-strong); font-size: var(--fs-xl); font-weight: var(--fw-extrabold); }
+.section-count { display: inline-flex; min-width: 22px; justify-content: center; padding: 1px 7px; border-radius: var(--r-pill); background: var(--primary-soft); color: var(--primary-strong); font-size: var(--fs-xs); vertical-align: middle; font-weight: var(--fw-bold); }
+
+/* Tarjeta de pedido activo */
+.order-card-active { border-left: 4px solid var(--primary); }
+.order-card-active.state-ready { border-left-color: var(--success); }
+.order-glance { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-top: 12px; }
+.order-glance-label { font-weight: var(--fw-bold); color: var(--text); }
+.order-eta { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 2px; }
+.order-eta strong { color: var(--primary-strong); font-size: var(--fs-lg); }
+.order-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+/* Tarjeta de historial */
+.order-card-history { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; margin-bottom: 12px; cursor: pointer; }
+.order-card-history:hover { border-color: var(--primary); box-shadow: var(--shadow-sm); }
+.order-history-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+/* Detalle de pedido (drawer) */
+.detail-status { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.detail-number { color: var(--primary-strong); font-size: var(--fs-xl); font-weight: var(--fw-extrabold); }
+.detail-eta { margin: 16px 0; padding: 12px 14px; border-radius: var(--r-md); color: var(--primary-strong); background: var(--primary-softer); font-weight: var(--fw-bold); }
+.timeline-detail { margin: 18px 0 24px; }
+.detail-section { padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--border); }
+.detail-section h4 { margin-bottom: 10px; font-size: var(--fs-sm); color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.detail-item, .detail-total, .detail-facts > div { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; font-size: var(--fs-sm); }
+.detail-total { margin-top: 7px; padding-top: 13px; border-top: 1px solid var(--border); font-size: var(--fs-md); }
+.detail-total b { color: var(--primary-strong); }
+.detail-facts > div > span { color: var(--text-2); }
+.detail-facts > div > b { text-align: right; font-weight: var(--fw-medium); }
+
+/* Perfil */
+.profile-hero { display: flex; gap: 18px; align-items: center; margin-bottom: 18px; }
+.profile-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start; }
+.security-row { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.security-row:last-child { border-bottom: 0; }
+.security-icon { width: 36px; height: 36px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--primary-soft); font-size: 1rem; }
+
+@media (max-width: 700px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .order-card-history { grid-template-columns: 1fr auto; }
+  .order-card-history .btn { grid-column: 1 / -1; width: 100%; }
+  .order-history-meta { align-items: flex-start; }
+}
+
+@media (max-width: 460px) {
+  .orders-overview { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .order-glance { flex-direction: column; }
+  .order-eta { text-align: left; }
+  .detail-item, .detail-total, .detail-facts > div { align-items: flex-start; }
+  .security-row { grid-template-columns: 38px 1fr; }
+  .security-row .btn { grid-column: 1 / -1; width: 100%; }
+}
+
+/* ============================================================
+   PANEL ADMIN BAR (integración Delgado) — estilos SOLO admin
+   Ninguno afecta al login, landing o panel del cliente.
+   ============================================================ */
+
+/* Banners en 2 columnas cuando hay 2 */
+body.is-admin .status-banners-wrap { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+body.is-admin .status-banners-wrap:has(.status-banner:nth-child(2)) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+body.is-admin .status-banners-wrap .status-banner { margin-bottom: 0; }
+
+/* Tabs admin - glassmorphism (no toca .cat-chip del cliente) */
+body.is-admin .adv-tabs {
+  display: flex; gap: 10px; overflow-x: auto; padding: 8px; margin-bottom: 20px;
+  background: rgba(255,255,255,0.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.28); border-radius: var(--r-lg); box-shadow: 0 2px 12px rgba(16,30,29,0.05);
+}
+body.is-admin .adv-tabs .category-chip { flex-shrink: 0; }
+body.is-admin .category-chip {
+  background: rgba(255,255,255,0.68); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 1px 6px rgba(16,30,29,0.04);
+}
+body.is-admin .category-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Product form (admin) */
+.pf-header {
+  background: #40807E;
+  color: #fff;
+  padding: 20px 24px;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  margin: -24px -24px 20px -24px;
+}
+.pf-header-title { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+.pf-cols {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--sp-5);
+}
+.pf-right { display: flex; flex-direction: column; }
+@media (max-width: 768px) {
+  .pf-cols { grid-template-columns: 1fr; }
+  .pf-header { margin: -24px -24px 16px -24px; }
+}
+.field-has-error .input { border-color: var(--danger); box-shadow: 0 0 0 3.5px rgba(217, 75, 75, 0.12); }
+.field-has-error .input-err-msg { color: var(--danger); font-size: var(--fs-xs); margin-top: 5px; display: block; }
+.pf-switch-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
+.pf-switch-label .switch { flex-shrink: 0; }
+
+/* Supplier icon-only circular buttons */
+.btn-icon-supplier {
+  width: 36px; height: 36px; border-radius: 50%; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-3); color: var(--text-2);
+  border: none; font-size: 0.95rem; flex-shrink: 0;
+  transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+}
+.btn-icon-supplier:hover { background: var(--primary-soft); color: var(--primary); box-shadow: 0 2px 8px rgba(64,128,126,0.2); }
+
+/* Stock history improvements */
+.stock-history-date-header { background: var(--surface-2); }
+.stock-history-date-header td { font-weight: var(--fw-semibold); color: var(--text); padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
+.stock-delta-positive { color: var(--success); }
+.stock-delta-negative { color: var(--danger); }
+
+/* Sales / reports charts (admin) */
+.sales-line-chart svg, .sales-chart-svg, .mom-donut-chart svg { width: 100%; height: auto; }
+
+/* += hover micro-interactions para accesibilidad (solo admin) */
+body.is-admin .profile-chip:focus-visible,
+body.is-admin .sb-link:focus-visible,
+body.is-admin .category-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ============================================================
+   FIX VISIBILIDAD — Carrito y Pedidos
+   Textos grises (muted #5c6b69 / #8a9795) poco visibles
+   Solicitud: gris → blanco o verde turquesa oscuro.
+   Se aplica blanco (#fff) sobre fondo claro
+   solicitado por usuario - blanco sobre fondo claro.
+   ============================================================ */
+
+/* Botones "Seguir comprando" / "Volver" — antes gris text-2 */
+#mainContent .btn-ghost,
+.page .btn-ghost {
+  color: #fff !important;
+  font-weight: 600;
+}
+#mainContent .btn-ghost:hover,
+.page .btn-ghost:hover {
+  color: #fff !important;
+  background: var(--primary) !important;
+}
+
+/* Carrito: precio, meta, resumen, capacidad */
+.ci-meta {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.ci-meta .muted { color: #fff !important; }
+.cart-item .bold { color: #fff !important; }
+.summary-card .summary-row { color: #fff !important; }
+.summary-card .summary-row.total { color: #fff !important; }
+.summary-card .summary-row.total span:last-child { color: #fff !important; }
+.summary-card .tiny.muted,
+.summary-card .small.muted,
+.cart-layout .tiny.muted { color: #fff !important; }
+#summaryRows .muted { color: #fff !important; }
+
+/* Pedidos: fecha, resumen, detalle */
+.order-meta {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.order-card .small.muted,
+.order-card-history .small.muted,
+.order-glance .small.muted,
+.orders-overview .muted,
+.detail-item .muted,
+.detail-facts .muted,
+.detail-item span.muted,
+.drawer-body .muted,
+#currentOrders .muted,
+#historyOrders .muted {
+  color: #fff !important;
+}
+.order-glance-label { color: #fff !important; }
+.detail-item b, .detail-total b { color: #fff !important; }
+
+/* Checkout: "× qty" y "Tiempo estimado" / "Total a pagar" muted */
+#checkoutItems .muted,
+#mainContent .card-body .muted.small {
+  color: #fff !important;
+}
+#checkoutItems span span.muted { color: #fff !important; }
+
+/* Pedidos - Lo importante y Estado actual */
+.page-title .page-sub,
+.tl-time,
+.tl-step .tl-time,
+.timeline-detail .tl-time {
+  color: #fff !important;
+}
+/* Variante blanca para fondos oscuros (si se necesita): descomentar
+.page-dark .muted { color: #fff !important; }
+*/
+
+>>>>>>> Stashed changes

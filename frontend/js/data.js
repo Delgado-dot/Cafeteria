@@ -5,21 +5,21 @@
 const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipapas', 'Bebidas', 'Snacks'];
 
 const DEFAULT_PRODUCTS = [
-  { id: 'p01', name: 'Hamburguesa Clásica', emoji: '🍔', image: '', category: 'Hamburguesas', price: 3.50, stock: 10, minStock: 3, prepMin: 8, available: true, desc: 'Pan, carne, queso, lechuga, tomate y salsas. Jugosa y económica.', addedAt: '2025-01-05' },
-  { id: 'p02', name: 'Hamburguesa Especial', emoji: '🍔', image: '', category: 'Hamburguesas', price: 4.50, stock: 8, minStock: 3, prepMin: 10, available: true, desc: 'Doble carne, tocineta, queso derretido, aros de cebolla y salsa de la casa.', addedAt: '2025-01-05' },
-  { id: 'p03', name: 'Hamburguesa de Pollo', emoji: '🍗', image: '', category: 'Hamburguesas', price: 4.00, stock: 6, minStock: 2, prepMin: 9, available: true, desc: 'Pechuga de pollo empanizada, lechuga, tomate y mayonesa.', addedAt: '2025-01-12' },
-  { id: 'p04', name: 'Hot Dog Clásico', emoji: '🌭', image: '', category: 'Hot Dogs', price: 2.00, stock: 12, minStock: 4, prepMin: 4, available: true, desc: 'Salchicha, pan, cebolla, papitas y salsas a elección.', addedAt: '2025-01-05' },
-  { id: 'p05', name: 'Hot Dog Especial', emoji: '🌭', image: '', category: 'Hot Dogs', price: 2.75, stock: 5, minStock: 2, prepMin: 6, available: true, desc: 'Con tocineta, queso y salsas. El favorito de los viernes.', addedAt: '2025-01-20' },
-  { id: 'p06', name: 'Sándwich de Jamón y Queso', emoji: '🥪', image: '', category: 'Sándwiches', price: 2.50, stock: 9, minStock: 3, prepMin: 5, available: true, desc: 'Pan, jamón, queso, lechuga y tomate.', addedAt: '2025-01-05' },
-  { id: 'p07', name: 'Sándwich Mixto', emoji: '🥪', image: '', category: 'Sándwiches', price: 2.80, stock: 0, minStock: 2, prepMin: 6, available: true, desc: 'Jamón, quesillo y huevo. Rápido y completo.', addedAt: '2025-02-01' },
-  { id: 'p08', name: 'Salchipapa Pequeña', emoji: '🍟', image: '', category: 'Papas y Salchipapas', price: 2.50, stock: 10, minStock: 3, prepMin: 7, available: true, desc: 'Papas fritas con salchicha, salsas y mayonesa.', addedAt: '2025-01-05' },
-  { id: 'p09', name: 'Salchipapa Grande', emoji: '🍟', image: '', category: 'Papas y Salchipapas', price: 3.50, stock: 7, minStock: 2, prepMin: 9, available: true, desc: 'Porción grande para compartir.', addedAt: '2025-01-05' },
-  { id: 'p10', name: 'Papas Fritas', emoji: '🍿', image: '', category: 'Papas y Salchipapas', price: 1.75, stock: 4, minStock: 3, prepMin: 5, available: true, desc: 'Porción de papas fritas con sal y salsas.', addedAt: '2025-01-05' },
-  { id: 'p11', name: 'Jugo Natural', emoji: '🧃', image: '', category: 'Bebidas', price: 1.50, stock: 15, minStock: 5, prepMin: 2, available: true, desc: 'Naranja, mora, piña o maracuyá.', addedAt: '2025-01-05' },
-  { id: 'p12', name: 'Gaseosa 350ml', emoji: '🥤', image: '', category: 'Bebidas', price: 1.00, stock: 20, minStock: 6, prepMin: 1, available: true, desc: 'Bebida gaseosa fría.', addedAt: '2025-01-05' },
-  { id: 'p13', name: 'Agua 600ml', emoji: '💧', image: '', category: 'Bebidas', price: 0.80, stock: 2, minStock: 5, prepMin: 1, available: true, desc: 'Agua natural.', addedAt: '2025-01-05' },
-  { id: 'p14', name: 'Café', emoji: '☕', image: '', category: 'Bebidas', price: 1.20, stock: 25, minStock: 8, prepMin: 2, available: true, desc: 'Café americano o con leche.', addedAt: '2025-01-05' },
-  { id: 'p15', name: 'Chocolate Caliente', emoji: '🍫', image: '', category: 'Bebidas', price: 1.40, stock: 12, minStock: 4, prepMin: 3, available: true, desc: 'Bebida caliente de chocolate.', addedAt: '2025-02-10' },
+  { id: 'p01', name: 'Hamburguesa Clásica', emoji: '🍔', image: 'assets/images/hamburguesa_clasica.png', category: 'Hamburguesas', price: 3.50, stock: 10, minStock: 3, prepMin: 8, available: true, desc: 'Pan, carne, queso, lechuga, tomate y salsas. Jugosa y económica.', addedAt: '2025-01-05' },
+  { id: 'p02', name: 'Hamburguesa Especial', emoji: '🍔', image: 'assets/images/hamburguesa_especial.png', category: 'Hamburguesas', price: 4.50, stock: 8, minStock: 3, prepMin: 10, available: true, desc: 'Doble carne, tocineta, queso derretido, aros de cebolla y salsa de la casa.', addedAt: '2025-01-05' },
+  { id: 'p03', name: 'Hamburguesa de Pollo', emoji: '🍗', image: 'assets/images/hamburguesa_pollo.png', category: 'Hamburguesas', price: 4.00, stock: 6, minStock: 2, prepMin: 9, available: true, desc: 'Pechuga de pollo empanizada, lechuga, tomate y mayonesa.', addedAt: '2025-01-12' },
+  { id: 'p04', name: 'Hot Dog Clásico', emoji: '🌭', image: 'assets/images/hotdog_clasico.png', category: 'Hot Dogs', price: 2.00, stock: 12, minStock: 4, prepMin: 4, available: true, desc: 'Salchicha, pan, cebolla, papitas y salsas a elección.', addedAt: '2025-01-05' },
+  { id: 'p05', name: 'Hot Dog Especial', emoji: '🌭', image: 'assets/images/hotdog_especial.png', category: 'Hot Dogs', price: 2.75, stock: 5, minStock: 2, prepMin: 6, available: true, desc: 'Con tocineta, queso y salsas. El favorito de los viernes.', addedAt: '2025-01-20' },
+  { id: 'p06', name: 'Sándwich de Jamón y Queso', emoji: '🥪', image: 'assets/images/sandwich.png', category: 'Sándwiches', price: 2.50, stock: 9, minStock: 3, prepMin: 5, available: true, desc: 'Pan, jamón, queso, lechuga y tomate.', addedAt: '2025-01-05' },
+  { id: 'p07', name: 'Sándwich Mixto', emoji: '🥪', image: 'assets/images/sandwich.png', category: 'Sándwiches', price: 2.80, stock: 0, minStock: 2, prepMin: 6, available: true, desc: 'Jamón, quesillo y huevo. Rápido y completo.', addedAt: '2025-02-01' },
+  { id: 'p08', name: 'Salchipapa Pequeña', emoji: '🍟', image: 'assets/images/salchipapa.png', category: 'Papas y Salchipapas', price: 2.50, stock: 10, minStock: 3, prepMin: 7, available: true, desc: 'Papas fritas con salchicha, salsas y mayonesa.', addedAt: '2025-01-05' },
+  { id: 'p09', name: 'Salchipapa Grande', emoji: '🍟', image: 'assets/images/salchipapa.png', category: 'Papas y Salchipapas', price: 3.50, stock: 7, minStock: 2, prepMin: 9, available: true, desc: 'Porción grande para compartir.', addedAt: '2025-01-05' },
+  { id: 'p10', name: 'Papas Fritas', emoji: '🍿', image: 'assets/images/papas_fritas.png', category: 'Papas y Salchipapas', price: 1.75, stock: 4, minStock: 3, prepMin: 5, available: true, desc: 'Porción de papas fritas con sal y salsas.', addedAt: '2025-01-05' },
+  { id: 'p11', name: 'Jugo Natural', emoji: '🧃', image: 'assets/images/jugo_natural.png', category: 'Bebidas', price: 1.50, stock: 15, minStock: 5, prepMin: 2, available: true, desc: 'Naranja, mora, piña o maracuyá.', addedAt: '2025-01-05' },
+  { id: 'p12', name: 'Gaseosa 350ml', emoji: '🥤', image: 'assets/images/gaseosa_300ml.png', category: 'Bebidas', price: 1.00, stock: 20, minStock: 6, prepMin: 1, available: true, desc: 'Bebida gaseosa fría.', addedAt: '2025-01-05' },
+  { id: 'p13', name: 'Agua 600ml', emoji: '💧', image: 'assets/images/agua_600ml.png', category: 'Bebidas', price: 0.80, stock: 2, minStock: 5, prepMin: 1, available: true, desc: 'Agua natural.', addedAt: '2025-01-05' },
+  { id: 'p14', name: 'Café', emoji: '☕', image: 'assets/images/cafe.png', category: 'Bebidas', price: 1.20, stock: 25, minStock: 8, prepMin: 2, available: true, desc: 'Café americano o con leche.', addedAt: '2025-01-05' },
+  { id: 'p15', name: 'Chocolate Caliente', emoji: '🍫', image: 'assets/images/chocolate_caliente.png', category: 'Bebidas', price: 1.40, stock: 12, minStock: 4, prepMin: 3, available: true, desc: 'Bebida caliente de chocolate.', addedAt: '2025-02-10' },
   { id: 'p16', name: 'Nachos con Queso', emoji: '🧀', image: '', category: 'Snacks', price: 2.20, stock: 8, minStock: 3, prepMin: 6, available: true, desc: 'Totopos con queso derretido.', addedAt: '2025-01-05' },
   { id: 'p17', name: 'Galletas', emoji: '🍪', image: '', category: 'Snacks', price: 0.75, stock: 30, minStock: 10, prepMin: 1, available: true, desc: 'Paquete de galletas surtidas.', addedAt: '2025-01-05' },
   { id: 'p18', name: 'Empanada', emoji: '🥟', image: '', category: 'Snacks', price: 1.25, stock: 0, minStock: 5, prepMin: 4, available: true, desc: 'Empanada de carne o queso.', addedAt: '2025-02-15' },
@@ -141,9 +141,20 @@ const Store = {
   set audit(v) { this._cache['int_audit'] = v; this.save('int_audit', v); },
   get stockHistory() { return this._get('int_stockHistory', [], 'int_stockHistory'); },
   set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
+<<<<<<< Updated upstream
   reset() {
     this._cache = {};
     ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory'].forEach((k) => localStorage.removeItem(k));
+=======
+  get suppliers() { return this._get('int_suppliers', DEFAULT_SUPPLIERS, 'int_suppliers'); },
+  set suppliers(v) { this._cache['int_suppliers'] = v; this.save('int_suppliers', v); },
+  // compat alias para rama providers
+  get providers() { return this.suppliers; },
+  set providers(v) { this.suppliers = v; },
+  reset() {
+    this._cache = {};
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers', 'int_providers'].forEach((k) => localStorage.removeItem(k));
+>>>>>>> Stashed changes
   },
 };
 
@@ -156,3 +167,30 @@ function logAudit(action, target) {
   audit.unshift({ id: 'a' + Date.now(), user: name, action, target, time });
   Store.audit = audit;
 }
+
+/* ---------- Migración automática para imágenes ---------- */
+(function migrateProductsImages() {
+  try {
+    const raw = localStorage.getItem('int_products');
+    if (raw) {
+      const arr = JSON.parse(raw);
+      const needsReset = !Array.isArray(arr) || arr.length < 18 || !arr.find((p) => p.id === 'p01');
+      if (needsReset) {
+        localStorage.removeItem('int_products');
+        localStorage.removeItem('int_orders');
+        if (Store._cache) { delete Store._cache['int_products']; delete Store._cache['int_orders']; }
+        return;
+      }
+      let changed = false;
+      arr.forEach((p) => {
+        const def = DEFAULT_PRODUCTS.find((d) => d.id === p.id);
+        if (def && def.image && !p.image) { p.image = def.image; changed = true; }
+      });
+      DEFAULT_PRODUCTS.forEach((def) => { if (!arr.find((p) => p.id === def.id)) { arr.push(def); changed = true; } });
+      if (changed) {
+        localStorage.setItem('int_products', JSON.stringify(arr));
+        if (Store._cache) Store._cache['int_products'] = arr;
+      }
+    }
+  } catch (e) {}
+})();

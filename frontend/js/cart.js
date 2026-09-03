@@ -28,11 +28,17 @@ const Cart = {
     } else {
       this.items.push({
         productId: product.id, qty, name, price: product.price + (addons?.reduce((s, a) => s + a.price, 0) || 0),
+<<<<<<< Updated upstream
         basePrice: product.price, addons: addons || [], note: note || '', emoji: productIcon(product), prepMin: product.prepMin,
+=======
+        basePrice: product.price, addons: addons || [], note: note || '', emoji: clientProductIcon(product), image: product.image || '', prepMin: product.prepMin,
+>>>>>>> Stashed changes
       });
     }
     this.save();
     refreshCartBadge();
+    if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:updated', { productId: product.id, qty: newQty, action: 'add', count: this.count(), total: this.total() });
+    if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:itemAdded', { productId: product.id, qty });
     return { ok: true };
   },
 
@@ -45,15 +51,22 @@ const Cart = {
     item.qty = qty;
     this.save();
     refreshCartBadge();
+    if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:updated', { productId, qty, action: 'setQty', count: this.count(), total: this.total() });
   },
 
   remove(productId) {
     this.items = this.items.filter((i) => i.productId !== productId);
     this.save();
     refreshCartBadge();
+    if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:updated', { productId, action: 'remove', count: this.count(), total: this.total() });
   },
 
-  clear() { this.items = []; this.save(); refreshCartBadge(); },
+  clear() { this.items = []; this.save(); refreshCartBadge(); if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:updated', { count: 0, total: 0, items: [] }); if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('cart:cleared', {}); },
+
+  // ===== Facade API pública (Regla 11) — preferir sobre acceso directo a Cart.items =====
+  getItems() { return [...this.items]; },
+  getTotal() { return this.total(); },
+  getCount() { return this.count(); },
 };
 
 function refreshCartBadge() {
@@ -64,6 +77,15 @@ function refreshCartBadge() {
   el.classList.toggle('show', c > 0);
 }
 window.refreshCartBadge = refreshCartBadge;
+
+// Observer: badge se actualiza vía evento cart:updated (desacoplado)
+if (typeof CafeteriaEventBus !== 'undefined') {
+  CafeteriaEventBus.on('cart:updated', refreshCartBadge);
+}
+
+// Facade alias para compatibilidad (Regla 16)
+window.CartService = Cart;
+window.cartFacade = Cart;
 
 /* ---------- Capacidad (simulada) ---------- */
 function capacityInfo() {
@@ -161,10 +183,18 @@ function renderCart(el) {
 
   Cart.items.forEach((item) => {
     const product = Store.products.find((p) => p.id === item.productId);
+    const hasImg = !!(item.image || (product && product.image));
+    const media = hasImg
+      ? (() => { const src = esc(item.image || product.image); const fb = esc(item.emoji || clientProductIcon(product)); return `<img class="ci-img" src="${src}" alt="${esc(item.name)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span class="ci-fallback" style="display:none">${fb}</span>`; })()
+      : clientProductIcon(product);
     const row = document.createElement('div');
     row.className = 'cart-item';
     row.innerHTML = `
+<<<<<<< Updated upstream
       <div class="ci-media">${item.emoji || '🍽️'}</div>
+=======
+      <div class="ci-media ${hasImg ? 'has-img' : ''}">${media}</div>
+>>>>>>> Stashed changes
       <div class="ci-body">
         <div class="ci-name">${esc(item.name)}</div>
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
@@ -202,10 +232,20 @@ function renderCheckout(el) {
 
   const cfg = Store.config;
   const deliveryOn = cfg.deliveryEnabled && canPlaceOrder();
+<<<<<<< Updated upstream
   const payOptions = [
     { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: '📱' },
     { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: '🏦' },
     { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: '💵' },
+=======
+  // Strategy Pattern: obtener estrategias registradas (fallback a hardcode si no existe registry)
+  const payOptions = (typeof PaymentStrategyRegistry !== 'undefined')
+    ? PaymentStrategyRegistry.getAll().map(s => ({ id: s.id, name: s.label, desc: s.description, icon: s.icon(), strategy: s }))
+    : [
+    { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: clientIcon('mobile') },
+    { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: clientIcon('transfer') },
+    { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: clientIcon('cash') },
+>>>>>>> Stashed changes
   ];
 
   app.innerHTML = `
@@ -347,6 +387,15 @@ function renderCheckout(el) {
 
   function renderPayDetail(method) {
     const detail = $('#payDetail');
+    const strat = (typeof PaymentStrategyRegistry !== 'undefined') ? PaymentStrategyRegistry.get(method) : null;
+    if (strat) {
+      detail.innerHTML = strat.renderDetail(Cart.total());
+      if (typeof strat.attachEvents === 'function') strat.attachEvents(detail);
+      // Observer: notificar cambio de método
+      if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('payment:methodChanged', { method });
+      return;
+    }
+    // Fallback legacy (compatibilidad)
     if (method === 'deuna') {
       detail.innerHTML = `
         <div class="alert info" style="margin-bottom:16px"><span class="a-ico">📱</span><div><div class="a-title">Pago con DEUNA.</div>Escanea el código QR para pagar <b>${money(Cart.total())}</b>. Se validará en línea y se mostrará en el estado del pedido.</div></div>
@@ -400,40 +449,48 @@ function confirmOrder() {
   const cap = capacityInfo();
   if (cap.stateCls === 'danger') { toast('La capacidad está completa. No se puede confirmar el pedido.', 'error'); return; }
 
-  if (delivery === 'delivery') {
-    if (!window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
+  // Strategy Pattern: validación desacoplada
+  if (typeof DeliveryStrategyRegistry !== 'undefined') {
+    const strat = DeliveryStrategyRegistry.get(delivery);
+    const result = strat ? strat.validate({ deliveryInfo: window._deliveryInfo }) : { valid: true };
+    if (!result.valid) { toast(result.message || 'Delivery inválido', 'warning'); return; }
+  } else {
+    if (delivery === 'delivery' && !window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
   }
-  if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia (simulado).', 'warning'); $('#fu')?.classList.add('err'); return; }
+  if (typeof PaymentStrategyRegistry !== 'undefined') {
+    const strat = PaymentStrategyRegistry.get(pay);
+    const result = strat ? strat.validate({ voucher: window._voucher }) : { valid: true };
+    if (!result.valid) { toast(result.message, 'warning'); const fu = $('#fu'); if (fu) fu.classList.add('err'); return; }
+  } else {
+    if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia (simulado).', 'warning'); $('#fu')?.classList.add('err'); return; }
+  }
 
   const user = currentUser();
-  const num = nextOrderNumber();
-  const prep = estimatedTime();
-  const now = new Date();
-  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  // Factory Pattern: creación centralizada de orden + Builder implícito
+  let order;
+  if (typeof ProductFactory !== 'undefined' && ProductFactory.createOrderPayload) {
+    const prep = estimatedTime();
+    order = ProductFactory.createOrderPayload({ user, items: Cart.getItems ? Cart.getItems() : Cart.items, delivery, deliveryInfo: window._deliveryInfo, payment: pay, prepMin: prep });
+  } else {
+    const num = nextOrderNumber();
+    const prep = estimatedTime();
+    const now = new Date();
+    const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    order = {
+      id: num, userEmail: user.email, userName: user.name, date: now.toISOString().slice(0, 10), time,
+      items: Cart.items.map((i) => ({ productId: i.productId, qty: i.qty, name: i.name, price: i.price })),
+      total: Cart.total(), status: 'queue', priority: 'normal',
+      delivery: delivery === 'delivery' ? 'delivery' : 'pickup', deliveryInfo: delivery === 'delivery' ? window._deliveryInfo : null,
+      payment: pay, paymentStatus: 'pending', prepMin: prep, eta: 'En cola', note: '',
+    };
+  }
 
-  let paymentStatus = 'pending';
-  if (pay === 'efectivo') paymentStatus = 'pending';
-
-  const order = {
-    id: num,
-    userEmail: user.email, userName: user.name,
-    date: now.toISOString().slice(0, 10), time,
-    items: Cart.items.map((i) => ({ productId: i.productId, qty: i.qty, name: i.name, price: i.price })),
-    total: Cart.total(),
-    status: 'queue',
-    priority: 'normal',
-    delivery: delivery === 'delivery' ? 'delivery' : 'pickup',
-    deliveryInfo: delivery === 'delivery' ? window._deliveryInfo : null,
-    payment: pay,
-    paymentStatus: pay === 'efectivo' ? 'pending' : 'pending',
-    prepMin: prep, eta: 'En cola', note: '',
-  };
-
+  // Facade: persistencia via Store + decrement stock + capacity
   const orders = Store.orders;
   orders.unshift(order);
   Store.orders = orders;
 
-  // decrement stock
+  // decrement stock (mantener compatibilidad directa + Factory validación)
   const products = Store.products;
   order.items.forEach((i) => {
     const p = products.find((x) => x.id === i.productId);
@@ -446,7 +503,10 @@ function confirmOrder() {
   cfg.currentCapacity = Math.min(cfg.capacity, cfg.currentCapacity + 1);
   Store.config = cfg;
 
-  logAudit('Realizó pedido', num);
+  logAudit('Realizó pedido', order.id);
+  // Observer: notificar creación
+  if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('order:created', { order });
+  if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('order:statusChanged', { orderId: order.id, from: null, to: 'queue', order });
 
   Cart.clear();
   renderConfirmation(order);

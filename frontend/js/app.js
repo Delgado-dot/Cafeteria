@@ -359,12 +359,24 @@ function userHome(el) {
 /* ---------- Card de producto ---------- */
 function productCard(p, size = '') {
   const soldOut = !p.available || p.stock === 0;
+  const hasImg = typeof productHasImage === 'function' ? productHasImage(p) : !!(p.image);
+  const mediaInner = hasImg && typeof productMediaHTML === 'function'
+    ? productMediaHTML(p, { size })
+    : `<span class="p-emoji">${clientProductIcon(p)}</span>`;
   const card = document.createElement('div');
-  card.className = 'product-card' + (soldOut ? ' disabled' : '');
+  card.className = 'product-card' + (soldOut ? ' disabled' : '') + (hasImg ? ' has-image' : ' no-image');
   card.innerHTML = `
+<<<<<<< Updated upstream
     <div class="product-media">
       ${catIcon(p.category) ? `<span class="p-cat badge badge-primary">${catIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>` : ''}
       ${productIcon(p)}
+=======
+    <div class="product-media ${hasImg ? 'has-img' : 'no-img'}">
+      <span class="pc-dots"></span>
+      <span class="pc-wave"></span>
+      ${mediaInner}
+      ${clientCatIcon(p.category) ? `<span class="p-cat badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>` : ''}
+>>>>>>> Stashed changes
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
     </div>
     <div class="product-body">
@@ -472,14 +484,25 @@ function userProductPage(el) {
   const addons = ADDONS[p.category] || [];
   const maxQty = p.stock;
 
+  const hasImg = typeof productHasImage === 'function' ? productHasImage(p) : !!(p.image);
+  const detailMedia = hasImg && typeof productImgTag === 'function'
+    ? `<div class="product-media-detail-wrap" style="height:100%;min-height:340px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);overflow:hidden;position:relative">${productImgTag(p, 'p-detail-img', p.name)}<span class="p-fallback" style="display:none;font-size:5rem">${clientProductIcon(p)}</span>${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}</div>`
+    : `<div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
+          ${clientProductIcon(p)}
+          ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
+        </div>`;
   el.innerHTML = `
     <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Volver al menú</button>
     <div class="card card-flush" style="overflow:hidden">
       <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
+<<<<<<< Updated upstream
         <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
           ${productIcon(p)}
           ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
         </div>
+=======
+        ${detailMedia}
+>>>>>>> Stashed changes
         <div style="padding:var(--sp-6)">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
             <span class="badge badge-primary">${catIcon(p.category)} ${esc(p.category)}</span>

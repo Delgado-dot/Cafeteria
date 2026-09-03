@@ -147,5 +147,41 @@ function productIcon(p) {
 }
 window.productIcon = productIcon;
 
+/* ---------- Imágenes de producto ---------- */
+function productHasImage(p) {
+  return !!(p && p.image && String(p.image).trim());
+}
+window.productHasImage = productHasImage;
+
+function productImgTag(p, cls = '', alt = '') {
+  if (!productHasImage(p)) return '';
+  const safeAlt = esc(alt || p.name || 'Producto');
+  const safeSrc = esc(p.image);
+  return `<img class="${cls}" src="${safeSrc}" alt="${safeAlt}" loading="lazy" onerror="this.style.display='none'; const fb=this.nextElementSibling; if(fb) fb.style.display='flex';">`;
+}
+window.productImgTag = productImgTag;
+
+function productMediaHTML(p, opts = {}) {
+  const size = opts.size || '';
+  const wrapperCls = opts.wrapperCls || '';
+  if (productHasImage(p)) {
+    const img = productImgTag(p, 'p-img' + (size ? ' ' + size : ''), p.name);
+    const fallback = `<span class="p-fallback" style="display:none">${esc(productIcon(p))}</span>`;
+    return `<span class="p-media-wrap ${wrapperCls}">${img}${fallback}</span>`;
+  }
+  return `<span class="p-emoji">${esc(productIcon(p))}</span>`;
+}
+window.productMediaHTML = productMediaHTML;
+
+function categoryImage(cat) {
+  const map = {
+    'Hamburguesas': 'assets/images/hamburguesa_clasica.png',
+    'Hot Dogs': 'assets/images/hotdog_clasico.png',
+    'Sándwiches': 'assets/images/sandwich.png',
+  };
+  return map[cat] || '';
+}
+window.categoryImage = categoryImage;
+
 function fmtTime(t) { return t; }
 window.fmtTime = fmtTime;

@@ -17,8 +17,10 @@ function renderOrders(el) {
   if (!currentUser()) return route('login');
   const orders = myOrders();
 
-  const active = orders.filter((o) => ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-  const history = orders.filter((o) => ['delivered', 'cancelled', 'nopickup', 'refunded'].includes(o.status));
+  const isActive = (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.isActive) ? OrderStateMachine.isActive : (s => ['queue','confirmed','prep','ready'].includes(s));
+  const isHistory = (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.isHistory) ? OrderStateMachine.isHistory : (s => ['delivered','cancelled','nopickup','refunded'].includes(s));
+  const active = orders.filter((o) => isActive(o.status));
+  const history = orders.filter((o) => isHistory(o.status));
 
   app.innerHTML = `
     <div class="page">
@@ -44,24 +46,37 @@ function renderOrders(el) {
 
 function orderTrackingCard(o) {
   const card = document.createElement('div');
+<<<<<<< Updated upstream
   card.className = 'order-card';
   const flowIdx = ORDER_FLOW.indexOf(o.status);
+=======
+  card.className = `order-card order-card-active state-${o.status}`;
+  // State Pattern: índice y visibilidad via OrderStateMachine
+  const flow = (typeof OrderStateMachine !== 'undefined') ? OrderStateMachine.FLOW : ORDER_FLOW;
+  const flowIdx = (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.getFlowIndex) ? OrderStateMachine.getFlowIndex(o.status) : ORDER_FLOW.indexOf(o.status);
+>>>>>>> Stashed changes
   const current = o.status === 'cancelled' ? -1 : flowIdx >= 0 ? flowIdx : 0;
   const showFlow = !['cancelled', 'nopickup'].includes(o.status);
 
   let timeline = '';
   if (showFlow) {
-    timeline = `<div class="timeline">` + ORDER_FLOW.map((st, i) => {
-      const label = ORDER_FLOW_LABEL[st];
+    const flowLabels = (typeof OrderStateMachine !== 'undefined') ? OrderStateMachine.LABELS : ORDER_FLOW_LABEL;
+    timeline = `<div class="timeline">` + flow.map((st, i) => {
+      const label = flowLabels[st];
       let cls = 'pending';
       if (i < current) cls = 'done';
       else if (i === current) cls = 'current';
+<<<<<<< Updated upstream
       const icon = i < current ? '✓' : (i === current ? '●' : '');
       const isLast = i === ORDER_FLOW.length - 1;
+=======
+      const icon = i < current ? clientIcon('check') : (i === current ? clientIcon('clock') : '');
+      const isLast = i === flow.length - 1;
+>>>>>>> Stashed changes
       return `<div class="tl-step ${cls}">
           <div class="tl-dot">${icon}</div>
           <div class="tl-body"><div class="tl-label">${label}</div>
-            ${i === current ? `<div class="tl-time">Estado actual</div>` : ''}
+            ${i === current ? `<div class="tl-time" style="color:#fff">Estado actual</div>` : ''}
           </div>
           ${isLast ? '' : '<div class="tl-rail"></div>'}
         </div>`;
@@ -105,11 +120,18 @@ function orderTrackingCard(o) {
     cancelBtn.onclick = async () => {
       const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido? Solo puedes cancelar mientras no esté en preparación.', 'Cancelar pedido', true);
       if (!ok) return;
-      o.status = 'cancelled';
-      o.eta = 'Cancelado';
+      try {
+        if (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.transition) {
+          OrderStateMachine.transition(o, 'cancelled');
+        } else {
+          o.status = 'cancelled';
+          o.eta = 'Cancelado';
+        }
+      } catch (e) { toast(e.message, 'error'); return; }
       o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
       Store.orders = Store.orders;
       logAudit('Canceló pedido', o.id);
+      if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('order:statusChanged', { orderId: o.id, from: 'queue', to: 'cancelled', order: o });
       toast('Pedido cancelado.', 'success');
       renderOrders();
     };
@@ -134,6 +156,54 @@ function historyCard(o) {
     </div>`;
 }
 
+<<<<<<< Updated upstream
+=======
+function orderEta(o) {
+  if (o.status === 'ready') return 'Retira ahora';
+  if (o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep') return `${o.prepMin || '—'} min`;
+  return o.eta || ORDER_FLOW_LABEL[o.status] || '—';
+}
+
+function orderStateMessage(o) {
+  const messages = {
+    queue: 'Tu pedido está en cola', confirmed: 'Pedido confirmado', prep: 'Estamos preparando tu pedido',
+    ready: '¡Tu pedido está listo!', delivered: 'Pedido entregado', cancelled: 'Pedido cancelado',
+    nopickup: 'Pedido no retirado', refunded: 'Reembolso procesado',
+  };
+  return messages[o.status] || 'Estado actualizado';
+}
+
+function showOrderDetail(o) {
+  const flow = (typeof OrderStateMachine !== 'undefined') ? OrderStateMachine.FLOW : ORDER_FLOW;
+  const flowLabels = (typeof OrderStateMachine !== 'undefined') ? OrderStateMachine.LABELS : ORDER_FLOW_LABEL;
+  const isTerminal = ['cancelled', 'nopickup', 'refunded'].includes(o.status);
+  const flowIndex = Math.max(0, (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.getFlowIndex) ? OrderStateMachine.getFlowIndex(o.status) : ORDER_FLOW.indexOf(o.status));
+  const progress = isTerminal ? '' : `<div class="timeline timeline-detail">${flow.map((status, index) => {
+    const cls = index < flowIndex ? 'done' : index === flowIndex ? 'current' : 'pending';
+    return `<div class="tl-step ${cls}"><div class="tl-dot">${index < flowIndex ? clientIcon('check') : index === flowIndex ? clientIcon('clock') : ''}</div><div class="tl-body"><div class="tl-label">${flowLabels[status]}</div>${index === flowIndex ? `<div class="tl-time" style="color:#fff">${orderStateMessage(o)}</div>` : ''}</div>${index === flow.length - 1 ? '' : '<div class="tl-rail"></div>'}</div>`;
+  }).join('')}</div>`;
+  const terminal = isTerminal ? `<div class="alert ${o.status === 'nopickup' ? 'warning' : o.status === 'refunded' ? 'info' : 'danger'}"><span class="a-ico">${clientIcon(o.status === 'nopickup' ? 'clock' : 'back')}</span><div><div class="a-title">${orderStateMessage(o)}</div>${o.paymentStatus === 'refunded' ? 'El reembolso fue solicitado para este pedido.' : (o.note || 'No se requieren más acciones.')}</div></div>` : '';
+  const d = drawer(`
+    <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
+    <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
+    ${terminal}${progress}
+    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
+    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
+  `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
+  $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
+    const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
+    if (!ok) return;
+    try {
+      if (typeof OrderStateMachine !== 'undefined' && OrderStateMachine.transition) OrderStateMachine.transition(o, 'cancelled');
+      else { o.status = 'cancelled'; o.eta = 'Cancelado'; }
+    } catch (e) { toast(e.message,'error'); return; }
+    o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
+    logAudit('Canceló pedido', o.id); d.close(); if (typeof CafeteriaEventBus !== 'undefined') CafeteriaEventBus.emit('order:statusChanged', { orderId: o.id, to:'cancelled', order:o }); toast('Pedido cancelado.', 'success'); renderOrders();
+  });
+}
+window.showOrderDetail = showOrderDetail;
+
+>>>>>>> Stashed changes
 function saveOrders() { Store.orders = Store.orders; }
 
 function fmtDate(d) {
