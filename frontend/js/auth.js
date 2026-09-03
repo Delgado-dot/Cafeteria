@@ -8,10 +8,19 @@ const Auth = {
   clear() { localStorage.removeItem('int_session'); },
 
   login(email, password, remember) {
-    const user = Store.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+    const emailUser = (email || '').trim().toLowerCase();
+    if (!emailUser) return { ok: false, field: 'email', msg: 'Ingresa tu usuario o correo.' };
+    let user = null;
+    try {
+      user = Store.users.find((u) => u && u.email && u.email.toLowerCase() === emailUser) || null;
+    } catch (e) {
+      return { ok: false, field: 'email', msg: 'No se pudo verificar el usuario. Intenta de nuevo.' };
+    }
     if (!user) return { ok: false, field: 'email', msg: 'Usuario no encontrado.' };
     if (!user.active) return { ok: false, field: 'email', msg: 'Este usuario está desactivado.' };
-    if (PASSWORDS[user.email] !== password) return { ok: false, field: 'password', msg: 'Contraseña incorrecta.' };
+    const realPass = PASSWORDS[user.email];
+    if (realPass === undefined) return { ok: false, field: 'password', msg: 'Este usuario aún no tiene contraseña asignada.' };
+    if (realPass !== password) return { ok: false, field: 'password', msg: 'Contraseña incorrecta.' };
     const now = new Date();
     user.lastAccess = now.toISOString().slice(0, 10) + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     Store.users = Store.users;
@@ -117,16 +126,23 @@ function renderLogin() {
     const btn = $('#li_submit');
     btn.disabled = true; btn.textContent = 'Ingresando...';
     setTimeout(() => {
-      const res = Auth.login(email, pass, $('#li_remember').checked);
-      if (res.ok) {
-        toast('¡Bienvenido, ' + res.user.name + '!', 'success');
-        // Redirección por rol: cada perfil aterriza en su propia interfaz.
-        const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
-          : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
-        setTimeout(() => route(dest), 400);
-      } else {
-        setErr(res.field, res.msg);
-        toast(res.msg, 'error');
+      try {
+        const res = Auth.login(email, pass, $('#li_remember').checked);
+        if (res.ok) {
+          toast('¡Bienvenido, ' + res.user.name + '!', 'success');
+          // Redirección por rol: cada perfil aterriza en su propia interfaz.
+          const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
+            : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
+          setTimeout(() => route(dest), 400);
+        } else {
+          setErr(res.field, res.msg);
+          toast(res.msg, 'error');
+          btn.disabled = false; btn.textContent = 'Iniciar sesión';
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        setErr('password', 'Ocurrió un error inesperado. Intenta de nuevo.');
+        toast('Ocurrió un error al iniciar sesión.', 'error');
         btn.disabled = false; btn.textContent = 'Iniciar sesión';
       }
     }, 700);
