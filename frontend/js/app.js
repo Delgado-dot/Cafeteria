@@ -47,19 +47,53 @@ window.setRoute = setRoute;
 
 /* ---------- Resolución de rutas y separación por rol ---------- */
 
-// Rutas públicas legibles que redirigen al área interna correspondiente.
-// El núcleo interno (home, menu, cart, adminbar/*, admindev/*) se mantiene
-// como aliases estables para no romper los setRoute existentes.
-function resolveAlias(r) {
-  if (r === 'usuario') return 'home';
-  if (r.startsWith('usuario/')) return r.slice('usuario/'.length) || 'home';
-  if (r === 'bar') return 'adminbar/dashboard';
-  if (r.startsWith('bar/')) return 'adminbar/' + r.slice('bar/'.length);
-  if (r === 'developer') return 'admindev/dashboard';
-  if (r.startsWith('developer/')) return 'admindev/' + r.slice('developer/'.length);
-  return r;
-}
-window.resolveAlias = resolveAlias;
+// Se agregan aliases en español según especificación del proyecto.
+ function resolveAlias(r) {
+   // normalizar
+   r = r.replace(/^\//, '');
+   // español -> interno
+   const alias = {
+     '': 'landing',
+     'inicio': 'home',
+     'menu': 'menu',
+     'catalogo': 'menu',
+     'producto': 'product',
+     'carrito': 'cart',
+     'checkout': 'checkout',
+     'pedidos': 'orders',
+     'perfil': 'profile',
+     'recuperar': 'forgot',
+     'verificar': 'forgot',
+     'nueva-contrasena': 'forgot',
+     'admin': 'adminbar/dashboard',
+     'admin/pedidos': 'adminbar/orders',
+     'admin/pedidos-listos': 'adminbar/orders',
+     'admin/preparacion': 'adminbar/dashboard',
+     'admin/productos': 'adminbar/products',
+     'admin/stock': 'adminbar/stock',
+     'admin/pagos': 'adminbar/payments',
+     'admin/ventas': 'adminbar/sales',
+     'admin/delivery': 'adminbar/delivery',
+     'admin/configuracion': 'adminbar/config',
+     'developer': 'admindev/dashboard',
+     'developer/usuarios': 'admindev/users',
+     'developer/roles': 'admindev/roles',
+     'developer/permisos': 'admindev/roles',
+     'developer/auditoria': 'admindev/auditoria',
+     'developer/configuracion': 'admindev/config',
+   };
+   if (alias[r] !== undefined) return alias[r];
+   if (r.startsWith('producto/')) return r.replace('producto/', 'product/');
+   if (r.startsWith('pedidos/')) return 'orders';
+   if (r.startsWith('admin/')) return r.replace('admin/', 'adminbar/');
+   if (r.startsWith('developer/')) return r.replace('developer/', 'admindev/');
+   if (r === 'usuario') return 'home';
+   if (r.startsWith('usuario/')) return r.slice('usuario/'.length) || 'home';
+   if (r === 'bar') return 'adminbar/dashboard';
+   if (r.startsWith('bar/')) return 'adminbar/' + r.slice('bar/'.length);
+   return r;
+ }
+ window.resolveAlias = resolveAlias;
 
 // Define a qué rol pertenece cada ruta para impedir el cruce de interfaces.
 function routeTargetRole(r) {
@@ -111,6 +145,26 @@ function handleRoute() {
   // Sin sesión: el Landing público es la puerta de entrada del sistema.
   // El login se alcanza desde el botón "ACCEDER" del Landing.
   if (!user) return renderLanding();
+
+  // --- Inicio: verificaciones de permiso granular por rol ---
+  // Para roles conocidos (adminbar/admindev), no forzar redirect por rol;
+  // permitir acceso a home + control por permisos detallados.
+  const isKnownAdmin = ['adminbar', 'admindev'].includes(user.role);
+  if (isKnownAdmin && routeTargetRole(r) !== user.role && routeTargetRole(r) !== 'public') {
+    setRoute(homeRouteFor(user.role));
+    return;
+  }
+  // Si es rol personalizado intentando entrar a admin, verificar permiso básico
+  if (!isKnownAdmin && r.startsWith('admin')) {
+    // requiere al menos dashboard.view o users.view para entrar a admindev
+    const need = r.startsWith('admindev') ? 'dashboard.view' : 'orders.view_all';
+    if (typeof can === 'function' && !can(need) && user.role !== 'admindev') {
+      toast('Acceso denegado: sin permiso '+need, 'error');
+      setRoute('home');
+      return;
+    }
+  }
+  // --- Fin: verificaciones de permiso granular por rol ---
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {

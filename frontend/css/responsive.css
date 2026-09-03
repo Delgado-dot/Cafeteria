@@ -160,6 +160,40 @@
 }
 
 /* ============================================================
+   Admin Developer (SaaS Platform) — responsive panel dev
+   ============================================================ */
+@media (max-width: 1080px) {
+  body.is-admindev .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  body.is-admindev .role-grid { grid-template-columns: repeat(2, 1fr); }
+  body.is-admindev .dev-qa-grid { grid-template-columns: repeat(2, 1fr); }
+  body.is-admindev .audit-toolbar { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  body.is-admindev .admin-sidebar {
+    display: flex !important;
+    position: fixed; left: 0; top: 0; height: 100vh; z-index: 130;
+    transform: translateX(-100%); transition: transform var(--t-med);
+    box-shadow: var(--shadow-lg);
+  }
+  body.is-admindev .admin-sidebar.open { transform: translateX(0); }
+  body.is-admindev .sb-scrim { display: block !important; }
+  body.is-admindev .admin-bottom-nav { display: none !important; }
+}
+
+@media (max-width: 560px) {
+  body.is-admindev .kpi-grid { grid-template-columns: 1fr; }
+  body.is-admindev .role-grid { grid-template-columns: 1fr; }
+  body.is-admindev .dev-qa-grid { grid-template-columns: 1fr; }
+  body.is-admindev .cafe-hero { grid-template-columns: 1fr; text-align: center; }
+  body.is-admindev .cafe-meta-grid { grid-template-columns: 1fr; }
+  body.is-admindev .audit-toolbar { grid-template-columns: 1fr; }
+  body.is-admindev .user-row-card { display: block; }
+  body.is-admindev .dev-search { max-width: 100%; }
+  body.is-admindev .dev-title { font-size: 1.35rem; }
+}
+
+/* ============================================================
    Ajustes de accesibilidad / preferencias
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
