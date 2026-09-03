@@ -1627,8 +1627,7 @@ function barPayments(el) {
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
       <tbody id="paymentRows"></tbody>
-    </table></div>
-    <div id="paymentCardsMobile" style="display:none"></div>`;
+    </table></div>`;
 
   const setPay = (id, status) => {
     const order = orders.find((o) => o.id === id);
@@ -1656,7 +1655,6 @@ function barPayments(el) {
 
   const renderRows = () => {
     const visibleOrders = selectedFilter === 'all' ? orders : selectedFilter === 'pending' ? getPendingPayments(orders) : orders.filter((o) => o.paymentStatus === selectedFilter);
-    // Verifica campo por campo: o.id, o.userName, o.total, o.payment, o.paymentStatus, o.date/o.time son valores reales
     $('#paymentRows', el).innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
         const sInfo = paymentStatusLabels[o.paymentStatus];
         const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
@@ -1678,45 +1676,6 @@ function barPayments(el) {
         </tr>
         `;
       }).join('') : `<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx ${selectedFilter==='pending' ? 'bx-happy-heart-eyes' : 'bx-search-alt'}"></i></div><div style="font-weight:600">${selectedFilter==='pending' ? '¡Todo al día! No hay pagos pendientes' : 'No encontramos pagos en este estado'}</div><div class="tiny muted" style="margin-top:4px">${selectedFilter==='pending' ? 'Respira tranquilo, por ahora no debes cobrar nada' : 'Prueba con otro filtro'}</div></td></tr>`;
-    // Mobile compact cards - mismo datos reales, layout 4 líneas
-    const mobileContainer = $('#paymentCardsMobile', el);
-    if (mobileContainer) {
-      mobileContainer.innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
-        const sInfo = paymentStatusLabels[o.paymentStatus];
-        const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
-        return `
-        <div class="mobile-compact-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-xs)">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span class="bold" style="font-size:14px">#${o.id}</span>
-            <span class="tiny muted" style="font-size:11px">${o.date} ${o.time || ''}</span>
-          </div>
-          <div class="bold" style="font-size:14px">${esc(o.userName)}</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span class="bold tabular-nums" style="font-size:16px">${money(o.total)}</span>
-            <span class="badge badge-primary" style="font-size:11px">${paymentMethodLabel(o.payment)}</span>
-            <span class="badge ${badgeCls}" style="font-size:11px;margin-left:auto">${sInfo ? sInfo.label : 'Pendiente'}</span>
-          </div>
-          <div style="position:absolute;bottom:8px;right:10px;display:flex;gap:6px">
-            ${['transferencia','deuna'].includes(o.payment) ? `<button class="btn btn-ghost" data-voucher="${o.id}" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--surface-3)" title="Ver comprobante"><i class="bx bx-printer" style="font-size:15px;color:var(--text-2)"></i></button>` : ''}
-            ${o.paymentStatus !== 'refunded' ? `<button class="btn btn-ghost" data-refund="${o.id}" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--danger-soft);color:var(--danger)" title="Reembolsar"><i class="bx bx-undo" style="font-size:16px"></i></button>` : ''}
-          </div>
-        </div>
-        `;
-      }).join('') : `<div style="text-align:center;padding:20px" class="tiny muted">No hay pagos para mostrar</div>`;
-      $$('[data-voucher]', mobileContainer).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
-      $$('[data-refund]', mobileContainer).forEach((b) => b.onclick = () => {
-        const order = orders.find((x) => x.id === b.dataset.refund);
-        if (!order) return;
-        confirmDialog('Confirmar reembolso', '¿Confirmar reembolso de este pedido?', 'Confirmar', true).then((ok) => {
-          if (!ok) return;
-          order.paymentStatus = 'refunded';
-          saveOrders();
-          logAudit('Reembolsó pago', order.id);
-          toast(`Pedido #${order.id} reembolsado`, 'success');
-          renderBarAdmin('payments');
-        });
-      });
-    }
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e7f1f0"/>
+      <stop offset="1" stop-color="#bcd8d4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <circle cx="140" cy="120" r="160" fill="#ffffff" opacity="0.4"/>
+
+  <!-- ventana -->
+  <rect x="420" y="70" width="260" height="310" rx="16" fill="#ffffff"/>
+  <rect x="430" y="80" width="240" height="290" rx="10" fill="#dcefec"/>
+  <circle cx="620" cy="150" r="34" fill="#f6c96b" opacity="0.9"/>
+  <path d="M430 370 C520 290 620 320 700 280 L700 370 Z" fill="#4e8f85" opacity="0.5"/>
+  <path d="M430 370 C560 310 680 350 760 320 L760 370 Z" fill="#3a7a70" opacity="0.45"/>
+  <rect x="470" y="70" width="14" height="310" fill="#dcefec"/>
+  <rect x="420" y="215" width="260" height="14" fill="#dcefec"/>
+
+  <!-- piso -->
+  <rect y="560" width="800" height="240" fill="#3a5552"/>
+
+  <!-- luz pendulo -->
+  <path d="M360 0 v56" stroke="#1f3b39" stroke-width="6"/>
+  <path d="M324 56 h72 l-12 32 h-48 Z" fill="#e0a63a"/>
+  <ellipse cx="360" cy="92" rx="30" ry="7" fill="#c98a1d"/>
+
+  <!-- mesa -->
+  <circle cx="360" cy="430" r="130" fill="#ffffff"/>
+  <circle cx="360" cy="430" r="118" fill="#f6faf9"/>
+  <rect x="330" y="430" width="60" height="130" rx="6" fill="#28514f"/>
+  <!-- sillas -->
+  <circle cx="470" cy="470" r="40" fill="#2f605e"/>
+  <circle cx="250" cy="470" r="40" fill="#2f605e"/>
+  <circle cx="470" cy="470" r="22" fill="#40807e"/>
+  <circle cx="250" cy="470" r="22" fill="#40807e"/>
+
+  <!-- taza sobre mesa -->
+  <ellipse cx="360" cy="400" rx="42" ry="12" fill="#cfe4e1"/>
+  <rect x="334" y="344" width="52" height="34" rx="7" fill="#40807e"/>
+  <path d="M386 352 h12 c10 0 10 28 0 28 h-12" fill="none" stroke="#40807e" stroke-width="6"/>
+  <ellipse cx="360" cy="344" rx="26" ry="7" fill="#e7f1f0"/>
+  <ellipse cx="360" cy="344" rx="19" ry="4.5" fill="#6b4a2e"/>
+
+  <!-- maceta -->
+  <path d="M160 560 h64 l-8 54 h-48 Z" fill="#9c6b3f"/>
+  <path d="M192 560 c-8 -28 -2 -54 -27 -78 c23 15 34 37 27 78 Z" fill="#4e8f85"/>
+  <path d="M192 560 c8 -28 5 -52 30 -72 c-22 14 -37 33 -30 72 Z" fill="#3a7a70"/>
+
+  <!-- maceta 2 -->
+  <path d="M600 560 h64 l-8 54 h-48 Z" fill="#9c6b3f"/>
+  <path d="M632 560 c-8 -28 -2 -54 -27 -78 c23 15 34 37 27 78 Z" fill="#3a7a70"/>
+  <path d="M632 560 c8 -28 5 -52 30 -72 c-22 14 -37 33 -30 72 Z" fill="#4e8f85"/>
+</svg>
