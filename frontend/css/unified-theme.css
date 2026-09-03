@@ -1,0 +1,141 @@
+/* ============================================================
+   unified-theme.css — lenguaje visual compartido y contraste
+   Landing, acceso, cliente, administración del bar y developer.
+   ============================================================ */
+
+:root {
+  --app-photo: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg");
+  --glass-dark: rgba(8, 27, 26, 0.78);
+  --glass-dark-soft: rgba(10, 34, 32, 0.68);
+  --glass-light: rgba(255, 255, 255, 0.91);
+  --glass-line: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 16px 42px rgba(5, 20, 19, 0.22);
+}
+
+/* Acceso: el mismo fondo fotografico y cristal oscuro del landing. */
+body.is-auth .login-screen {
+  background:
+    linear-gradient(160deg, rgba(8, 29, 27, 0.74), rgba(5, 20, 19, 0.88)),
+    var(--app-photo) center / cover no-repeat;
+}
+
+body.is-auth .login-card {
+  color: #fff;
+  background: var(--glass-dark);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+body.is-auth .login-head h2,
+body.is-auth .login-head p,
+body.is-auth .login-card .label,
+body.is-auth .login-card .checkbox-row,
+body.is-auth .login-card .demo-creds summary,
+body.is-auth .login-card .demo-list,
+body.is-auth .login-card .demo-list b {
+  color: #fff !important;
+}
+
+body.is-auth .login-head p,
+body.is-auth .login-card .demo-creds summary,
+body.is-auth .login-card .demo-list { color: rgba(255, 255, 255, 0.78) !important; }
+body.is-auth .login-card .divider { border-color: rgba(255, 255, 255, 0.16); }
+body.is-auth .login-card .input,
+body.is-auth .login-card .ig-btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.52);
+}
+body.is-auth .login-card .input::placeholder { color: #71817f; opacity: 1; }
+body.is-auth .login-card code { background: rgba(255, 255, 255, 0.14) !important; color: #fff; }
+body.is-auth .login-card a { color: #9ee2dc !important; }
+body.is-auth .login-logo { background: rgba(255, 255, 255, 0.96); }
+
+/* Paneles administrativos: foto compartida, navegacion oscura y
+   superficies claras translucidas para preservar lectura de datos. */
+body.is-admin {
+  min-height: 100vh;
+  background:
+    linear-gradient(145deg, rgba(8, 30, 28, 0.72), rgba(10, 35, 33, 0.56)),
+    var(--app-photo) center / cover fixed no-repeat;
+}
+
+body.is-admin .admin-layout,
+body.is-admin .admin-main { background: transparent; }
+
+body.is-admin .admin-sidebar {
+  background: rgba(10, 31, 30, 0.94);
+  border-right-color: var(--glass-line);
+  box-shadow: 8px 0 28px rgba(4, 18, 17, 0.24);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.is-admin .admin-topbar {
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom-color: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 8px 24px rgba(5, 20, 19, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.is-admin .admin-content > .page-title h1,
+body.is-admin .admin-content > .page-title .page-sub,
+body.is-admin .admin-content > h1,
+body.is-admin .admin-content > h2 {
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(3, 18, 17, 0.34);
+}
+
+body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
+  .capacity-panel, .chart-card, .settings-card, .audit-card) {
+  background: var(--glass-light);
+  border-color: rgba(255, 255, 255, 0.62);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Contraste explicito: textos de datos oscuros dentro de cristal claro. */
+body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
+  .capacity-panel, .chart-card, .settings-card, .audit-card) {
+  color: var(--text);
+}
+body.is-admin .admin-content .muted { color: #556563; }
+body.is-admin .admin-content .muted-3,
+body.is-admin .admin-content .tiny.muted { color: #667572; }
+body.is-admin .admin-content thead th { color: #52615f; background: rgba(235, 243, 241, 0.9); }
+body.is-admin .admin-content tbody td { color: var(--text); }
+
+body.is-admin .sb-link { color: rgba(255, 255, 255, 0.88); }
+body.is-admin .sb-link.active { background: #fff; color: var(--primary-strong); }
+body.is-admin .sb-group,
+body.is-admin .sb-footer .tiny.muted { color: rgba(255, 255, 255, 0.7) !important; }
+
+/* Cliente: controles claros siempre conservan texto oscuro, aunque vivan
+   dentro de una tarjeta de cristal oscura. */
+body.has-bottom-nav :is(.input, select.input, textarea.input, .dropdown-menu, .modal, .drawer,
+  .qty-stepper .qty-val, .floor-tab, .aula-cell) { color: var(--text); }
+body.has-bottom-nav :is(.input, select.input, textarea.input)::placeholder { color: #6f7f7d; opacity: 1; }
+body.has-bottom-nav .dropdown-menu :is(a, span, div),
+body.has-bottom-nav .modal :is(.label, .modal-title),
+body.has-bottom-nav .drawer :is(.label, .drawer-title) { color: var(--text); }
+
+/* Accesibilidad visible en todos los shells. */
+:is(.landing, .login-screen, body.is-admin, body.has-bottom-nav) :focus-visible {
+  outline: 3px solid #9ee2dc;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  body.is-admin .admin-bottom-nav {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  body.is-admin .admin-content { padding-bottom: 88px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; }
+}
