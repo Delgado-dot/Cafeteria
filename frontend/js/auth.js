@@ -116,20 +116,31 @@ function renderLogin() {
 
     const btn = $('#li_submit');
     btn.disabled = true; btn.textContent = 'Ingresando...';
-    setTimeout(() => {
+    const resetBtn = () => { btn.disabled = false; btn.textContent = 'Iniciar sesión'; };
+    // Procesamiento inmediato (sin demoras artificiales) para que el ingreso
+    // sea fluido y no se quede "trabado" en el estado de cargando.
+    try {
       const res = Auth.login(email, pass, $('#li_remember').checked);
       if (res.ok) {
         toast('¡Bienvenido, ' + res.user.name + '!', 'success');
         // Redirección por rol: cada perfil aterriza en su propia interfaz.
         const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
           : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
-        setTimeout(() => route(dest), 400);
+        if (location.hash.replace('#', '') === dest) {
+          handleRoute();
+          return;
+        }
+        setRoute(dest);
       } else {
         setErr(res.field, res.msg);
         toast(res.msg, 'error');
-        btn.disabled = false; btn.textContent = 'Iniciar sesión';
+        resetBtn();
       }
-    }, 700);
+    } catch (err) {
+      console.error('Error al iniciar sesión:', err);
+      toast('No se pudo iniciar sesión. Intenta de nuevo.', 'error');
+      resetBtn();
+    }
   });
 }
 
