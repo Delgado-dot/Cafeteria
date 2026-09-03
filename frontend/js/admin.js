@@ -1707,7 +1707,7 @@ function barPayments(el) {
       $$('[data-refund]', mobileContainer).forEach((b) => b.onclick = () => {
         const order = orders.find((x) => x.id === b.dataset.refund);
         if (!order) return;
-        confirmDialog('Confirmar reembolso', `¿Confirmar reembolso de ${order.id} por ${money(order.total)}?`, 'Confirmar', true).then((ok) => {
+        confirmDialog('Confirmar reembolso', '¿Confirmar reembolso de este pedido?', 'Confirmar', true).then((ok) => {
           if (!ok) return;
           order.paymentStatus = 'refunded';
           saveOrders();
