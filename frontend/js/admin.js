@@ -3,20 +3,15 @@
    ============================================================ */
 
 const BAR_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: 'dashboard' },
-  orders: { label: 'Pedidos', icon: 'orders' },
-  preparacion: { label: 'Preparación', icon: 'prep' },
-  listos: { label: 'Pedidos listos', icon: 'ready' },
-  products: { label: 'Productos', icon: 'products' },
-  stock: { label: 'Stock', icon: 'stock' },
-  payments: { label: 'Pagos', icon: 'payments' },
-  sales: { label: 'Ventas', icon: 'sales' },
-  delivery: { label: 'Delivery', icon: 'delivery' },
-  config: { label: 'Configuración', icon: 'config' },
+  dashboard: { label: 'Dashboard', icon: '📊' },
+  orders: { label: 'Pedidos', icon: '🧾' },
+  products: { label: 'Productos', icon: '🍔' },
+  stock: { label: 'Stock', icon: '📦' },
+  payments: { label: 'Pagos', icon: '💳' },
+  sales: { label: 'Ventas', icon: '📈' },
+  delivery: { label: 'Delivery', icon: '🛵' },
+  config: { label: 'Configuración', icon: '⚙️' },
 };
-
-const BAR_ICON_MAP = { dashboard:'grid', orders:'orders', preparacion:'clock', listos:'check', products:'bag', stock:'bag', payments:'orders', sales:'grid', delivery:'cart', config:'menu' };
-function _barSvg(sec){ return svgIcon(BAR_ICON_MAP[sec]||'grid'); }
 
 function renderBarAdmin(page) {
   const app = $('#app');
@@ -31,14 +26,12 @@ function renderBarAdmin(page) {
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="color:var(--primary)">${svgIcon('coffee')}</span> Cafetería INTESUD</div>
+        <div class="sb-brand"><span style="font-size:1.3rem">☕</span> Cafetería INTESUD</div>
         <nav class="sb-nav">
           ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-bar="${k}">
-              <span class="sb-ico">${_barSvg(k)}</span>${v.label}
+              <span class="ico">${v.icon}</span>${v.label}
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
-              ${k === 'preparacion' && prepCount ? `<span class="sb-badge" style="background:var(--warning)">${prepCount}</span>` : ''}
-              ${k === 'listos' && readyCount ? `<span class="sb-badge" style="background:var(--success)">${readyCount}</span>` : ''}
             </a>`).join('')}
         </nav>
         <div class="sb-footer">
@@ -49,14 +42,9 @@ function renderBarAdmin(page) {
       <div class="admin-main">
         <div class="admin-topbar">
           <button class="hamburger" id="barHamburger" title="Menú">☰</button>
-          <span class="topbar-ico">${_barSvg(sec)}</span>
+          <span style="font-size:1.3rem">${BAR_SECTIONS[sec].icon}</span>
           <span class="page-name">${BAR_SECTIONS[sec].label}</span>
-          <div class="admin-topbar-actions" style="margin-left:auto;display:flex;align-items:center;gap:12px">
-            <div class="header-search" style="width:220px;display:flex;align-items:center;position:relative">
-              <span class="ico" style="position:absolute;left:10px;color:var(--text-3);display:flex">${svgIcon('search')}</span>
-              <input class="input" placeholder="Buscar pedido..." style="padding-left:34px;height:34px;font-size:0.88rem;background:var(--surface-3);border-color:transparent;border-radius:999px;width:100%" id="adminSearch">
-            </div>
-            <button class="header-icon-btn" title="Notificaciones" style="width:36px;height:36px">${svgIcon('bell')}<span class="bubble ${queueCount>0?'show':''}" style="position:absolute;top:-4px;right:-4px">${queueCount||''}</span></button>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <span id="cafePill"></span>
             <div class="profile-chip" id="barUserMenu">
               <div class="avatar sm">${esc(initials(currentUser().name))}</div>
@@ -95,17 +83,11 @@ function renderBarAdmin(page) {
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
   $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
-  const adminSearch = $('#adminSearch');
-  if (adminSearch) adminSearch.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && adminSearch.value.trim()){ toast('Búsqueda: '+adminSearch.value,'info'); setRoute('adminbar/orders'); }});
 
   const content = $('#barContent');
-  // limpiar tick operativo si se sale del dashboard
-  if (sec !== 'dashboard' && window._opsTick) { clearInterval(window._opsTick); window._opsTick = null; }
   const renderers = {
     dashboard: barDashboard,
     orders: barOrders,
-    preparacion: (el)=> barOrders(el, 'prep'),
-    listos: (el)=> barOrders(el, 'ready'),
     products: barProducts,
     stock: barStock,
     payments: barPayments,
@@ -122,474 +104,114 @@ function renderCafePill(el) {
 }
 
 /* ============================================================
-   DASHBOARD OPERATIVO — ¿Qué tengo que preparar ahora?
-   Orden: ALERTAS > CAPACIDAD+PEDIDOS > COLA > LISTOS > STOCK/PAGOS/VENTAS
+   DASHBOARD
    ============================================================ */
-
-// helpers de tiempo y prioridad para dashboard operativo
-function _parseHM(hm) {
-  if (!hm || !hm.includes(':')) return 0;
-  const [h, m] = hm.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-function _elapsedMins(o) {
-  try {
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes();
-    const orderMins = _parseHM(o.time || '00:00');
-    let diff = nowMins - orderMins;
-    if (o.date) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (o.date !== today) {
-        const d1 = new Date(o.date + 'T00:00:00');
-        const d2 = new Date(today + 'T00:00:00');
-        const dayDiff = Math.round((d2 - d1) / 86400000);
-        if (dayDiff > 0) diff += dayDiff * 1440;
-      }
-    }
-    let v = Math.max(0, diff);
-    // Demo: si el diff es irrealmente grande (ej. probando en la tarde), normalizar a valores demo 3-19 min
-    // para que el dashboard siempre se vea operativo y cumpla el ejemplo del requerimiento.
-    if (v > 90) {
-      // hash determinístico por id para mantener orden estable
-      let h = 0;
-      for (let i = 0; i < String(o.id).length; i++) h = (h * 31 + String(o.id).charCodeAt(i)) % 1000;
-      const demoVals = [5, 8, 12, 18, 3, 9, 14, 6, 16, 4];
-      v = demoVals[h % demoVals.length] + (h % 3);
-      // urgente/priority ya definidos mantienen su peso; ajustar para que se vea la escalada
-      if (o.priority === 'urgent') v = Math.max(v, 16);
-      else if (o.priority === 'priority') v = Math.max(v, 11);
-    }
-    if (v > 60) v = v % 60 + 5;
-    return v;
-  } catch (e) { return 0; }
-}
-function _effectivePriority(o, elapsed) {
-  if (o.priority === 'urgent' || elapsed >= 18) return 'urgent';
-  if (o.priority === 'priority' || elapsed >= 12) return 'priority';
-  if (elapsed >= 8 && o.priority === 'normal') return 'priority';
-  return o.priority || 'normal';
-}
-function _priorityMeta(p) {
-  if (p === 'urgent') return { label: 'URGENTE', icon: '🔴', cls: 'urgent', dot: 'var(--danger)' };
-  if (p === 'priority') return { label: 'ALTA', icon: '🟠', cls: 'priority', dot: 'var(--warning)' };
-  return { label: 'NORMAL', icon: '🟡', cls: 'normal', dot: 'var(--neutral)' };
-}
-function _fmtMM(elapsed) {
-  const m = Math.floor(elapsed);
-  const s = '00';
-  // formato Preparación: MM:SS / MM:00  -> mostramos MM:SS simple
-  // para elapsed > 60 usamos mins totales
-  return String(m).padStart(2, '0') + ':' + s;
-}
-function _fmtElapsedText(elapsed) {
-  if (elapsed < 1) return 'hace un momento';
-  if (elapsed === 1) return '1 min esperando';
-  return elapsed + ' min esperando';
-}
-
 function barDashboard(el) {
   const orders = Store.orders;
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter((o) => o.date === today);
-  // estados
   const queue = orders.filter((o) => o.status === 'queue');
-  const confirmed = orders.filter((o) => o.status === 'confirmed');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
-  const deliveredToday = todayOrders.filter((o) => o.status === 'delivered');
-  const pendingPrep = [...queue, ...confirmed, ...prep]; // lo que hay que preparar ahora
   const cap = capacityInfo();
-  const capUsed = cap.used;
-  const capTotal = cap.total;
-  // pagos
-  const payPaid = orders.filter((o) => ['paid', 'approved'].includes(o.paymentStatus)).length;
-  const payPending = orders.filter((o) => o.paymentStatus === 'pending').length;
-  const payReview = orders.filter((o) => o.paymentStatus === 'review').length;
-  const payRejected = orders.filter((o) => o.paymentStatus === 'rejected').length;
-  // stock
-  const lowStock = Store.products.filter((p) => p.available && p.stock > 0 && p.stock <= p.minStock);
+  const payPending = orders.filter((o) => ['pending', 'review'].includes(o.paymentStatus) && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status)).length;
+  const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
+  const salesToday = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).reduce((s, o) => s + o.total, 0);
+
+  const lowStock = Store.products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
   const outStock = Store.products.filter((p) => p.stock === 0);
-  const availStock = Store.products.filter((p) => p.stock > p.minStock).length;
-  // ventas
-  const salesTodayVal = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).reduce((s, o) => s + o.total, 0);
-  const countToday = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).length;
 
-  // enriquecer cola con tiempos y prioridad efectiva
-  const enriched = pendingPrep.map((o) => {
-    const elapsed = _elapsedMins(o);
-    const effPri = _effectivePriority(o, elapsed);
-    return { o, elapsed, effPri };
-  });
-
-  // alertas operativas
-  const alerts = [];
-  enriched.forEach(({ o, elapsed, effPri }) => {
-    if (elapsed >= 18 || effPri === 'urgent' && o.priority !== 'urgent') {
-      alerts.push({ level: 'danger', icon: '🔴', text: `Pedido <b>#${o.id}</b> lleva <b>${elapsed} min</b> esperando — prioridad elevada a <b>URGENTE</b>.`, orderId: o.id });
-    } else if (elapsed >= 12) {
-      alerts.push({ level: 'warning', icon: '🟠', text: `Pedido <b>#${o.id}</b> lleva <b>${elapsed} min</b> esperando.`, orderId: o.id });
-    }
-  });
-  if (cap.pct >= 100) alerts.push({ level: 'danger', icon: '🔴', text: `<b>CAPACIDAD LLENA</b> — No aceptar nuevos pedidos hasta liberar capacidad (${capUsed}/${capTotal}).` });
-  else if (cap.pct >= 90) alerts.push({ level: 'warning', icon: '🟠', text: `<b>ALTA DEMANDA</b> — La barra está al <b>${cap.pct}%</b> de capacidad (${capUsed}/${capTotal}).` });
-  else if (cap.pct >= 70) alerts.push({ level: 'info', icon: '🟡', text: `Capacidad al <b>${cap.pct}%</b> — ritmo alto, prioriza pedidos urgentes.` });
-  outStock.slice(0, 3).forEach((p) => alerts.push({ level: 'danger', icon: '🔴', text: `Stock: <b>${esc(p.name)}</b> — <b>AGOTADO</b>.` }));
-  if (!outStock.length && lowStock.length) alerts.push({ level: 'warning', icon: '🟡', text: `Stock bajo: <b>${lowStock.slice(0, 3).map((p) => esc(p.name)).join(', ')}</b>${lowStock.length > 3 ? ' +' + (lowStock.length - 3) + ' más' : ''} — reponer pronto.` });
-  const pendingPayOrders = orders.filter((o) => ['pending', 'review'].includes(o.paymentStatus) && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-  if (pendingPayOrders.length) {
-    const reviewOne = pendingPayOrders.find((o) => o.paymentStatus === 'review');
-    if (reviewOne) alerts.push({ level: 'danger', icon: '🔴', text: `Pago pendiente <b>#${reviewOne.id}</b> — ${paymentMethodLabel(reviewOne.payment)} en revisión.` });
-    else alerts.push({ level: 'warning', icon: '🟡', text: `<b>${pendingPayOrders.length}</b> pago(s) pendiente(s) — verificar antes de preparar.` });
-  }
-
-  // ordenar cola: prioridad > tiempo espera > hora
-  let sortMode = 'priority';
-  const sortFns = {
-    priority: (a, b) => {
-      const w = { urgent: 3, priority: 2, normal: 1 };
-      const d = (w[b.effPri] || 0) - (w[a.effPri] || 0);
-      if (d !== 0) return d;
-      return b.elapsed - a.elapsed;
-    },
-    wait: (a, b) => b.elapsed - a.elapsed,
-    time: (a, b) => _parseHM(a.o.time) - _parseHM(b.o.time),
-  };
-
-  // agrupar por prioridad para mostrar secciones URGENTE/ALTA/NORMAL
-  const grouped = { urgent: [], priority: [], normal: [] };
-  // se ordenará dinámicamente; por defecto priority
-  let sorted = [...enriched].sort(sortFns[sortMode]);
-  sorted.forEach((x) => grouped[x.effPri].push(x));
-
-  // capacidad hero estado
-  let capState = 'NORMAL';
-  let capCls = 'ok';
-  let capMsg = 'Ritmo normal — se aceptan pedidos.';
-  if (cap.pct >= 100) { capState = 'CAPACIDAD LLENA'; capCls = 'full'; capMsg = 'No aceptar nuevos pedidos hasta liberar capacidad.'; }
-  else if (cap.pct >= 90) { capState = 'ALTA DEMANDA'; capCls = 'high'; capMsg = 'La barra está trabajando al ' + cap.pct + '% de capacidad.'; }
-  else if (cap.pct >= 70) { capState = 'ALTA DEMANDA'; capCls = 'mid'; capMsg = 'Ritmo alto — prioriza urgentes.'; }
+  // Pedidos prioritarios: qué atender primero (urgente/prioridad, delivery o pago en revisión)
+  const priorityOrders = orders
+    .filter((o) => ['queue', 'confirmed', 'prep'].includes(o.status))
+    .map((o) => {
+      let w = 0;
+      if (o.priority === 'urgent') w += 4;
+      else if (o.priority === 'priority') w += 3;
+      if (o.delivery === 'delivery') w += 2;
+      if (o.paymentStatus === 'review') w += 1;
+      if (o.paymentStatus === 'pending') w += 0.5;
+      return { o, w };
+    })
+    .filter((x) => x.w >= 2)
+    .sort((a, b) => b.w - a.w)
+    .map((x) => x.o);
+  const hasPriority = priorityOrders.length > 0;
 
   el.innerHTML = `
-    <div class="ops-dash">
-      <!-- HEADER OPERATIVO -->
-      <div class="ops-header">
-        <div>
-          <h1 class="ops-title">¿Qué tengo que preparar ahora?</h1>
-          <div class="tiny muted" style="margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <span>📅 ${today} · <span id="opsClock">${nowTime()}</span></span>
-            <span class="badge ${Store.config.cafeOpen ? 'badge-success' : 'badge-danger'}">${Store.config.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span>
-            <span class="muted">Receso ${Store.config.breakStart}–${Store.config.breakEnd}</span>
-          </div>
-        </div>
-        <div class="ops-header-actions">
-          <button class="btn btn-outline btn-sm" id="opsRefresh">↻ Actualizar</button>
-          <a class="btn btn-primary btn-sm" href="#" id="opsGoOrders">Ver todos los pedidos →</a>
-        </div>
-      </div>
+    <div class="page-title"><h1>Panel de la cafetería</h1><span class="muted small">${today}</span></div>
+    <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
 
-      <!-- ALERTAS IMPORTANTES (siempre visible, arriba) -->
-      <section class="ops-alerts" aria-label="Alertas operativas">
-        <div class="ops-section-head"><span class="ops-kicker">⚠️ ALERTAS</span><span class="badge ${alerts.length ? 'badge-danger' : 'badge-success'}">${alerts.length ? alerts.length + ' activa(s)' : 'Sin alertas'}</span></div>
-        ${alerts.length ? `<div class="ops-alerts-list">${alerts.map((a) => `
-          <div class="ops-alert ops-alert-${a.level}">
-            <span class="ops-alert-ico">${a.icon}</span>
-            <div class="ops-alert-text">${a.text}</div>
-            ${a.orderId ? `<span class="badge badge-outline" style="margin-left:auto;flex-shrink:0">#${a.orderId}</span>` : ''}
-          </div>`).join('')}</div>`
-      : `<div class="status-banner success" style="margin:0"><span class="ico">✅</span><div><b>Sin alertas operativas.</b> Todo fluye con normalidad.</div></div>`}
-      </section>
+    ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
 
-      <!-- CAPACIDAD + RESUMEN PEDIDOS (muy visible) -->
-      <section class="grid ops-cap-row" style="grid-template-columns:1.35fr 1fr;gap:16px">
-        <div class="capacity-hero cap-${capCls}">
-          <div class="capacity-hero-head">
-            <div>
-              <div class="ops-kicker">CAPACIDAD</div>
-              <div class="capacity-hero-state">${capState}</div>
-              <div class="tiny muted">${capMsg}</div>
-            </div>
-            <div class="capacity-hero-pct">${cap.pct}<small>%</small></div>
-          </div>
-          <div class="bar-track bar-lg" style="margin-top:14px"><div class="bar-fill ${cap.pct >= 100 ? 'danger' : cap.pct >= 70 ? 'warn' : ''}" style="width:${cap.pct}%"></div></div>
-          <div class="capacity-hero-foot">
-            <span><b>${capUsed} / ${capTotal}</b> pedidos en preparación</span>
-            <span class="badge ${cap.pct >= 100 ? 'badge-danger' : cap.pct >= 90 ? 'badge-warning' : 'badge-success'}">${capState}</span>
-          </div>
-          ${cap.pct >= 90 ? `<div class="alert ${cap.pct >= 100 ? 'danger' : 'warning'}" style="margin-top:12px;padding:10px 12px"><span class="a-ico">${cap.pct >= 100 ? '🔴' : '⚠️'}</span><div>${cap.pct >= 100 ? '<b>CAPACIDAD LLENA</b> — No aceptar nuevos pedidos hasta liberar capacidad.' : '<b>ALTA DEMANDA</b> — Prioriza urgentes y libera listos rápido.'}</div></div>` : ''}
-        </div>
-        <div class="ops-counts">
-          <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
-            <div class="stat-card ${queue.length ? 'alert' : ''}" style="border-left:4px solid var(--warning)"><div class="st-label">Pendientes</div><div class="st-value ${queue.length ? 'warning' : ''}">${queue.length}</div><div class="st-sub">en cola</div><div class="tiny muted" style="margin-top:6px">+ ${confirmed.length} confirmados</div></div>
-            <div class="stat-card" style="border-left:4px solid #e09a16"><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">en barra ahora</div><div class="tiny muted" style="margin-top:6px">${capUsed}/${capTotal} capacidad</div></div>
-            <div class="stat-card success-card"><div class="st-label">Listos</div><div class="st-value" style="color:var(--success)">${ready.length}</div><div class="st-sub">para entregar</div><div class="tiny muted" style="margin-top:6px">${ready.length ? '¡Entregar ya!' : 'sin espera'}</div></div>
-            <div class="stat-card"><div class="st-label">Entregados hoy</div><div class="st-value">${deliveredToday.length}</div><div class="st-sub">${today}</div><div class="tiny muted" style="margin-top:6px">${countToday} pedidos totales hoy</div></div>
-          </div>
-          <div class="ops-mini-timer card" style="margin-top:12px;padding:14px;display:flex;justify-content:space-between;align-items:center">
-            <div><div class="tiny muted">Pedidos que necesitan atención ahora</div><div class="bold" style="font-size:1.1rem">${pendingPrep.length} en cola de preparación</div></div>
-            <span class="badge badge-primary" style="font-size:.85rem">${pendingPrep.length ? '▶ Preparar' : '✓ Al día'}</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- COLA DE PREPARACIÓN (prioridad operativa) -->
-      <section class="ops-queue-section" aria-label="Cola de preparación">
-        <div class="ops-section-head">
-          <div><span class="ops-kicker">🔥 COLA DE PREPARACIÓN</span><div class="ops-queue-sub">Ordenado por prioridad y tiempo de espera — <b>atiende de arriba hacia abajo</b></div></div>
-          <div class="ops-sort">
-            <span class="tiny muted">Ordenar:</span>
-            <button class="btn btn-sm ${sortMode === 'priority' ? 'btn-primary' : 'btn-outline'}" data-sort="priority">Prioridad</button>
-            <button class="btn btn-sm ${sortMode === 'wait' ? 'btn-primary' : 'btn-outline'}" data-sort="wait">Tiempo espera</button>
-            <button class="btn btn-sm ${sortMode === 'time' ? 'btn-primary' : 'btn-outline'}" data-sort="time">Hora pedido</button>
-          </div>
-        </div>
-        <div id="opsQueueList">
-          ${pendingPrep.length ? `
-            ${grouped.urgent.length ? `<div class="ops-group ops-group-urgent"><div class="ops-group-head"><span class="priority-tag urgent">🔴 URGENTE</span><span class="tiny muted">${grouped.urgent.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.urgent.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-            ${grouped.priority.length ? `<div class="ops-group ops-group-priority"><div class="ops-group-head"><span class="priority-tag priority">🟠 ALTA</span><span class="tiny muted">${grouped.priority.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.priority.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-            ${grouped.normal.length ? `<div class="ops-group ops-group-normal"><div class="ops-group-head"><span class="priority-tag normal">🟡 NORMAL</span><span class="tiny muted">${grouped.normal.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.normal.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-          ` : `<div class="empty-state" style="padding:28px"><div class="es-ico">✅</div><h3>Cola vacía</h3><p>No hay pedidos pendientes de preparación. ¡Buen trabajo!</p></div>`}
-        </div>
-      </section>
-
-      <!-- PEDIDOS LISTOS (muy visible, acción ENTREGADO) -->
-      <section class="ops-ready-section">
-        <div class="ops-section-head">
-          <div><span class="ops-kicker">✅ PEDIDOS LISTOS</span><div class="tiny muted">Listos para retirar — marca <b>ENTREGADO</b> al entregar</div></div>
-          <span class="badge ${ready.length ? 'badge-success' : 'badge-neutral'}">${ready.length} listo(s)</span>
-        </div>
-        <div id="opsReadyList">
-          ${ready.length ? `<div class="ops-ready-grid">${ready.map((o) => opsReadyCard(o)).join('')}</div>` : `<div class="status-banner neutral" style="margin:0"><span class="ico">📦</span><div><b>Sin pedidos listos.</b> Cuando marques un pedido como listo aparecerá aquí.</div></div>`}
-        </div>
-      </section>
-
-      <!-- RESUMEN INFERIOR: STOCK / PAGOS / VENTAS -->
-      <section class="grid grid-3 ops-bottom">
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">📦 STOCK</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/stock">Ver stock →</a></div>
-          <div class="ops-summary-stats">
-            <div class="ops-pill ok">✓ ${availStock} disponibles</div>
-            <div class="ops-pill warn">⚠ ${lowStock.length} bajo</div>
-            <div class="ops-pill danger">⛔ ${outStock.length} agotados</div>
-          </div>
-          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-            ${outStock.slice(0, 2).map((p) => `<div class="ops-stock-row danger"><span>🥪 ${esc(p.name)}</span><span class="badge badge-danger">AGOTADO</span></div>`).join('')}
-            ${lowStock.slice(0, 2).map((p) => `<div class="ops-stock-row warn"><span>☕ ${esc(p.name)}</span><span class="badge badge-warning">${p.stock} · bajo</span></div>`).join('')}
-            ${!outStock.length && !lowStock.length ? `<div class="tiny muted">Todo el stock está en niveles normales.</div>` : ''}
-          </div>
-        </div>
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">💳 PAGOS</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/payments">Revisar →</a></div>
-          <div class="ops-summary-stats">
-            <div class="ops-pill ok">✓ ${payPaid} pagados</div>
-            <div class="ops-pill warn">⏳ ${payPending} pendientes</div>
-            <div class="ops-pill danger">✕ ${payRejected} rechazados</div>
-          </div>
-          ${payReview ? `<div class="alert warning" style="margin-top:12px;padding:8px 12px"><span class="a-ico">🔍</span><div><b>${payReview} en revisión</b> — aprobar comprobantes</div></div>` : ''}
-          ${pendingPayOrders.slice(0, 1).map((o) => `<div class="ops-pay-row" style="margin-top:10px"><span class="bold">#${o.id}</span><span class="tiny muted">${paymentMethodLabel(o.payment)}</span>${paymentMeta(o.paymentStatus)}</div>`).join('')}
-          ${!pendingPayOrders.length ? `<div class="tiny muted" style="margin-top:10px">Sin pagos pendientes.</div>` : ''}
-        </div>
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">📈 VENTAS HOY</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/sales">Detalle →</a></div>
-          <div style="margin-top:8px">
-            <div class="ops-sales-big">${money(salesTodayVal)}</div>
-            <div class="tiny muted">${countToday} pedidos · ${today}</div>
-          </div>
-          <div class="divider" style="margin:12px 0"></div>
-          <div class="tiny muted">Total vendido hoy (pedidos activos + entregados).</div>
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <span class="badge badge-success">${deliveredToday.length} entregados</span>
-            <span class="badge badge-neutral">${ready.length + prep.length + queue.length} en curso</span>
-          </div>
-        </div>
-      </section>
-
-      <div class="tiny muted" style="margin-top:16px;text-align:center">Actualización automática cada 60s · <span id="opsLastUpdate">${nowTime()}</span> · Prioridad se eleva automáticamente si el pedido supera el tiempo esperado.</div>
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
+      <div class="stat-card"><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">preparándose ahora</div></div>
+      <div class="stat-card success-card"><div class="st-label">Listos</div><div class="st-value">${ready.length}</div><div class="st-sub">listos para retirar</div></div>
+      <div class="stat-card ${cap.stateCls === 'danger' ? 'danger-card' : cap.stateCls === 'warning' ? 'alert' : ''}"><div class="st-label">Capacidad</div><div class="st-value ${cap.stateCls === 'danger' ? 'danger' : ''}">${cap.pct}%</div><div class="st-sub">${cap.state}</div></div>
     </div>
-  `;
 
-  // bindings
-  $('#opsRefresh')?.addEventListener('click', () => barDashboard(el));
-  $('#opsGoOrders')?.addEventListener('click', (e) => { e.preventDefault(); setRoute('adminbar/orders'); });
-  $$('[data-goto]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); const [s, p] = a.dataset.goto.split('/'); setRoute(s + '/' + p); });
+    <div id="dashCap" style="margin-bottom:20px"></div>
 
-  // ordenar cola
-  $$('[data-sort]', el).forEach((btn) => {
-    btn.addEventListener('click', () => {
-      sortMode = btn.dataset.sort;
-      const newSorted = [...enriched].sort(sortFns[sortMode]);
-      const ng = { urgent: [], priority: [], normal: [] };
-      newSorted.forEach((x) => ng[x.effPri].push(x));
-      const listEl = $('#opsQueueList');
-      if (!newSorted.length) { listEl.innerHTML = `<div class="empty-state" style="padding:28px"><div class="es-ico">✅</div><h3>Cola vacía</h3><p>No hay pedidos pendientes.</p></div>`; return; }
-      listEl.innerHTML = `
-        ${ng.urgent.length ? `<div class="ops-group ops-group-urgent"><div class="ops-group-head"><span class="priority-tag urgent">🔴 URGENTE</span><span class="tiny muted">${ng.urgent.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.urgent.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-        ${ng.priority.length ? `<div class="ops-group ops-group-priority"><div class="ops-group-head"><span class="priority-tag priority">🟠 ALTA</span><span class="tiny muted">${ng.priority.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.priority.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-        ${ng.normal.length ? `<div class="ops-group ops-group-normal"><div class="ops-group-head"><span class="priority-tag normal">🟡 NORMAL</span><span class="tiny muted">${ng.normal.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.normal.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-      `;
-      bindOpsQueueActions(listEl);
-      // actualizar botones
-      $$('[data-sort]', el).forEach((b) => b.className = b.dataset.sort === sortMode ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline');
-    });
-  });
+    <div class="card" style="margin-bottom:20px;${hasPriority ? 'border-left:4px solid var(--primary)' : ''}">
+      <div class="card-header">
+        <div><div class="card-title">⚡ Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
+        ${hasPriority ? `<span class="badge badge-primary">${priorityOrders.length} a atender</span>` : ''}
+      </div>
+      <div class="card-body">
+        ${hasPriority ? `<div class="order-queue" style="grid-template-columns:1fr">${priorityOrders.map((o) => priorityMiniCard(o)).join('')}</div>`
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">✅</div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
+      </div>
+    </div>
 
-  bindOpsQueueActions(el);
-  bindOpsReadyActions(el);
+    <div class="grid grid-4">
+      <div class="stat-card alert"><div class="st-label">Pagos pendientes</div><div class="st-value warning">${payPending}</div><div class="st-sub"><a href="#" data-goto="adminbar/payments">Revisar</a></div></div>
+      <div class="stat-card"><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
+      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales">Detalle</a></div></div>
+      <div class="stat-card"><div class="st-label">Productos agotados</div><div class="st-value ${outStock.length ? 'danger' : ''}">${outStock.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/stock">Ir a stock</a></div></div>
+    </div>
 
-  // live tick cada 60s para tiempos
-  if (window._opsTick) clearInterval(window._opsTick);
-  window._opsTick = setInterval(() => {
-    const clk = $('#opsClock');
-    if (clk) clk.textContent = nowTime();
-    const upd = $('#opsLastUpdate');
-    if (upd) upd.textContent = nowTime();
-    // actualizar textos de espera sin re-render completo
-    $$('[data-elapsed]', el).forEach((node) => {
-      const id = node.dataset.elapsed;
-      const ord = Store.orders.find((o) => o.id === id);
-      if (!ord) return;
-      const e = _elapsedMins(ord);
-      node.textContent = e + ' min';
-      const sub = node.nextElementSibling;
-      if (sub && sub.classList.contains('ops-wait-sub')) sub.textContent = _fmtElapsedText(e);
-    });
-    $$('[data-timer]', el).forEach((node) => {
-      const id = node.dataset.timer;
-      const ord = Store.orders.find((o) => o.id === id);
-      if (!ord) return;
-      const e = _elapsedMins(ord);
-      const est = ord.prepMin || 5;
-      const exceeded = e > est;
-      node.textContent = _fmtMM(e) + ' / ' + String(est).padStart(2, '0') + ':00';
-      node.classList.toggle('exceeded', exceeded);
-      const badge = node.parentElement?.querySelector('[data-exceeded]');
-      if (badge) badge.style.display = exceeded ? 'inline-flex' : 'none';
-    });
-  }, 60000);
+    <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+      ${[['adminbar/orders', '🧾', 'Pedidos'], ['adminbar/products', '🍔', 'Productos'], ['adminbar/stock', '📦', 'Stock'], ['adminbar/payments', '💳', 'Pagos'], ['adminbar/sales', '📈', 'Ventas'], ['adminbar/delivery', '🛵', 'Delivery']].map(([r, ic, l]) =>
+        `<a href="#" class="btn btn-outline" data-goto="${r}">${ic} ${l}</a>`).join('')}
+    </div>`;
+
+  renderCapacityCard(el.querySelector('#dashCap'));
+  $$('[data-goto]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); const [s, p] = a.dataset.goto.split('/'); setRoute(`${s}/${p}`); });
+  $$('[data-pri]', el).forEach((c) => c.onclick = () => setRoute('adminbar/orders'));
 }
 
-function opsQueueCard(o, elapsed, effPri) {
-  const pri = _priorityMeta(effPri);
-  const est = o.prepMin || 5;
-  const exceeded = elapsed > est;
-  const remaining = Math.max(0, est - elapsed);
-  const pct = Math.min(100, Math.round((elapsed / est) * 100));
-  const totalItems = o.items.reduce((s, i) => s + i.qty, 0);
-  const isDelivery = o.delivery === 'delivery';
-  const escalated = effPri !== o.priority;
+/* Tarjeta compacta para el panel de "Pedidos prioritarios" del dashboard */
+function priorityMiniCard(o) {
+  const priTag = o.priority === 'urgent'
+    ? `<span class="priority-tag urgent">⚡ Urgente</span>`
+    : o.priority === 'priority' ? `<span class="priority-tag priority">⭐ Prioridad</span>` : '';
   return `
-    <div class="ops-q-card pri-${effPri} ${exceeded ? 'exceeded' : ''}" data-qid="${o.id}">
-      <div class="ops-q-head">
+    <div class="queue-order pri-${o.priority === 'normal' ? 'normal' : o.priority}" style="cursor:pointer" data-pri="${o.id}">
+      <div class="queue-head">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="ops-q-num">#${o.id}</span>
-          <span class="priority-tag ${pri.cls}">${pri.icon} ${pri.label}</span>
-          ${escalated ? `<span class="badge badge-warning" title="Prioridad elevada por tiempo de espera">⬆ escalada</span>` : ''}
+          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
+          <span class="tiny muted">${o.time}</span>
+          ${priTag}
           ${statusMeta(o.status)}
         </div>
-        <span class="badge ${isDelivery ? 'badge-info' : 'badge-neutral'}">${isDelivery ? `🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}` : '🏪 Retiro'}</span>
-      </div>
-      <div class="ops-q-meta">
-        <span class="ops-q-client">👤 ${esc(o.userName)}</span>
-        <span class="muted">·</span>
-        <span class="tiny">🕒 ${o.time}</span>
-        <span class="muted">·</span>
-        <span class="tiny"><b data-elapsed="${o.id}">${elapsed} min</b> <span class="ops-wait-sub tiny muted">${_fmtElapsedText(elapsed)}</span></span>
-      </div>
-      <div class="ops-q-items">
-        <div class="tiny muted" style="margin-bottom:4px">${totalItems} producto(s)</div>
-        ${o.items.map((i) => `<div class="ops-q-item"><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
-        ${o.note ? `<div class="tiny muted" style="margin-top:6px">📝 ${esc(o.note)}</div>` : ''}
-      </div>
-      <div class="ops-timer">
-        <div class="ops-timer-head">
-          <span class="tiny bold">Preparación: <span data-timer="${o.id}" class="${exceeded ? 'exceeded' : ''}">${_fmtMM(elapsed)} / ${String(est).padStart(2, '0')}:00</span></span>
-          <span class="badge badge-danger" data-exceeded style="display:${exceeded ? 'inline-flex' : 'none'}">⚠ Tiempo excedido</span>
-          ${!exceeded ? `<span class="tiny muted">restante ${remaining} min</span>` : ''}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${o.delivery === 'delivery' ? `<span class="badge badge-info">🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪</span>`}
+          <span class="small bold">${money(o.total)}</span>
         </div>
-        <div class="bar-track bar-sm"><div class="bar-fill ${exceeded ? 'danger' : pct > 80 ? 'warn' : ''}" style="width:${pct}%"></div></div>
-        <div class="tiny muted" style="display:flex;justify-content:space-between;margin-top:4px"><span>Transcurrido ${elapsed} min</span><span>Estimado ${est} min</span></div>
       </div>
-      <div class="ops-q-foot">
-        <span class="small bold">${money(o.total)}</span>
-        <span class="tiny muted">${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)}</span>
+      <div class="queue-items">
+        ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
       </div>
-      <div class="ops-q-actions">
-        ${o.status === 'queue' ? `<button class="btn btn-primary btn-sm" data-act="confirm" data-id="${o.id}">Confirmar</button>` : ''}
-        ${o.status === 'confirmed' ? `<button class="btn btn-warning btn-sm" data-act="prep" data-id="${o.id}">Iniciar preparación</button>` : ''}
-        ${o.status === 'prep' ? `<button class="btn btn-success btn-sm" data-act="ready" data-id="${o.id}">Marcar listo</button>` : ''}
-        ${['queue', 'confirmed'].includes(o.status) ? `<button class="btn btn-neutral btn-sm" data-act="cancel" data-id="${o.id}">Cancelar</button>` : ''}
-      </div>
+      <div class="tiny muted" style="color:var(--text-2)"><b>${esc(o.userName)}</b> · ${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)} · est. ${o.prepMin} min</div>
     </div>`;
-}
-
-function opsReadyCard(o) {
-  const elapsed = _elapsedMins(o);
-  const readyWait = Math.max(0, elapsed - (o.prepMin || 5));
-  return `
-    <div class="ops-ready-card" data-rid="${o.id}">
-      <div class="ops-ready-head">
-        <span class="ops-q-num">#${o.id}</span>
-        <span class="badge badge-success">● Listo</span>
-        <span class="tiny muted">terminó ${o.time}</span>
-      </div>
-      <div class="tiny muted" style="margin:6px 0"><b>${esc(o.userName)}</b> · ${o.delivery === 'delivery' ? `🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}` : '🏪 Retiro'} · ${money(o.total)}</div>
-      <div class="ops-q-items" style="margin:8px 0">${o.items.map((i) => `<div class="ops-q-item"><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}</div>
-      <div class="alert ${readyWait > 10 ? 'danger' : readyWait > 5 ? 'warning' : 'success'}" style="padding:8px 12px;margin:8px 0"><span class="a-ico">${readyWait > 10 ? '🔴' : readyWait > 5 ? '⚠️' : '✅'}</span><div><b>Esperando ${readyWait} min</b> para ser retirado.</div></div>
-      <button class="btn btn-success btn-sm btn-block" data-ready-act="delivered" data-id="${o.id}">✓ ENTREGADO</button>
-    </div>`;
-}
-
-function bindOpsQueueActions(root) {
-  $$('[data-act]', root).forEach((btn) => {
-    btn.onclick = () => {
-      const id = btn.dataset.id;
-      const act = btn.dataset.act;
-      const order = Store.orders.find((o) => o.id === id);
-      if (!order) return;
-      if (act === 'cancel') {
-        confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${order.id}?`, 'Cancelar pedido', true).then((ok) => {
-          if (!ok) return;
-          order.status = 'cancelled'; order.eta = 'Cancelado';
-          order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
-          saveOrders(); logAudit('Canceló pedido', order.id); toast('Pedido cancelado.', 'success');
-          const c = document.querySelector('#barContent');
-          if (c) barDashboard(c);
-        });
-        return;
-      }
-      const next = { confirm: 'confirmed', prep: 'prep', ready: 'ready' }[act];
-      order.status = next;
-      order.eta = { confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo' }[next];
-      saveOrders(); logAudit('Cambió estado de pedido', `${order.id} → ${order.eta}`);
-      toast('#' + order.id + ' ' + order.eta + '.', 'success');
-      const c = document.querySelector('#barContent');
-      if (c) barDashboard(c);
-    };
-  });
-}
-function bindOpsReadyActions(root) {
-  $$('[data-ready-act]', root).forEach((btn) => {
-    btn.onclick = () => {
-      const id = btn.dataset.id;
-      const order = Store.orders.find((o) => o.id === id);
-      if (!order) return;
-      order.status = 'delivered'; order.eta = 'Entregado';
-      if (order.paymentStatus === 'pending') order.paymentStatus = 'paid';
-      // liberar capacidad
-      const cfg = Store.config;
-      cfg.currentCapacity = Math.max(0, (cfg.currentCapacity || 0) - 1);
-      Store.config = cfg;
-      saveOrders(); logAudit('Entregó pedido', order.id); toast('#' + order.id + ' entregado.', 'success');
-      const c = document.querySelector('#barContent');
-      if (c) barDashboard(c);
-    };
-  });
 }
 
 /* ============================================================
    PEDIDOS (cola)
    ============================================================ */
-function barOrders(el, initialTab) {
+function barOrders(el) {
   const orders = Store.orders;
   const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
   const queue = orders.filter((o) => o.status === 'queue');
@@ -597,18 +219,17 @@ function barOrders(el, initialTab) {
   const ready = orders.filter((o) => o.status === 'ready');
   const delivered = orders.filter((o) => o.status === 'delivered');
 
-  const init = (initialTab && ['queue','prep','ready','delivered'].includes(initialTab)) ? initialTab : 'queue';
   el.innerHTML = `
-    <div class="page-title"><h1>${init==='prep'?'Preparación':init==='ready'?'Pedidos listos':'Pedidos'}</h1><span class="badge badge-primary">${actives.length} activos</span></div>
+    <div class="page-title"><h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span></div>
     <div class="adv-tabs">
-      <button class="category-chip ${init==='queue'?'active':''}" data-tab="queue">En cola (${queue.length})</button>
-      <button class="category-chip ${init==='prep'?'active':''}" data-tab="prep">En preparación (${prep.length})</button>
-      <button class="category-chip ${init==='ready'?'active':''}" data-tab="ready">Listos (${ready.length})</button>
-      <button class="category-chip ${init==='delivered'?'active':''}" data-tab="delivered">Entregados (${delivered.length})</button>
+      <button class="category-chip active" data-tab="queue">En cola (${queue.length})</button>
+      <button class="category-chip" data-tab="prep">En preparación (${prep.length})</button>
+      <button class="category-chip" data-tab="ready">Listos (${ready.length})</button>
+      <button class="category-chip" data-tab="delivered">Entregados (${delivered.length})</button>
     </div>
     <div id="queueArea"></div>`;
 
-  let tab = init;
+  let tab = 'queue';
   const render = () => {
     const area = $('#queueArea');
     const list = tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
