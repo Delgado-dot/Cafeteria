@@ -527,7 +527,8 @@ window.syncBodyClass = syncBodyClass;
 
 window.onhashchange = handleRoute;
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   syncBodyClass();
+  await initStore();
   handleRoute();
 });

@@ -1,6 +1,9 @@
 /* ============================================================
-   data.js — Datos simulados iniciales del sistema (no backend)
+   data.js — Caché en memoria + sincronización con API Django
+   Mantiene la misma interfaz síncrona: Store.products, Store.orders, etc.
    ============================================================ */
+
+const API_BASE = 'http://localhost:8000/api';
 
 const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipapas', 'Bebidas', 'Snacks'];
 
@@ -25,19 +28,13 @@ const DEFAULT_PRODUCTS = [
   { id: 'p18', name: 'Empanada', emoji: '🥟', image: '', category: 'Snacks', price: 1.25, stock: 0, minStock: 5, prepMin: 4, available: true, desc: 'Empanada de carne o queso.', addedAt: '2025-02-15' },
 ];
 
-function recentDt(days) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(Math.floor(Math.random() * 59)).padStart(2, '0');
-}
-
 const DEFAULT_USERS = [
-  { id: 'u1', name: 'Estudiante Demo', email: 'usuario@intesud.edu.ec', username: 'usuario@intesud.edu.ec', role: 'user', cargo: 'Estudiante', aula: '2B', active: true, registeredAt: '2025-03-10', lastAccess: recentDt(0) },
-  { id: 'u2', name: 'Administradora Bar', email: 'adminbar@intesud.edu.ec', username: 'adminbar@intesud.edu.ec', role: 'adminbar', cargo: 'Administradora de cafetería', active: true, registeredAt: '2025-01-05', lastAccess: recentDt(0) },
-  { id: 'u3', name: 'Administrador Desarrollador', email: 'developer@system.local', username: 'developer@system.local', role: 'admindev', cargo: 'Administrador desarrollador', active: true, registeredAt: '2024-11-20', lastAccess: recentDt(0) },
-  { id: 'u4', name: 'María Fernanda Torres', email: 'maria.torres@intesud.edu.ec', username: 'maria.torres', role: 'user', cargo: 'Estudiante', aula: '3C', active: true, registeredAt: '2025-02-14', lastAccess: recentDt(1) },
-  { id: 'u5', name: 'Juan Pablo Ruiz', email: 'juan.ruiz@intesud.edu.ec', username: 'juan.ruiz', role: 'user', cargo: 'Estudiante', aula: '1A', active: true, registeredAt: '2025-02-18', lastAccess: recentDt(3) },
-  { id: 'u6', name: 'Docente Demo', email: 'docente@intesud.edu.ec', username: 'docente.demo', role: 'user', cargo: 'Docente', aula: '—', active: false, registeredAt: '2025-04-01', lastAccess: recentDt(12) },
+  { id: 'u1', name: 'Estudiante Demo', email: 'usuario@intesud.edu.ec', username: 'usuario@intesud.edu.ec', role: 'user', cargo: 'Estudiante', aula: '2B', active: true, registeredAt: '2025-03-10', lastAccess: '2025-03-10 10:00' },
+  { id: 'u2', name: 'Administradora Bar', email: 'adminbar@intesud.edu.ec', username: 'adminbar@intesud.edu.ec', role: 'adminbar', cargo: 'Administradora de cafetería', active: true, registeredAt: '2025-01-05', lastAccess: '2025-03-10 10:00' },
+  { id: 'u3', name: 'Administrador Desarrollador', email: 'developer@system.local', username: 'developer@system.local', role: 'admindev', cargo: 'Administrador desarrollador', active: true, registeredAt: '2024-11-20', lastAccess: '2025-03-10 10:00' },
+  { id: 'u4', name: 'María Fernanda Torres', email: 'maria.torres@intesud.edu.ec', username: 'maria.torres', role: 'user', cargo: 'Estudiante', aula: '3C', active: true, registeredAt: '2025-02-14', lastAccess: '2025-03-09 10:00' },
+  { id: 'u5', name: 'Juan Pablo Ruiz', email: 'juan.ruiz@intesud.edu.ec', username: 'juan.ruiz', role: 'user', cargo: 'Estudiante', aula: '1A', active: true, registeredAt: '2025-02-18', lastAccess: '2025-03-07 10:00' },
+  { id: 'u6', name: 'Docente Demo', email: 'docente@intesud.edu.ec', username: 'docente.demo', role: 'user', cargo: 'Docente', aula: '—', active: false, registeredAt: '2025-04-01', lastAccess: '2025-02-26 10:00' },
 ];
 
 const PASSWORDS = {
@@ -109,49 +106,384 @@ const PERMISSION_MATRIX = [
   { fn: 'Auditoría', user: '—', adminbar: '—', admindev: '✓' },
 ];
 
-/* ---------- Utilidades de persistencia ---------- */
+const CATEGORY_EMOJI = {
+  'Hamburguesas': '🍔', 'Hot Dogs': '🌭', 'Sándwiches': '🥪',
+  'Papas y Salchipapas': '🍟', 'Bebidas': '🥤', 'Snacks': '🍪'
+};
 
+const STATUS_MAP = {
+  'queue': 'queue', 'prep': 'prep', 'ready': 'ready',
+  'delivered': 'delivered', 'cancelled': 'cancelled', 'nopickup': 'nopickup'
+};
+
+const PRIORITY_MAP = { 'normal': 'normal', 'priority': 'priority', 'urgent': 'urgent' };
+
+const PAYMENT_MAP = { 'deuna': 'deuna', 'efectivo': 'efectivo', 'transferencia': 'transferencia' };
+
+const PAYMENT_STATUS_MAP = { 'pending': 'pending', 'paid': 'paid', 'approved': 'approved', 'review': 'review', 'refunded': 'refunded' };
+
+const DELIVERY_MAP = { 'pickup': 'pickup', 'delivery': 'delivery' };
+
+function mapProductFromApi(apiProduct) {
+  return {
+    id: String(apiProduct.id),
+    name: apiProduct.nombre,
+    emoji: CATEGORY_EMOJI[apiProduct.categoria] || '🍔',
+    image: apiProduct.imagen_base64 || '',
+    category: apiProduct.categoria,
+    price: parseFloat(apiProduct.precio),
+    stock: apiProduct.stock,
+    minStock: apiProduct.stock_minimo,
+    prepMin: apiProduct.tiempo_preparacion,
+    available: apiProduct.disponible,
+    desc: apiProduct.descripcion || '',
+    addedAt: new Date().toISOString().slice(0, 10)
+  };
+}
+
+function mapProductToApi(product) {
+  return {
+    nombre: product.name,
+    descripcion: product.desc || '',
+    categoria: product.category,
+    precio: product.price,
+    stock: product.stock,
+    stock_minimo: product.minStock,
+    tiempo_preparacion: product.prepMin,
+    imagen_base64: product.image || '',
+    disponible: product.available
+  };
+}
+
+function mapOrderFromApi(apiOrder) {
+  const items = (apiOrder.items || []).map(item => ({
+    productId: String(item.producto),
+    qty: item.cantidad,
+    name: item.producto_nombre || '',
+    price: parseFloat(item.producto_precio || 0)
+  }));
+  const fecha = new Date(apiOrder.fecha);
+  const dateStr = fecha.toISOString().slice(0, 10);
+  const timeStr = String(fecha.getHours()).padStart(2, '0') + ':' + String(fecha.getMinutes()).padStart(2, '0');
+  return {
+    id: apiOrder.numero,
+    userEmail: '',
+    userName: apiOrder.usuario_nombre,
+    date: dateStr,
+    time: timeStr,
+    items,
+    total: parseFloat(apiOrder.total),
+    status: STATUS_MAP[apiOrder.estado_pedido] || 'queue',
+    priority: PRIORITY_MAP[apiOrder.prioridad] || 'normal',
+    delivery: DELIVERY_MAP[apiOrder.tipo_entrega] || 'pickup',
+    deliveryInfo: (apiOrder.piso || apiOrder.aula) ? { piso: apiOrder.piso, aula: apiOrder.aula } : null,
+    payment: PAYMENT_MAP[apiOrder.metodo_pago] || 'efectivo',
+    paymentStatus: PAYMENT_STATUS_MAP[apiOrder.estado_pago] || 'pending',
+    prepMin: items.reduce((sum, i) => sum + (i.price || 0), 0),
+    eta: apiOrder.estado_pedido === 'ready' ? 'Listo' : apiOrder.estado_pedido === 'delivered' ? 'Entregado' : 'En cola',
+    note: apiOrder.observaciones || ''
+  };
+}
+
+function mapOrderToApi(order) {
+  return {
+    usuario_nombre: order.userName,
+    total: order.total,
+    metodo_pago: order.payment,
+    estado_pago: order.paymentStatus,
+    estado_pedido: order.status,
+    piso: order.deliveryInfo?.piso || '',
+    aula: order.deliveryInfo?.aula || '',
+    observaciones: order.note || '',
+    items: order.items.map(i => ({
+      producto: i.productId,
+      cantidad: i.qty
+    }))
+  };
+}
+
+function mapSupplierFromApi(apiSupplier) {
+  return { id: String(apiSupplier.id), name: apiSupplier.nombre, type: apiSupplier.tipo, phone: apiSupplier.telefono };
+}
+
+function mapSupplierToApi(supplier) {
+  return { nombre: supplier.name, tipo: supplier.type, telefono: supplier.phone, activo: true };
+}
+
+function mapConfigFromApi(apiConfig) {
+  return {
+    orderOpen: apiConfig.horario_apertura || '09:00',
+    orderClose: apiConfig.horario_cierre || '09:45',
+    breakStart: apiConfig.horario_receso_inicio || '10:00',
+    breakEnd: apiConfig.horario_receso_fin || '10:15',
+    capacity: apiConfig.capacidad || 10,
+    currentCapacity: 8,
+    cafeOpen: apiConfig.estado_abierto !== false,
+    deliveryEnabled: apiConfig.delivery_habilitado !== false,
+    deliveryDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+    deliveryMax: 4,
+    deliveryCurrent: 2,
+    timeRemainingMinutes: 78
+  };
+}
+
+function mapConfigToApi(config) {
+  return {
+    horario_apertura: config.orderOpen,
+    horario_cierre: config.orderClose,
+    horario_receso_inicio: config.breakStart,
+    horario_receso_fin: config.breakEnd,
+    capacidad: config.capacity,
+    estado_abierto: config.cafeOpen,
+    delivery_habilitado: config.deliveryEnabled,
+    pisos_habilitados: '1,2,3'
+  };
+}
+
+function mapStockFromApi(apiStock) {
+  return { id: String(apiStock.id), productId: String(apiStock.producto), type: apiStock.tipo, qty: apiStock.cantidad, date: new Date(apiStock.fecha).toISOString() };
+}
+
+/* ---------- Caché en memoria ---------- */
+const _cache = {
+  products: null,
+  orders: null,
+  users: null,
+  config: null,
+  audit: null,
+  stockHistory: null,
+  suppliers: null
+};
+
+let _initialized = false;
+let _initPromise = null;
+
+function apiGet(endpoint) {
+  return fetch(`${API_BASE}${endpoint}`).then(r => {
+    if (!r.ok) throw new Error(`API ${endpoint}: ${r.status}`);
+    return r.json();
+  });
+}
+
+function apiPost(endpoint, data) {
+  return fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => {
+    if (!r.ok) throw new Error(`API POST ${endpoint}: ${r.status}`);
+    return r.json();
+  });
+}
+
+function apiPut(endpoint, data) {
+  return fetch(`${API_BASE}${endpoint}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => {
+    if (!r.ok) throw new Error(`API PUT ${endpoint}: ${r.status}`);
+    return r.json();
+  });
+}
+
+function apiPatch(endpoint, data) {
+  return fetch(`${API_BASE}${endpoint}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => {
+    if (!r.ok) throw new Error(`API PATCH ${endpoint}: ${r.status}`);
+    return r.json();
+  });
+}
+
+function apiDelete(endpoint) {
+  return fetch(`${API_BASE}${endpoint}`, { method: 'DELETE' }).then(r => {
+    if (!r.ok) throw new Error(`API DELETE ${endpoint}: ${r.status}`);
+    return true;
+  });
+}
+
+function syncToApi(key, data, isArray = true) {
+  const endpointMap = {
+    products: '/productos/',
+    orders: '/pedidos/',
+    stockHistory: '/stock/',
+    suppliers: '/proveedores/',
+    config: '/configuracion/',
+    audit: '/auditoria/',
+    users: '/usuarios/'
+  };
+  const endpoint = endpointMap[key];
+  if (!endpoint) return Promise.resolve();
+
+  const item = isArray ? data[data.length - 1] : data;
+  if (!item) return Promise.resolve();
+
+  const id = item.id || item.numero;
+  const mapToApi = {
+    products: mapProductToApi,
+    orders: mapOrderToApi,
+    suppliers: mapSupplierToApi,
+    config: mapConfigToApi
+  }[key];
+
+  const apiData = mapToApi ? mapToApi(item) : item;
+
+  const promise = id && !String(id).startsWith('p') && !String(id).startsWith('PED-') && !String(id).startsWith('s')
+    ? apiPut(`${endpoint}${id}/`, apiData)
+    : apiPost(endpoint, apiData);
+
+  return promise
+    .then(result => {
+      if (result && result.id && isArray) {
+        const idx = data.findIndex(d => d.id === item.id);
+        if (idx >= 0) data[idx].id = String(result.id);
+      }
+    })
+    .catch(err => console.error(`Sync ${key} to API failed:`, err));
+}
+
+async function loadProducts() {
+  try {
+    const data = await apiGet('/productos/');
+    _cache.products = data.map(mapProductFromApi);
+  } catch (e) {
+    console.warn('Failed to load products from API, using defaults:', e);
+    _cache.products = [...DEFAULT_PRODUCTS];
+  }
+}
+
+async function loadOrders() {
+  try {
+    const data = await apiGet('/pedidos/');
+    _cache.orders = data.map(mapOrderFromApi);
+  } catch (e) {
+    console.warn('Failed to load orders from API, using defaults:', e);
+    _cache.orders = [...DEFAULT_ORDERS];
+  }
+}
+
+async function loadUsers() {
+  _cache.users = [...DEFAULT_USERS];
+}
+
+async function loadConfig() {
+  try {
+    const data = await apiGet('/configuracion/');
+    _cache.config = data.length ? mapConfigFromApi(data[0]) : { ...DEFAULT_CONFIG };
+  } catch (e) {
+    console.warn('Failed to load config from API, using defaults:', e);
+    _cache.config = { ...DEFAULT_CONFIG };
+  }
+}
+
+async function loadAudit() {
+  _cache.audit = [...DEFAULT_AUDIT];
+}
+
+async function loadStockHistory() {
+  try {
+    const data = await apiGet('/stock/');
+    _cache.stockHistory = data.map(mapStockFromApi);
+  } catch (e) {
+    console.warn('Failed to load stock history from API, using defaults:', e);
+    _cache.stockHistory = [];
+  }
+}
+
+async function loadSuppliers() {
+  try {
+    const data = await apiGet('/proveedores/');
+    _cache.suppliers = data.map(mapSupplierFromApi);
+  } catch (e) {
+    console.warn('Failed to load suppliers from API, using defaults:', e);
+    _cache.suppliers = [...DEFAULT_SUPPLIERS];
+  }
+}
+
+async function initStore() {
+  if (_initialized) return;
+  if (_initPromise) return _initPromise;
+
+  _initPromise = (async () => {
+    await Promise.all([
+      loadProducts(),
+      loadOrders(),
+      loadUsers(),
+      loadConfig(),
+      loadAudit(),
+      loadStockHistory(),
+      loadSuppliers()
+    ]);
+    _initialized = true;
+    console.log('Store initialized with API data');
+  })();
+
+  return _initPromise;
+}
+
+/* ---------- Store público (interfaz idéntica a antes) ---------- */
 const Store = {
+  get products() { return _cache.products ?? DEFAULT_PRODUCTS; },
+  set products(v) {
+    _cache.products = v;
+    syncToApi('products', v);
+  },
+
+  get orders() { return _cache.orders ?? DEFAULT_ORDERS; },
+  set orders(v) {
+    _cache.orders = v;
+    syncToApi('orders', v);
+  },
+
+  get users() { return _cache.users ?? DEFAULT_USERS; },
+  set users(v) {
+    _cache.users = v;
+  },
+
+  get config() { return _cache.config ?? DEFAULT_CONFIG; },
+  set config(v) {
+    _cache.config = v;
+    syncToApi('config', v, false);
+  },
+
+  get audit() { return _cache.audit ?? DEFAULT_AUDIT; },
+  set audit(v) {
+    _cache.audit = v;
+  },
+
+  get stockHistory() { return _cache.stockHistory ?? []; },
+  set stockHistory(v) {
+    _cache.stockHistory = v;
+    syncToApi('stockHistory', v);
+  },
+
+  get suppliers() { return _cache.suppliers ?? DEFAULT_SUPPLIERS; },
+  set suppliers(v) {
+    _cache.suppliers = v;
+    syncToApi('suppliers', v);
+  },
+
+  reset() {
+    _cache.products = null;
+    _cache.orders = null;
+    _cache.users = null;
+    _cache.config = null;
+    _cache.audit = null;
+    _cache.stockHistory = null;
+    _cache.suppliers = null;
+    _initialized = false;
+    _initPromise = null;
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers', 'int_session', 'int_remember'].forEach(k => localStorage.removeItem(k));
+  },
+
   save(key, value) { localStorage.setItem(key, JSON.stringify(value)); },
   load(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch (e) { return fallback; }
-  },
-  // Cache: keep loaded data in memory so repeated access returns the SAME
-  // reference (mutation + resave works reliably).
-  _cache: {},
-  _get(key, seed, saveKey) {
-    if (this._cache[saveKey] !== undefined) return this._cache[saveKey];
-    const val = this.load(key, null) ?? seed;
-    if (!localStorage.getItem(key)) this.save(saveKey, val);
-    this._cache[saveKey] = val;
-    return val;
-  },
-  get products() { return this._get('int_products', DEFAULT_PRODUCTS, 'int_products'); },
-  set products(v) { this._cache['int_products'] = v; this.save('int_products', v); },
-  get orders() { return this._get('int_orders', DEFAULT_ORDERS, 'int_orders'); },
-  set orders(v) { this._cache['int_orders'] = v; this.save('int_orders', v); },
-  get users() { return this._get('int_users', DEFAULT_USERS, 'int_users'); },
-  set users(v) { this._cache['int_users'] = v; this.save('int_users', v); },
-  get config() {
-    if (this._cache['int_config'] !== undefined) return this._cache['int_config'];
-    const c = this.load('int_config', null);
-    const val = c ?? DEFAULT_CONFIG;
-    if (!c) this.save('int_config', val);
-    this._cache['int_config'] = val;
-    return val;
-  },
-  set config(v) { this._cache['int_config'] = v; this.save('int_config', v); },
-  get audit() { return this._get('int_audit', DEFAULT_AUDIT, 'int_audit'); },
-  set audit(v) { this._cache['int_audit'] = v; this.save('int_audit', v); },
-  get stockHistory() { return this._get('int_stockHistory', [], 'int_stockHistory'); },
-  set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
-  get suppliers() { return this._get('int_suppliers', DEFAULT_SUPPLIERS, 'int_suppliers'); },
-  set suppliers(v) { this._cache['int_suppliers'] = v; this.save('int_suppliers', v); },
-  reset() {
-    this._cache = {};
-    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers'].forEach((k) => localStorage.removeItem(k));
-  },
+  }
 };
 
 function logAudit(action, target) {
@@ -163,3 +495,5 @@ function logAudit(action, target) {
   audit.unshift({ id: 'a' + Date.now(), user: name, action, target, time });
   Store.audit = audit;
 }
+
+window.initStore = initStore;
