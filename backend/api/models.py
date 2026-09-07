@@ -1,4 +1,23 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('adminbar', 'Administradora Bar'),
+        ('admindev', 'Administrador Desarrollador'),
+    ]
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    cargo = models.CharField(max_length=100, blank=True)
+    aula = models.CharField(max_length=50, blank=True)
+    active = models.BooleanField(default=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def __str__(self):
+        return self.email
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
