@@ -368,9 +368,22 @@ function renderCheckout(el) {
           <div class="tiny muted" id="fuName" style="margin-top:6px"></div>
         </div>`;
       const fu = $('#fu');
-      fu.onclick = () => {
+      const fuName = $('#fuName');
+      let voucherFile = null;
+      
+      fu.onclick = () => { fu.querySelector('input[type=file]')?.click(); };
+      
+      fu.innerHTML += '<input type="file" accept="image/*,application/pdf" style="display:none" id="fuInput">';
+      const fuInput = $('#fuInput');
+      
+      fuInput.onchange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        window._voucherFile = file;
+        fuName.textContent = file.name;
         fu.classList.add('success');
-        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante cargado (simulado)</div>`;
+        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante listo: ${file.name}</div>`;
         window._voucher = true;
       };
     } else if (method === 'efectivo') {
@@ -395,7 +408,7 @@ function estimatedTime() {
 }
 window.estimatedTime = estimatedTime;
 
-function confirmOrder() {
+async function confirmOrder() {
   const delivery = $('[data-d].active') ? $('[data-d].active').dataset.d : 'pickup';
   const pay = window._payMethod || 'deuna';
   const cap = capacityInfo();
@@ -404,7 +417,7 @@ function confirmOrder() {
   if (delivery === 'delivery') {
     if (!window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
   }
-  if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia (simulado).', 'warning'); $('#fu')?.classList.add('err'); return; }
+  if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia.', 'warning'); $('#fu')?.classList.add('err'); return; }
 
   const user = currentUser();
   const num = nextOrderNumber();
@@ -448,6 +461,24 @@ function confirmOrder() {
   Store.config = cfg;
 
   logAudit('Realizó pedido', num);
+
+  // Subir comprobante si es transferencia
+  if (pay === 'transferencia' && window._voucherFile) {
+    try {
+      const fu = $('#fu');
+      fu.classList.add('loading');
+      fu.innerHTML = `<span class="spinner" style="width:24px;height:24px;border-width:2.5px"></span><div>Subiendo comprobante...</div>`;
+      
+      await uploadComprobante(window._voucherFile, num);
+      fu.classList.remove('loading');
+      fu.classList.add('success');
+      fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante subido</div>`;
+    } catch (err) {
+      console.error('Error subiendo comprobante:', err);
+      // No bloquear el pedido, solo avisar
+      toast('Pedido creado, pero error subiendo comprobante', 'warning');
+    }
+  }
 
   Cart.clear();
   renderConfirmation(order);

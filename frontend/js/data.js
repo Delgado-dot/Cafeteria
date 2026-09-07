@@ -243,6 +243,96 @@ function mapStockFromApi(apiStock) {
   return { id: String(apiStock.id), productId: String(apiStock.producto), type: apiStock.tipo, qty: apiStock.cantidad, date: new Date(apiStock.fecha).toISOString() };
 }
 
+function syncToApi(key, data, isArray = true) {
+  const endpointMap = {
+    products: '/productos/',
+    orders: '/pedidos/',
+    stockHistory: '/stock/',
+    suppliers: '/proveedores/',
+    config: '/configuracion/',
+    audit: '/auditoria/',
+    users: '/usuarios/'
+  };
+  const endpoint = endpointMap[key];
+  if (!endpoint) return Promise.resolve();
+
+  const item = isArray ? data[data.length - 1] : data;
+  if (!item) return Promise.resolve();
+
+  const id = item.id || item.numero;
+  const mapToApi = {
+    products: mapProductToApi,
+    orders: mapOrderToApi,
+    suppliers: mapSupplierToApi,
+    config: mapConfigToApi
+  }[key];
+
+  const apiData = mapToApi ? mapToApi(item) : item;
+
+  const promise = id && !String(id).startsWith('p') && !String(id).startsWith('PED-') && !String(id).startsWith('s')
+    ? apiPut(`${endpoint}${id}/`, apiData)
+    : apiPost(endpoint, apiData);
+
+  return promise
+    .then(result => {
+      if (result && result.id && isArray) {
+        const idx = data.findIndex(d => d.id === item.id);
+        if (idx >= 0) data[idx].id = String(result.id);
+      }
+    })
+    .catch(err => console.error(`Sync ${key} to API failed:`, err));
+}
+
+/* ---------- Cloudinary Upload Helpers ---------- */
+async function uploadImage(file, folder = 'uploads') {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('folder', folder);
+  
+  const res = await Auth.fetchWithAuth(`${API_BASE}/upload/image/`, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Error subiendo imagen');
+  }
+  return res.json();
+}
+
+async function uploadAvatar(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  const res = await Auth.fetchWithAuth(`${API_BASE}/upload/avatar/`, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Error subiendo avatar');
+  }
+  return res.json();
+}
+
+async function uploadComprobante(file, pedidoId) {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  const res = await Auth.fetchWithAuth(`${API_BASE}/upload/comprobante/${pedidoId}/`, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Error subiendo comprobante');
+  }
+  return res.json();
+}
+
 /* ---------- Caché en memoria ---------- */
 const _cache = {
   products: null,

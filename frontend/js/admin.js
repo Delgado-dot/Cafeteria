@@ -1147,7 +1147,7 @@ function productFormModal(p) {
             <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
               <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
               <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
-              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se sube a Cloudinary</div>
             </div>
             <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
             <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
@@ -1214,11 +1214,32 @@ function productFormModal(p) {
     if (pfDropPlaceholder) pfDropPlaceholder.style.display = '';
     if (pfRemoveImage) pfRemoveImage.style.display = 'none';
   };
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (e) => showPreview(e.target.result);
-    reader.readAsDataURL(file);
+    
+    // Mostrar estado de carga
+    if (pfDropPlaceholder) {
+      pfDropPlaceholder.innerHTML = `
+        <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px">
+          <span class="spinner" style="width:32px;height:32px;border-width:3px"></span>
+        </div>
+        <div style="font-weight:600;color:var(--text-2)">Subiendo a Cloudinary...</div>
+        <div class="tiny muted" style="margin-top:4px">Por favor espere</div>
+      `;
+      pfDropPlaceholder.style.display = '';
+    }
+    if (pfImagePreview) pfImagePreview.style.display = 'none';
+    if (pfRemoveImage) pfRemoveImage.style.display = 'none';
+    if (pfDropZone) { pfDropZone.style.borderColor = 'var(--primary)'; pfDropZone.style.background = 'var(--primary-soft)'; }
+    
+    try {
+      const result = await uploadImage(file, 'productos');
+      showPreview(result.url);
+    } catch (err) {
+      console.error('Error subiendo imagen:', err);
+      toast('Error subiendo imagen: ' + err.message, 'error');
+      clearPreview();
+    }
   };
   if (pfImage && pfImagePreview && pfDropZone) {
     pfImage.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
@@ -2412,16 +2433,25 @@ function barAdminProfile(el) {
     }
   });
 
-  photoInput.addEventListener('change', (e) => {
+  photoInput.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes', 'warning'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      newPhotoBase64 = ev.target.result;
+    
+    // Mostrar estado de carga
+    avatarPreview.style.backgroundImage = 'none';
+    avatarPreview.textContent = '';
+    avatarPreview.innerHTML = '<span class="spinner" style="width:32px;height:32px;border-width:3px"></span>';
+    
+    try {
+      const result = await uploadAvatar(file);
+      newPhotoBase64 = result.avatar_url;
       updateAvatarPreview(newPhotoBase64);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error subiendo avatar:', err);
+      toast('Error subiendo avatar: ' + err.message, 'error');
+      updateAvatarPreview(currentPhoto);
+    }
   });
 
   if (btnRemove) {
