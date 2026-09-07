@@ -1,0 +1,7 @@
+function confirmDialog(title, message, okLabel = 'Confirmar', danger = false) {
+  return new Promise((resolve) => {
+    const overlay = modal(`
+      <div class="alert neutral" style="margin-bottom:18px"><span class="a-ico">ℹ️</span><div>${esc(message)}</div></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px">
+        <button class="btn btn-neutral" data-cancel>Cancelar</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-ok>${esc(okLabel)}</but
