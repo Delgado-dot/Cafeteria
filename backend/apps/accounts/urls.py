@@ -5,7 +5,15 @@ URLs de la aplicación de cuentas.
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from .views import LoginView, MeView, RegisterView, UserDetailView, UserListView
+from .views import (
+    LoginView,
+    MeView,
+    RegisterView,
+    RolePermissionBulkView,
+    RolePermissionListView,
+    UserDetailView,
+    UserListView,
+)
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="auth-register"),
@@ -15,4 +23,6 @@ urlpatterns = [
     path("me/", MeView.as_view(), name="auth-me"),
     path("users/", UserListView.as_view(), name="user-list"),
     path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
+    path("permissions/", RolePermissionListView.as_view(), name="role-permissions"),
+    path("permissions/bulk/", RolePermissionBulkView.as_view(), name="role-permissions-bulk"),
 ]

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2f8f7"/>
+      <stop offset="1" stop-color="#cfe4e1"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f605e"/>
+      <stop offset="1" stop-color="#28514f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <circle cx="660" cy="120" r="150" fill="#ffffff" opacity="0.35"/>
+  <rect y="560" width="800" height="240" fill="#2b3f3d"/>
+
+  <!-- estante -->
+  <rect x="120" y="120" width="330" height="14" rx="7" fill="#8fb5b1" opacity="0.7"/>
+  <rect x="142" y="84" width="20" height="36" rx="5" fill="#6b4a2e"/>
+  <rect x="196" y="92" width="26" height="28" rx="4" fill="#3a7a70"/>
+  <rect x="252" y="78" width="24" height="42" rx="5" fill="#c9a063"/>
+
+  <!-- letrero -->
+  <rect x="300" y="210" width="240" height="34" rx="17" fill="#40807e"/>
+  <circle cx="324" cy="227" r="7" fill="#ffffff"/>
+  <rect x="524" y="220" width="8" height="15" rx="4" fill="#ffffff"/>
+
+  <!-- maquina espresso lateral -->
+  <rect x="520" y="260" width="190" height="120" rx="14" fill="#1f3b39"/>
+  <rect x="536" y="276" width="158" height="14" rx="7" fill="#40807e"/>
+  <path d="M575 380 h80 l10 34 h-100 Z" fill="#141f1e"/>
+
+  <!-- taza -->
+  <rect x="228" y="322" width="76" height="52" rx="9" fill="#ffffff"/>
+  <path d="M304 334 h16 c13 0 13 38 0 38 h-16" fill="none" stroke="#ffffff" stroke-width="8"/>
+  <ellipse cx="266" cy="322" rx="38" ry="10" fill="#dfebe9"/>
+  <ellipse cx="266" cy="322" rx="27" ry="6" fill="#6b4a2e"/>
+  <path d="M244 290 c-6 -14 6 -20 0 -34 M266 282 c-6 -14 6 -20 0 -34 M288 290 c-6 -14 6 -20 0 -34" fill="none" stroke="#4e8f85" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- maceta -->
+  <path d="M96 410 h66 l-9 58 h-48 Z" fill="#9c6b3f"/>
+  <path d="M129 410 c-8 -30 -2 -58 -28 -84 c24 16 36 40 28 84 Z" fill="#4e8f85"/>
+  <path d="M129 410 c8 -30 6 -56 32 -78 c-24 15 -40 36 -32 78 Z" fill="#3a7a70"/>
+
+  <!-- barra -->
+  <rect x="60" y="410" width="680" height="26" rx="13" fill="#5b9c99"/>
+  <rect x="80" y="436" width="640" height="182" rx="16" fill="url(#panel)"/>
+  <rect x="150" y="468" width="150" height="110" rx="10" fill="#ffffff" opacity="0.06"/>
+  <rect x="520" y="468" width="150" height="110" rx="10" fill="#ffffff" opacity="0.06"/>
+</svg>

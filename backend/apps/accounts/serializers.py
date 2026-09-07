@@ -69,3 +69,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "aula",
             "is_active",
         ]
+
+
+class RolePermissionSerializer(serializers.ModelSerializer):
+    """Serializador de permisos por rol."""
+
+    class Meta:
+        from .models import RolePermission
+
+        model = RolePermission
+        fields = ["id", "role", "code", "enabled", "updated_at"]
+        read_only_fields = ["id", "updated_at"]

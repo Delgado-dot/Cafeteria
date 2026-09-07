@@ -1,0 +1,26 @@
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310"]
+include = '\.pyi?$'
+exclude = '''
+(
+  /migrations/
+  | /venv/
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["core", "apps"]
+
+[tool.flake8]
+max-line-length = 100
+exclude = ["migrations", "venv", "__pycache__"]
+ignore = ["E501", "W503"]
+extend-ignore = ["E203"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "core.cafeteria.settings_test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]

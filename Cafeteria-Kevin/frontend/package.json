@@ -1,0 +1,24 @@
+{
+  "name": "cafeteria-intesud-frontend",
+  "version": "1.0.0",
+  "description": "Frontend del sistema de pedidos en línea de la cafetería INTESUD",
+  "private": true,
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "test": "node --test tests/frontend/",
+    "lint": "eslint js/*.js",
+    "format": "prettier --write \"js/*.js\" \"css/*.css\" \"index.html\""
+  },
+  "keywords": [
+    "cafeteria",
+    "pedidos",
+    "intesud",
+    "frontend"
+  ],
+  "author": "INTESUD",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3"
+  }
+}
