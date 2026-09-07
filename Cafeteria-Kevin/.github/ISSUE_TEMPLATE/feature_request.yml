@@ -1,0 +1,43 @@
+name: Feature Request
+description: Sugiere una nueva funcionalidad para el sistema
+title: "[FEATURE] - "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: input
+    id: titulo
+    attributes:
+      label: Título de la función
+      description: Título descriptivo de la nueva funcionalidad
+      placeholder: "Exportar reportes a PDF"
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción
+      description: Describe la funcionalidad deseada
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivacion
+    attributes:
+      label: Motivación
+      description: ¿Por qué es necesaria esta funcionalidad?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad
+      options:
+        - Baja
+        - Media
+        - Alta
+        - Urgente
+    validations:
+      required: true
