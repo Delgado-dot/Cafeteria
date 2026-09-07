@@ -707,7 +707,7 @@ function barDashboard(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1>Panel de la cafetería</h1><span class="muted small">${today}</span></div>
-    <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
+    <p class="page-sub" style="color:#fff">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
 
     <div class="status-banners-wrap">
       ${outStock.length ? `<div class="status-banner danger"><span class="ico bx bx-block"></span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
@@ -730,7 +730,7 @@ function barDashboard(el) {
       </div>
       <div class="card-body">
         ${hasPriority ? `<div class="order-queue" style="grid-template-columns:1fr">${priorityOrders.map((o) => priorityMiniCard(o)).join('')}</div>`
-          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico bx bx-check-circle"></div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico bx bx-check-circle" style="color:var(--success)"></div><h3 style="color:var(--text)">Sin pedidos prioritarios</h3><p style="color:var(--text-2)">No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
       </div>
     </div>
 
@@ -1302,6 +1302,7 @@ function barStock(el) {
 
   const outOfStock = products.filter((p) => p.stock === 0);
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+  const inventoryValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
 
   el.innerHTML = `
     <div class="page-title"><h1>Stock</h1></div>
@@ -1314,10 +1315,11 @@ function barStock(el) {
       <button class="category-chip" data-stock-tab="bajo">Bajo stock</button>
       <button class="category-chip" data-stock-tab="agotados">Agotados</button>
     </div>
-    <div class="grid grid-3" style="gap:12px;margin-bottom:16px">
+    <div class="grid grid-4" style="gap:12px;margin-bottom:16px">
       <div class="stat-card"><div class="st-label">Total productos</div><div class="st-value">${products.length}</div><div class="st-sub">${products.filter((p)=>p.available).length} activos</div><span class="stat-ico bx bx-package muted"></span></div>
       <div class="stat-card warning-card"><div class="st-label">Bajo stock</div><div class="st-value warning">${lowStock.length}</div><div class="st-sub">requieren reposición</div><span class="stat-ico bx bx-error warning"></span></div>
       <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div><div class="st-sub">sin existencias</div><span class="stat-ico bx bx-x-circle danger"></span></div>
+      <div class="stat-card success-card"><div class="st-label">Valor inventario</div><div class="st-value success">${money(inventoryValue)}</div><div class="st-sub">stock actual × precio</div><span class="stat-ico bx bx-dollar-circle success"></span></div>
     </div>
     <div class="card" style="margin-bottom:16px;padding:16px">
       <div style="font-weight:700;margin-bottom:12px">Productos con bajo stock</div>
