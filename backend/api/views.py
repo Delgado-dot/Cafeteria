@@ -125,3 +125,64 @@ class VentasResumenView(viewsets.ViewSet):
             'ventas_mes': ventas_mes,
             'ticket_promedio': ticket_promedio
         })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_image(request):
+    serializer = ImageUploadSerializer(data=request.data)
+    if serializer.is_valid():
+        image = serializer.validated_data['image']
+        folder = serializer.validated_data.get('folder', 'uploads')
+        
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(image, folder=folder)
+        
+        return Response({
+            'url': result['secure_url'],
+            'public_id': result['public_id'],
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_avatar(request):
+    serializer = ImageUploadSerializer(data=request.data)
+    if serializer.is_valid():
+        image = serializer.validated_data['image']
+        
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(image, folder='avatars')
+        
+        user = request.user
+        user.avatar = result['secure_url']
+        user.save()
+        
+        return Response({
+            'avatar_url': result['secure_url'],
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_comprobante(request, pedido_id):
+    serializer = ImageUploadSerializer(data=request.data)
+    if serializer.is_valid():
+        image = serializer.validated_data['image']
+        
+        import cloudinary.uploader
+        result = cloudinary.uploader.upload(image, folder='comprobantes')
+        
+        pedido = Pedido.objects.filter(numero=pedido_id).first()
+        if not pedido:
+            return Response({'detail': 'Pedido no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        
+        pedido.comprobante = result['secure_url']
+        pedido.save()
+        
+        return Response({
+            'comprobante_url': result['secure_url'],
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

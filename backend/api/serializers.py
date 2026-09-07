@@ -46,10 +46,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('id', 'email', 'name', 'role', 'cargo', 'aula', 'active', 'last_login', 'date_joined')
-        read_only_fields = ('id', 'last_login', 'date_joined')
+        fields = ('id', 'email', 'name', 'role', 'cargo', 'aula', 'active', 'avatar', 'avatar_url', 'last_login', 'date_joined')
+        read_only_fields = ('id', 'last_login', 'date_joined', 'avatar_url')
+    
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            return obj.avatar.url
+        return None
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
@@ -93,6 +100,19 @@ class ConfiguracionCafeteriaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PerfilAdminSerializer(serializers.ModelSerializer):
+    foto_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = PerfilAdmin
         fields = '__all__'
+        read_only_fields = ('foto_url',)
+    
+    def get_foto_url(self, obj):
+        if obj.foto:
+            return obj.foto.url
+        return None
+
+
+class ImageUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    folder = serializers.CharField(required=False, default='uploads')

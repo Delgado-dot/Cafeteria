@@ -21,4 +21,8 @@ urlpatterns = [
     path('auth/me/', me_view, name='me'),
     path('auth/register/', register_view, name='register'),
     path('auth/change-password/', change_password_view, name='change_password'),
+    # Image upload endpoints
+    path('upload/image/', upload_image, name='upload_image'),
+    path('upload/avatar/', upload_avatar, name='upload_avatar'),
+    path('upload/comprobante/<str:pedido_id>/', upload_comprobante, name='upload_comprobante'),
 ]
