@@ -1,27 +1,87 @@
 /* ============================================================
-   auth.js — Inicio de sesión, recuperación de contraseña, sesión
+   auth.js — Inicio de sesión, recuperación de contraseña, sesión (JWT)
    ============================================================ */
 
 const Auth = {
   current() { return Store.load('int_session', null); },
   set(u) { Store.save('int_session', u); },
-  clear() { localStorage.removeItem('int_session'); },
+  clear() { localStorage.removeItem('int_session'); localStorage.removeItem('int_refresh_token'); },
 
-  login(email, password, remember) {
-    const user = Store.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!user) return { ok: false, field: 'email', msg: 'Usuario no encontrado.' };
-    if (!user.active) return { ok: false, field: 'email', msg: 'Este usuario está desactivado.' };
-    if (PASSWORDS[user.email] !== password) return { ok: false, field: 'password', msg: 'Contraseña incorrecta.' };
-    const now = new Date();
-    user.lastAccess = now.toISOString().slice(0, 10) + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    Store.users = Store.users;
-    this.set({ id: user.id, name: user.name, email: user.email, role: user.role, cargo: user.cargo, aula: user.aula });
-    if (remember) Store.save('int_remember', email);
-    logAudit('Inició sesión', user.name);
-    return { ok: true, user };
+  async login(email, password, remember) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const field = data.detail ? 'email' : Object.keys(data)[0];
+        const msg = data.detail || data[field] || 'Error de autenticación';
+        return { ok: false, field, msg };
+      }
+      const user = data.user;
+      if (!user.active) return { ok: false, field: 'email', msg: 'Este usuario está desactivado.' };
+      this.set({ id: user.id, name: user.name, email: user.email, role: user.role, cargo: user.cargo, aula: user.aula });
+      localStorage.setItem('int_access_token', data.access);
+      localStorage.setItem('int_refresh_token', data.refresh);
+      if (remember) Store.save('int_remember', email);
+      logAudit('Inició sesión', user.name);
+      return { ok: true, user };
+    } catch (e) {
+      return { ok: false, field: 'email', msg: 'No se pudo conectar al servidor' };
+    }
   },
 
-  logout() { this.clear(); logAudit('Cerró sesión', ''); },
+  async logout() {
+    const refresh = localStorage.getItem('int_refresh_token');
+    if (refresh) {
+      try {
+        await fetch(`${API_BASE}/auth/logout/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('int_access_token')}` },
+          body: JSON.stringify({ refresh })
+        });
+      } catch (e) {}
+    }
+    this.clear();
+    logAudit('Cerró sesión', '');
+  },
+
+  async refreshToken() {
+    const refresh = localStorage.getItem('int_refresh_token');
+    if (!refresh) return false;
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('int_access_token', data.access);
+        if (data.refresh) localStorage.setItem('int_refresh_token', data.refresh);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  async fetchWithAuth(url, options = {}) {
+    let token = localStorage.getItem('int_access_token');
+    const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+    let res = await fetch(url, { ...options, headers });
+    if (res.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (refreshed) {
+        token = localStorage.getItem('int_access_token');
+        res = await fetch(url, { ...options, headers: { ...options.headers, 'Authorization': `Bearer ${token}` } });
+      }
+    }
+    return res;
+  },
+
+  getToken() { return localStorage.getItem('int_access_token'); }
 };
 
 /* ---------- Iconos compartidos con Admin Bar ---------- */
@@ -85,8 +145,7 @@ function renderLogin() {
           </div>
         </details>
       </div>
-    </div>
-  </div>`;
+    </div>`;
 
   const remembered = Store.load('int_remember', null);
   if (remembered) { $('#li_email').value = remembered; $('#li_remember').checked = true; }
@@ -104,7 +163,7 @@ function renderLogin() {
   });
   $('#li_clear').addEventListener('click', () => { $('#li_email').value = ''; setErr('email', ''); });
 
-  $('#loginForm').addEventListener('submit', (e) => {
+  $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = $('#li_email').value.trim();
     const pass = $('#li_pass').value;
@@ -117,13 +176,10 @@ function renderLogin() {
     const btn = $('#li_submit');
     btn.disabled = true; btn.textContent = 'Ingresando...';
     const resetBtn = () => { btn.disabled = false; btn.textContent = 'Iniciar sesión'; };
-    // Procesamiento inmediato (sin demoras artificiales) para que el ingreso
-    // sea fluido y no se quede "trabado" en el estado de cargando.
     try {
-      const res = Auth.login(email, pass, $('#li_remember').checked);
+      const res = await Auth.login(email, pass, $('#li_remember').checked);
       if (res.ok) {
         toast('¡Bienvenido, ' + res.user.name + '!', 'success');
-        // Redirección por rol: cada perfil aterriza en su propia interfaz.
         const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
           : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
         if (location.hash.replace('#', '') === dest) {
