@@ -11,6 +11,8 @@ router.register(r'configuracion', ConfiguracionCafeteriaViewSet)
 router.register(r'perfil', PerfilAdminViewSet)
 
 urlpatterns = [
+    path('auth/login/', LoginView.as_view(), name='login'),
+    path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('', include(router.urls)),
     path('pagos/resumen/', PagosResumenView.as_view({'get': 'list'})),
     path('ventas/resumen/', VentasResumenView.as_view({'get': 'list'})),

@@ -35,8 +35,6 @@ backend/staticfiles/*
 !backend/staticfiles/js/
 !backend/staticfiles/images/
 staticfiles_collected/
-**/migrations/*.py
-!**/migrations/__init__.py
 
 # ============================
 # Environment variables

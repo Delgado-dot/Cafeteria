@@ -1,17 +1,51 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Sum
 from .models import *
 from .serializers import *
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({'detail': 'El token refresh es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            RefreshToken(refresh_token).blacklist()
+        except TokenError:
+            return Response({'detail': 'El token refresh no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+
 
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
 
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
 class PedidoViewSet(viewsets.ModelViewSet):
     queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['patch'])
     def confirmar_listos(self, request):
@@ -21,20 +55,26 @@ class PedidoViewSet(viewsets.ModelViewSet):
 class MovimientoStockViewSet(viewsets.ModelViewSet):
     queryset = MovimientoStock.objects.all()
     serializer_class = MovimientoStockSerializer
+    permission_classes = [IsAuthenticated]
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
     serializer_class = ProveedorSerializer
+    permission_classes = [IsAuthenticated]
 
 class ConfiguracionCafeteriaViewSet(viewsets.ModelViewSet):
     queryset = ConfiguracionCafeteria.objects.all()
     serializer_class = ConfiguracionCafeteriaSerializer
+    permission_classes = [IsAuthenticated]
 
 class PerfilAdminViewSet(viewsets.ModelViewSet):
     queryset = PerfilAdmin.objects.all()
     serializer_class = PerfilAdminSerializer
+    permission_classes = [IsAuthenticated]
 
 class PagosResumenView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
     def list(self, request):
         resumen = {}
         pedidos = Pedido.objects.all()
@@ -44,6 +84,8 @@ class PagosResumenView(viewsets.ViewSet):
         return Response(resumen)
 
 class VentasResumenView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
     def list(self, request):
         from django.utils import timezone
         hoy = timezone.now().date()
