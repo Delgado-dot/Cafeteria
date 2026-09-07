@@ -84,7 +84,8 @@ body.is-admin .admin-content > .page-title .page-sub,
 body.is-admin .admin-content > .page-title .muted,
 body.is-admin .admin-content > .page-title small,
 body.is-admin .admin-content > h1,
-body.is-admin .admin-content > h2 {
+body.is-admin .admin-content > h2,
+body.is-admin .admin-content .section-title {
   color: #fff;
   text-shadow: 0 2px 14px rgba(3, 18, 17, 0.45);
 }
