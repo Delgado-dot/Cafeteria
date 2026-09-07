@@ -1306,9 +1306,8 @@ function barStock(el) {
 
   el.innerHTML = `
     <div class="page-title"><h1>Stock</h1></div>
-    <div style="display:flex;gap:10px;margin-bottom:16px">
-      <div class="input-wrap" style="flex:1"><span class="leading-ico"><i class="bx bx-search"></i></span><input class="input" id="stockSearch" placeholder="Buscar producto..." style="padding-left:36px"></div>
-      <button class="btn btn-outline btn-sm" id="stockFilterBtn"><i class="bx bx-filter"></i> Filtros</button>
+    <div style="margin-bottom:16px">
+      <div class="input-wrap"><span class="leading-ico"><i class="bx bx-search"></i></span><input class="input" id="stockSearch" placeholder="Buscar producto..." style="padding-left:36px"></div>
     </div>
     <div class="adv-tabs" style="margin-bottom:16px">
       <button class="category-chip active" data-stock-tab="todos">Todos</button>
