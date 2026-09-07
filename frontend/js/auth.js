@@ -2,6 +2,8 @@
    auth.js — Inicio de sesión, recuperación de contraseña, sesión (JWT)
    ============================================================ */
 
+const API_BASE = 'http://localhost:8000/api';
+
 const Auth = {
   current() { return Store.load('int_session', null); },
   set(u) { Store.save('int_session', u); },
