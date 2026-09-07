@@ -1,4 +1,27 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('user', 'Usuario'),
+        ('adminbar', 'Administradora Bar'),
+        ('admindev', 'Administrador Desarrollador'),
+    ]
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    cargo = models.CharField(max_length=100, blank=True)
+    aula = models.CharField(max_length=50, blank=True)
+    active = models.BooleanField(default=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    class Meta:
+        swappable = 'AUTH_USER_MODEL'
+
+    def __str__(self):
+        return self.email
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
@@ -8,7 +31,7 @@ class Producto(models.Model):
     stock = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=3)
     tiempo_preparacion = models.IntegerField(default=5)
-    imagen_base64 = models.TextField(blank=True, null=True)
+    imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     disponible = models.BooleanField(default=True)
 
     def __str__(self):
@@ -24,6 +47,7 @@ class Pedido(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     piso = models.CharField(max_length=50, blank=True, null=True)
     aula = models.CharField(max_length=50, blank=True, null=True)
+    comprobante = models.ImageField(upload_to='comprobantes/', blank=True, null=True)
 
     def __str__(self):
         return self.numero
@@ -65,7 +89,7 @@ class ConfiguracionCafeteria(models.Model):
 
 class PerfilAdmin(models.Model):
     nombre_mostrar = models.CharField(max_length=200)
-    foto_base64 = models.TextField(blank=True, null=True)
+    foto = models.ImageField(upload_to='perfil/', blank=True, null=True)
 
     def __str__(self):
         return self.nombre_mostrar

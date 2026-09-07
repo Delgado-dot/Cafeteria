@@ -14,4 +14,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('pagos/resumen/', PagosResumenView.as_view({'get': 'list'})),
     path('ventas/resumen/', VentasResumenView.as_view({'get': 'list'})),
+    # Upload endpoints
+    path('upload/image/', upload_image, name='upload_image'),
+    path('upload/avatar/', upload_avatar, name='upload_avatar'),
+    path('upload/comprobante/<str:pedido_id>/', upload_comprobante, name='upload_comprobante'),
 ]

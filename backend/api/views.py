@@ -1,9 +1,11 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum
 from .models import *
 from .serializers import *
+import cloudinary.uploader
 
 class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.all()
@@ -55,3 +57,61 @@ class VentasResumenView(viewsets.ViewSet):
             'ventas_mes': ventas_mes,
             'ticket_promedio': ticket_promedio
         })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_image(request):
+    """Subida genérica de imagen a Cloudinary"""
+    image = request.FILES.get('image')
+    folder = request.data.get('folder', 'uploads')
+    
+    if not image:
+        return Response({'detail': 'No se envió imagen'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        result = cloudinary.uploader.upload(image, folder=folder)
+        return Response({
+            'url': result['secure_url'],
+            'public_id': result['public_id'],
+        }, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'detail': f'Error subiendo imagen: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_avatar(request):
+    """Subir avatar de usuario"""
+    image = request.FILES.get('image')
+    if not image:
+        return Response({'detail': 'No se envió imagen'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        result = cloudinary.uploader.upload(image, folder='avatars')
+        user = request.user
+        user.avatar = result['secure_url']
+        user.save()
+        return Response({'avatar_url': result['secure_url']}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'detail': f'Error subiendo avatar: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_comprobante(request, pedido_id):
+    """Subir comprobante de pago para un pedido"""
+    image = request.FILES.get('image')
+    if not image:
+        return Response({'detail': 'No se envió imagen'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        result = cloudinary.uploader.upload(image, folder='comprobantes')
+        pedido = Pedido.objects.filter(numero=pedido_id).first()
+        if not pedido:
+            return Response({'detail': 'Pedido no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        pedido.comprobante = result['secure_url']
+        pedido.save()
+        return Response({'comprobante_url': result['secure_url']}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'detail': f'Error subiendo comprobante: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

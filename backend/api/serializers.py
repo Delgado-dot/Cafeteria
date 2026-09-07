@@ -36,3 +36,8 @@ class PerfilAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = PerfilAdmin
         fields = '__all__'
+
+
+class ImageUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    folder = serializers.CharField(required=False, default='uploads')
