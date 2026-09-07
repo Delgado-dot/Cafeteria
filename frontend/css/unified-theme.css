@@ -56,7 +56,7 @@ body.is-auth .login-logo { background: rgba(255, 255, 255, 0.96); }
 body.is-admin {
   min-height: 100vh;
   background:
-    linear-gradient(145deg, rgba(8, 30, 28, 0.72), rgba(10, 35, 33, 0.56)),
+    linear-gradient(145deg, rgba(8, 30, 28, 0.85), rgba(10, 35, 33, 0.72)),
     var(--app-photo) center / cover fixed no-repeat;
 }
 
@@ -81,10 +81,12 @@ body.is-admin .admin-topbar {
 
 body.is-admin .admin-content > .page-title h1,
 body.is-admin .admin-content > .page-title .page-sub,
+body.is-admin .admin-content > .page-title .muted,
+body.is-admin .admin-content > .page-title small,
 body.is-admin .admin-content > h1,
 body.is-admin .admin-content > h2 {
   color: #fff;
-  text-shadow: 0 2px 14px rgba(3, 18, 17, 0.34);
+  text-shadow: 0 2px 14px rgba(3, 18, 17, 0.45);
 }
 
 body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
@@ -104,6 +106,11 @@ body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .
 body.is-admin .admin-content .muted { color: #556563; }
 body.is-admin .admin-content .muted-3,
 body.is-admin .admin-content .tiny.muted { color: #667572; }
+
+body.is-admin .admin-content .empty-state { color: rgba(255,255,255,0.9); }
+body.is-admin .admin-content .empty-state .es-ico { opacity: 0.8; }
+body.is-admin .admin-content .empty-state h3 { color: #fff; text-shadow: 0 2px 12px rgba(3,18,17,0.4); }
+body.is-admin .admin-content .empty-state p { color: rgba(255,255,255,0.85); text-shadow: 0 1px 8px rgba(3,18,17,0.3); }
 body.is-admin .admin-content thead th { color: #52615f; background: rgba(235, 243, 241, 0.9); }
 body.is-admin .admin-content tbody td { color: var(--text); }
 

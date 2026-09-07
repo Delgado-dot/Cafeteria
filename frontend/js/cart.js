@@ -65,11 +65,12 @@ function refreshCartBadge() {
 }
 window.refreshCartBadge = refreshCartBadge;
 
-/* ---------- Capacidad (simulada) ---------- */
+/* ---------- Capacidad (calculada desde pedidos reales) ---------- */
 function capacityInfo() {
   const cfg = Store.config;
-  const total = cfg.capacity;
-  const used = Math.min(cfg.currentCapacity, total);
+  const total = cfg.capacity || 10;
+  const activeOrders = Store.orders.filter((o) => ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
+  const used = activeOrders.length;
   const pct = total ? Math.round((used / total) * 100) : 0;
   let state = 'DISPONIBLE', stateCls = 'success', warnMsg = '';
   if (pct >= 100) { state = 'CAPACIDAD LLENA'; stateCls = 'danger'; }

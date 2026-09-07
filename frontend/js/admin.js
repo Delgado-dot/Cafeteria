@@ -321,7 +321,7 @@ const renderers = {
 
 function renderCafePill(el) {
   const cfg = Store.config;
-  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${cfg.cafeOpen ? '🟢' : '🔴'}</span> ${cfg.cafeOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
+  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}"><span class="ico bx ${cfg.cafeOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${cfg.cafeOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
 }
 
 function renderAdminTabs(el, tabs, initialTab) {
@@ -419,10 +419,6 @@ function barConfigTabs(el, initialTab) {
             <label class="checkbox-row"><input type="checkbox" checked disabled> Notificar pedidos nuevos (próximamente)</label>
             <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
           </div>
-        </div>
-        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
-          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
-          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
         </div>
       </div>
     </div>
@@ -610,7 +606,7 @@ function barReports(el) {
       const prodSales = {};
       orders.forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
       const top = Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,qty])=> ({ product: Store.products.find((p)=>p.id===id), qty})).filter(x=>x.product);
-      rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px">${product.emoji||'📦'}</div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
+      rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px"><i class="bx ${product.emoji ? 'bx-food-menu' : 'bx-package'}"></i></div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
     } else if (tab === 'pagos') {
       rptContent.innerHTML = `
         <div class="grid grid-3" style="gap:12px">
@@ -714,27 +710,27 @@ function barDashboard(el) {
     <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
 
     <div class="status-banners-wrap">
-      ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${outStock.length ? `<div class="status-banner danger"><span class="ico bx bx-block"></span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico bx bx-error-circle"></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     </div>
 
     <div class="grid grid-4" style="margin-bottom:20px">
       <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><span class="stat-ico bx bx-time ${queue.length >= 5 ? 'danger' : 'primary'}"></span><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
       <div class="stat-card"><span class="stat-ico bx bx-restaurant warning"></span><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">preparándose ahora</div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-check-double success"></span><div class="st-label">Listos</div><div class="st-value">${ready.length}</div><div class="st-sub">listos para retirar</div></div>
-      <div class="stat-card ${cap.stateCls === 'danger' ? 'danger-card' : cap.stateCls === 'warning' ? 'alert' : ''}"><span class="stat-ico bx bx-gauge ${cap.stateCls === 'danger' ? 'danger' : cap.stateCls === 'warning' ? 'warning' : 'muted'}"></span><div class="st-label">Capacidad</div><div class="st-value ${cap.stateCls === 'danger' ? 'danger' : ''}">${cap.pct}%</div><div class="st-sub">${cap.state}</div></div>
+      <div class="stat-card ${cap.stateCls === 'danger' ? 'danger-card' : cap.stateCls === 'warning' ? 'alert' : ''}"><span class="stat-ico bx bx-gauge ${cap.stateCls === 'danger' ? 'danger' : cap.stateCls === 'warning' ? 'warning' : 'muted'}"></span><div class="st-label">Capacidad</div><div class="st-value ${cap.stateCls === 'danger' ? 'danger' : ''}">${cap.pct}%</div><div class="st-sub"><span class="badge ${cap.stateCls === 'danger' ? 'badge-danger' : cap.stateCls === 'warning' ? 'badge-warning' : 'badge-success'}">${cap.state}</span></div></div>
     </div>
 
     <div id="dashCap" style="margin-bottom:20px"></div>
 
     <div class="card" style="margin-bottom:20px;${hasPriority ? 'border-left:4px solid var(--primary)' : ''}">
       <div class="card-header">
-        <div><div class="card-title">⚡ Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
+        <div><div class="card-title"><i class="bx bx-flash" style="margin-right:6px"></i>Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
         ${hasPriority ? `<span class="badge badge-primary">${priorityOrders.length} a atender</span>` : ''}
       </div>
       <div class="card-body">
         ${hasPriority ? `<div class="order-queue" style="grid-template-columns:1fr">${priorityOrders.map((o) => priorityMiniCard(o)).join('')}</div>`
-          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">✅</div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico bx bx-check-circle"></div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
       </div>
     </div>
 
@@ -768,8 +764,8 @@ function barDashboard(el) {
 /* Tarjeta compacta para el panel de "Pedidos prioritarios" del dashboard */
 function priorityMiniCard(o) {
   const priTag = o.priority === 'urgent'
-    ? `<span class="priority-tag urgent">⚡ Urgente</span>`
-    : o.priority === 'priority' ? `<span class="priority-tag priority">⭐ Prioridad</span>` : '';
+    ? `<span class="priority-tag urgent"><i class="bx bx-flash" style="margin-right:4px"></i>Urgente</span>`
+    : o.priority === 'priority' ? `<span class="priority-tag priority"><i class="bx bx-star" style="margin-right:4px"></i>Prioridad</span>` : '';
   return `
     <div class="queue-order pri-${o.priority === 'normal' ? 'normal' : o.priority}" style="cursor:pointer" data-pri="${o.id}">
       <div class="queue-head">
@@ -780,7 +776,7 @@ function priorityMiniCard(o) {
           ${statusMeta(o.status)}
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          ${o.delivery === 'delivery' ? `<span class="badge badge-info">🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪</span>`}
+          ${o.delivery === 'delivery' ? `<span class="badge badge-info"><i class="bx bx-cycling" style="margin-right:4px"></i>P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral"><i class="bx bx-store" style="margin-right:4px"></i>Retiro</span>`}
           <span class="small bold">${money(o.total)}</span>
         </div>
       </div>
@@ -877,8 +873,8 @@ function queueOrderCard(o, tab) {
   const needsPayment = o.paymentStatus === 'pending' || o.paymentStatus === 'review';
   let extraCls = '';
   let priTag = '';
-  if (o.priority === 'urgent') { extraCls += ' pri-urgent'; priTag = `<span class="priority-tag urgent">⚡ Urgente</span>`; }
-  else if (o.priority === 'priority') { extraCls += ' pri-priority'; priTag = `<span class="priority-tag priority">⭐ Prioridad</span>`; }
+  if (o.priority === 'urgent') { extraCls += ' pri-urgent'; priTag = `<span class="priority-tag urgent"><i class="bx bx-flash" style="margin-right:4px"></i>Urgente</span>`; }
+  else if (o.priority === 'priority') { extraCls += ' pri-priority'; priTag = `<span class="priority-tag priority"><i class="bx bx-star" style="margin-right:4px"></i>Prioridad</span>`; }
   else { extraCls += ' pri-normal'; }
   if (o.status === 'ready') extraCls += ' state-ready';
   if (o.status === 'prep') extraCls += ' state-prep';
@@ -901,7 +897,7 @@ function queueOrderCard(o, tab) {
           ${statusMeta(o.status)}
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          ${isDelivery ? `<span class="badge badge-info">🛵 Delivery · P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪 Retiro</span>`}
+          ${isDelivery ? `<span class="badge badge-info"><i class="bx bx-cycling" style="margin-right:4px"></i>Delivery · P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral"><i class="bx bx-store" style="margin-right:4px"></i>Retiro</span>`}
           <span class="small bold">${money(o.total)}</span>
         </div>
       </div>
@@ -2138,7 +2134,7 @@ function barDelivery(el) {
         </div>
       </div>
     </div>
-    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico">⚠️</span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
+    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico bx bx-error-circle"></span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
   `;
 
   let dtab = 'pendiente';
@@ -2158,7 +2154,7 @@ function barDelivery(el) {
     }
     const list = dtab === 'pendiente' ? pending : dtab === 'encamino' ? enCamino : entregado;
     if (!list.length) {
-      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico">📦</div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
+      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico bx bx-package"></div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
       return;
     }
     area.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map((o) => `
