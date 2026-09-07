@@ -183,9 +183,10 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
               <div class="avatar sm" style="${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? `background-image:url('${currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')}');background-size:cover;background-position:center;color:transparent` : ''}">${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? '' : esc(initials(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name))}</div>
               <span class="pname">${esc(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name)}</span> ▾
               <div class="dropdown-menu" id="barUserDropdown" style="display:none">
-                <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
+                <a class="dropdown-item" href="#" data-link="profile"><span class="ico bx bx-user"></span>Mi perfil</a>
+                <a class="dropdown-item" href="#" data-link="changepass"><span class="ico bx bx-lock-alt"></span>Cambio de contraseña</a>
                 <div class="dropdown-sep"></div>
-                <a class="dropdown-item danger" href="#" id="btnBarLogout"><span class="ico">⏻</span>Cerrar sesión</a>
+                <a class="dropdown-item danger" href="#" id="btnBarLogout"><span class="ico bx bx-log-out"></span>Cerrar sesión</a>
               </div>
             </div>
           </div>
@@ -2361,6 +2362,22 @@ function barAdminProfile(el) {
         <label class="label">Nombre para mostrar</label>
         <input class="input" id="profileNameInput" value="${esc(currentName)}" placeholder="Administradora Bar">
       </div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-weight:700;margin-bottom:12px;color:var(--text)"><i class="bx bx-lock-alt" style="margin-right:6px"></i>Cambio de contraseña</div>
+        <div class="field">
+          <label class="label">Contraseña actual</label>
+          <input class="input" type="password" id="oldPassInput" placeholder="••••••••">
+        </div>
+        <div class="field">
+          <label class="label">Nueva contraseña</label>
+          <input class="input" type="password" id="newPassInput" placeholder="••••••••">
+        </div>
+        <div class="field">
+          <label class="label">Confirmar nueva contraseña</label>
+          <input class="input" type="password" id="confirmPassInput" placeholder="••••••••">
+        </div>
+        <div class="tiny muted" style="margin-top:8px">Mínimo 6 caracteres. Deja en blanco si no quieres cambiarla.</div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
         <button class="btn btn-primary" id="btnSaveProfile">Guardar cambios</button>
       </div>
@@ -2415,9 +2432,30 @@ function barAdminProfile(el) {
     };
   }
 
+  const oldPassInput = $('#oldPassInput', el);
+  const newPassInput = $('#newPassInput', el);
+  const confirmPassInput = $('#confirmPassInput', el);
+
   $('#btnSaveProfile', el).onclick = () => {
     const newName = nameInput.value.trim();
     if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    
+    const oldPass = oldPassInput.value;
+    const newPass = newPassInput.value;
+    const confirmPass = confirmPassInput.value;
+    
+    if (oldPass || newPass || confirmPass) {
+      if (!oldPass) { toast('Ingresa tu contraseña actual para cambiarla', 'warning'); oldPassInput.focus(); return; }
+      if (newPass.length < 6) { toast('La nueva contraseña debe tener al menos 6 caracteres', 'warning'); newPassInput.focus(); return; }
+      if (newPass !== confirmPass) { toast('Las contraseñas no coinciden', 'warning'); confirmPassInput.focus(); return; }
+      const session = Store.load('int_session', null);
+      const users = Store.users;
+      const u = users.find(x => x.id === user.id);
+      if (!u || PASSWORDS[u.email] !== oldPass) { toast('La contraseña actual es incorrecta', 'warning'); oldPassInput.focus(); return; }
+      PASSWORDS[u.email] = newPass;
+      toast('Contraseña actualizada', 'success');
+    }
+    
     const session = Store.load('int_session', null);
     if (session) {
       session.name = newName;
@@ -2433,8 +2471,10 @@ function barAdminProfile(el) {
     }
     Store.save('int_admin_name_' + user.id, newName);
     Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
-    // Actualiza también la foto en el avatar global si existe
     toast('Perfil actualizado', 'success');
+    oldPassInput.value = '';
+    newPassInput.value = '';
+    confirmPassInput.value = '';
     renderBarAdmin('profile');
   };
 }

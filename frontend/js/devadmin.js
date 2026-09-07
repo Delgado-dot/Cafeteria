@@ -52,7 +52,7 @@ function renderDevAdmin(page) {
     <div class="admin-layout dev-layout">
       <aside class="admin-sidebar" id="devSidebar">
         <div class="sb-brand">
-          <span class="brand-mark" style="background: linear-gradient(135deg,#0ea5e9,#40807E); color:#fff; width:38px;height:38px; border-radius:10px; display:flex;align-items:center;justify-content:center">◈</span>
+          <span class="brand-mark" style="background: linear-gradient(135deg,#0ea5e9,#40807E); color:#fff; width:38px;height:38px; border-radius:10px; display:flex;align-items:center;justify-content:center"><i class="bx bx-diamond" style="font-size:1.3rem"></i></span>
           <div style="line-height:1.1">
             <div class="brand-name" style="font-size:0.95rem; letter-spacing:-0.01em">INTESUD Platform</div>
             <span class="brand-sub">Administración · SaaS</span>
@@ -89,7 +89,7 @@ function renderDevAdmin(page) {
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="devHamburger" title="Menú">☰</button>
+          <button class="hamburger" id="devHamburger" title="Menú"><i class="bx bx-menu" style="font-size:1.5rem"></i></button>
           <div style="display:flex; align-items:center; gap:10px">
             <span class="topbar-ico" style="width:32px;height:32px; border-radius:8px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center">${_devSvg(DEV_SECTIONS[sec].icon)}</span>
             <div>
@@ -187,11 +187,11 @@ function devDashboard(el) {
 
   // alerts platform
   const alerts=[];
-  if(outStock.length) alerts.push({ level:'danger', title:'Stock crítico', text:`${outStock.length} producto(s) agotados — ${outStock.slice(0,2).map(p=>esc(p.name)).join(', ')}`, icon:'⛔' });
-  if(lowStock.length) alerts.push({ level:'warning', title:'Stock bajo', text:`${lowStock.length} producto(s) bajo mínimo — reponer pronto.`, icon:'⚠️' });
-  if(payReview) alerts.push({ level:'danger', title:'Pagos en revisión', text:`${payReview} comprobante(s) requieren validación antes de preparar.`, icon:'💳' });
-  if(cap.pct>=90) alerts.push({ level: cap.pct>=100?'danger':'warning', title: cap.pct>=100?'Capacidad llena':'Alta demanda', text: `${cap.pct}% capacidad (${cap.used}/${cap.total}) — coordinar con barra.`, icon:'🔥' });
-  if(inactiveUsers>1) alerts.push({ level:'neutral', title:'Usuarios inactivos', text:`${inactiveUsers} cuentas desactivadas — revisar acceso.`, icon:'👤' });
+  if(outStock.length) alerts.push({ level:'danger', title:'Stock crítico', text:`${outStock.length} producto(s) agotados — ${outStock.slice(0,2).map(p=>esc(p.name)).join(', ')}`, icon:'bx-block' });
+  if(lowStock.length) alerts.push({ level:'warning', title:'Stock bajo', text:`${lowStock.length} producto(s) bajo mínimo — reponer pronto.`, icon:'bx-error-circle' });
+  if(payReview) alerts.push({ level:'danger', title:'Pagos en revisión', text:`${payReview} comprobante(s) requieren validación antes de preparar.`, icon:'bx-credit-card' });
+  if(cap.pct>=90) alerts.push({ level: cap.pct>=100?'danger':'warning', title: cap.pct>=100?'Capacidad llena':'Alta demanda', text: `${cap.pct}% capacidad (${cap.used}/${cap.total}) — coordinar con barra.`, icon:'bx-flash' });
+  if(inactiveUsers>1) alerts.push({ level:'neutral', title:'Usuarios inactivos', text:`${inactiveUsers} cuentas desactivadas — revisar acceso.`, icon:'bx-user-x' });
 
   el.innerHTML = `
     <div class="dev-page-head">
@@ -213,10 +213,10 @@ function devDashboard(el) {
       <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap:12px; margin-bottom:16px">
         ${alerts.map(a=> `
           <div class="alert ${a.level==='danger'?'danger':a.level==='warning'?'warning':a.level==='neutral'?'neutral':'info'}" style="margin:0; padding:12px 14px">
-            <span class="a-ico">${a.icon}</span>
+            <span class="a-ico bx ${a.icon}"></span>
             <div><div class="a-title">${a.title}</div><div class="small">${a.text}</div></div>
           </div>`).join('')}
-      </div>` : `<div class="status-banner success" style="margin-bottom:16px"><span class="ico">✅</span><div><b>Todo en orden.</b> Sin alertas críticas.</div></div>`}
+      </div>` : `<div class="status-banner success" style="margin-bottom:16px"><span class="ico bx bx-check-circle"></span><div><b>Todo en orden.</b> Sin alertas críticas.</div></div>`}
 
     <div class="kpi-grid" style="margin-bottom:16px">
       <div class="kpi-card" style="--kpi-accent: var(--primary)">
@@ -324,10 +324,10 @@ function devDashboard(el) {
             ['users','👥','Usuarios','Crear, editar y desactivar cuentas','admindev/users'],
             ['roles','🛡️','Roles y permisos','Matriz por módulos','admindev/roles'],
             ['audit','📜','Auditoría','Filtros por usuario/módulo/fecha','admindev/audit'],
-            ['cafe','🏪','Cafetería','Nombre, logo, horarios, contacto','admindev/cafe'],
+            ['cafe','bx-store','Cafetería','Nombre, logo, horarios, contacto','admindev/cafe'],
             ['config','⚙️','Configuración','General, seguridad, notificaciones','admindev/config'],
             ['design','🎨','Design System','Tokens, botones, inputs, cards','admindev/design'],
-            ['orders','📦','Ver operación Bar','Solo informativa — requiere rol Bar','adminbar/dashboard'],
+            ['orders','bx-receipt','Ver operación Bar','Solo informativa — requiere rol Bar','adminbar/dashboard'],
             ['help','💡','Documentación','README y docs del proyecto',''],
           ].map(([k,ic,title,desc,route])=> `
             <a class="dev-qa" href="#" data-goto="${route}" ${route===''?'style="opacity:0.6; pointer-events:none"':''}>
@@ -615,9 +615,9 @@ function userFormModal(u, onDone){
 function devRoles(el){
   try {
   const ROLES_META_BASE = {
-    user: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.user) || 'Usuario institucional', icon:'👤', color:'#0ea5e9', desc:'Acceso a menú, pedidos propios y perfil.' },
-    adminbar: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.adminbar) || 'Administradora bar', icon:'☕', color:'#40807E', desc:'Gestión operativa diaria: pedidos, stock, pagos, ventas y delivery.' },
-    admindev: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.admindev) || 'Administrador desarrollador', icon:'🛡️', color:'#0f172a', desc:'Administración de plataforma: usuarios, roles, auditoría y configuración.' },
+    user: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.user) || 'Usuario institucional', icon:'bx-user', color:'#0ea5e9', desc:'Acceso a menú, pedidos propios y perfil.' },
+    adminbar: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.adminbar) || 'Administradora bar', icon:'bx-coffee-togo', color:'#40807E', desc:'Gestión operativa diaria: pedidos, stock, pagos, ventas y delivery.' },
+    admindev: { label: (typeof ROLE_LABELS!=='undefined' && ROLE_LABELS.admindev) || 'Administrador desarrollador', icon:'bx-shield', color:'#0f172a', desc:'Administración de plataforma: usuarios, roles, auditoría y configuración.' },
   };
 
   // Detectar roles personalizados existentes en usuarios / rolePerms
@@ -627,7 +627,7 @@ function devRoles(el){
   const ROLES_META = {};
   allStoredRoles.forEach(r=>{
     if(ROLES_META_BASE[r]) ROLES_META[r]=ROLES_META_BASE[r];
-    else ROLES_META[r]={ label: r, icon:'🏷️', color:'#64748b', desc:'Rol personalizado — sin permisos por defecto. Activa los que necesites.' };
+    else ROLES_META[r]={ label: r, icon:'bx-tag', color:'#64748b', desc:'Rol personalizado — sin permisos por defecto. Activa los que necesites.' };
   });
 
   // Catálogo granular viene de data.js PERMISSIONS_CATALOG
@@ -834,7 +834,7 @@ function devRoles(el){
   $('#btnPermHelp')?.addEventListener('click', ()=> modal(`<div class="alert info" style="margin-bottom:12px"><span class="a-ico">ℹ️</span><div><b>Cómo funciona</b><br>Cada switch es un <code>RolePermission(role, code, enabled)</code> en BD. Al alternar se hace <code>POST /api/auth/permissions/</code> y se actualiza <code>Store.rolePerms</code>. Luego <code>can("users.create")</code> bloquea botones y rutas.</div></div><p class="small muted"><b>Ejemplo:</b> desactiva <code>users.create</code> para <code>admindev</code> y el botón "＋ Nuevo usuario" se deshabilita al instante.</p><p class="small muted" style="margin-top:10px">Roles personalizados: créalos con "Otro" en Usuarios o "＋ Nuevo rol"; aparecen aquí automáticamente.</p>`, { title:'Roles y permisos — funcional' }));
   } catch(e){
     console.error('[devRoles] error', e);
-    el.innerHTML = `<div class="card" style="padding:18px"><div class="alert danger"><span class="a-ico">⛔</span><div><div class="a-title">Error al cargar Roles y permisos</div>${esc(e.message)}<br><span class="tiny muted">${esc(e.stack||'')}</span></div></div><button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="devRoles(document.getElementById('devContent'))">Reintentar</button></div>`;
+    el.innerHTML = `<div class="card" style="padding:18px"><div class="alert danger"><span class="a-ico bx bx-block"></span><div><div class="a-title">Error al cargar Roles y permisos</div>${esc(e.message)}<br><span class="tiny muted">${esc(e.stack||'')}</span></div></div><button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="devRoles(document.getElementById('devContent'))">Reintentar</button></div>`;
   }
 }
 
@@ -1087,9 +1087,9 @@ function devConfig(el){
           <div class="card" style="margin-top:14px">
             <h3 style="margin-bottom:8px">Vista operativa</h3>
             <div class="grid grid-3">
-              <div class="alert ${cfg.cafeOpen?'success':'danger'}" style="margin:0"><span class="a-ico">${cfg.cafeOpen?'✓':'⛔'}</span><div><div class="a-title">${cfg.cafeOpen?'Operativa':'Pausada'}</div>Cafetería ${cfg.cafeOpen?'recibe pedidos':'no recibe pedidos'} (${cfg.orderOpen}–${cfg.orderClose})</div></div>
-              <div class="alert ${cfg.deliveryEnabled?'success':'neutral'}" style="margin:0"><span class="a-ico">🛵</span><div><div class="a-title">Delivery ${cfg.deliveryEnabled?'habilitado':'deshabilitado'}</div>3 pisos (P1–P3) · Máx 4 pedidos</div></div>
-              <div class="alert info" style="margin:0"><span class="a-ico">📦</span><div><div class="a-title">${cfg.capacity} cupos</div>Capacidad de preparación diaria</div></div>
+              <div class="alert ${cfg.cafeOpen?'success':'danger'}" style="margin:0"><span class="a-ico bx ${cfg.cafeOpen?'bx-check-circle':'bx-lock-alt'}"></span><div><div class="a-title">${cfg.cafeOpen?'Operativa':'Pausada'}</div>Cafetería ${cfg.cafeOpen?'recibe pedidos':'no recibe pedidos'} (${cfg.orderOpen}–${cfg.orderClose})</div></div>
+              <div class="alert ${cfg.deliveryEnabled?'success':'neutral'}" style="margin:0"><span class="a-ico bx bx-cycling"></span><div><div class="a-title">Delivery ${cfg.deliveryEnabled?'habilitado':'deshabilitado'}</div>3 pisos (P1–P3) · Máx 4 pedidos</div></div>
+              <div class="alert info" style="margin:0"><span class="a-ico bx bx-package"></span><div><div class="a-title">${cfg.capacity} cupos</div>Capacidad de preparación diaria</div></div>
             </div>
           </div>
         `;
@@ -1128,7 +1128,7 @@ function devConfig(el){
             </div>
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px"><button class="btn btn-primary" id="acSave">Guardar cuenta</button></div>
           </div>
-          <div class="alert info" style="margin-top:14px"><span class="a-ico">ℹ️</span><div><b>Sesión:</b> los cambios de nombre/rol se aplican a <code>int_session</code> inmediatamente.</div></div>
+          <div class="alert info" style="margin-top:14px"><span class="a-ico bx bx-info-circle"></span><div><b>Sesión:</b> los cambios de nombre/rol se aplican a <code>int_session</code> inmediatamente.</div></div>
         `;
         $('#btnChangePass2')?.addEventListener('click', ()=> changePasswordModal());
         $('#acSave').onclick=()=>{
@@ -1175,7 +1175,7 @@ function devConfig(el){
             </div>
             <div style="margin-top:14px; display:grid; gap:10px">
               <label class="checkbox-row"><input type="checkbox" ${Store.load('int_maint',false)?'checked':''} id="sysMaint"> <b>Modo mantenimiento</b> <span class="tiny muted" style="margin-left:8px">Bloquea pedidos y muestra banner</span></label>
-              <div class="alert warning" style="margin:0"><span class="a-ico">⚠️</span><div class="small"><b>Zona peligrosa:</b> restablecer datos de demo eliminará usuarios, pedidos y auditoría personalizados.</div></div>
+              <div class="alert warning" style="margin:0"><span class="a-ico bx bx-error-circle"></span><div class="small"><b>Zona peligrosa:</b> restablecer datos de demo eliminará usuarios, pedidos y auditoría personalizados.</div></div>
               <div style="display:flex; gap:10px; flex-wrap:wrap">
                 <button class="btn btn-danger-outline btn-sm" id="sysReset">↺ Restablecer demo</button>
                 <button class="btn btn-outline btn-sm" id="sysClearAudit">Borrar auditoría</button>
@@ -1419,9 +1419,9 @@ function devDesign(el) {
           <span class="badge badge-danger"><span class="dot"></span> Urgente</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span class="priority-tag urgent">🔴 URGENTE</span>
-          <span class="priority-tag priority">🟠 ALTA</span>
-          <span class="priority-tag normal">🟡 NORMAL</span>
+          <span class="priority-tag urgent"><i class="bx bx-flash" style="margin-right:4px"></i>URGENTE</span>
+          <span class="priority-tag priority"><i class="bx bx-error-circle" style="margin-right:4px"></i>ALTA</span>
+          <span class="priority-tag normal"><i class="bx bx-info-circle" style="margin-right:4px"></i>NORMAL</span>
         </div>
         <div class="tiny muted" style="margin-top:10px">Colores con función semántica — no aleatorios por página.</div>
       </div>
@@ -1431,15 +1431,15 @@ function devDesign(el) {
       <div class="card">
         <h3 style="margin-bottom:12px">Cards & Alerts</h3>
         <div class="card" style="padding:14px;margin-bottom:10px"><div class="bold">Card base</div><div class="tiny muted">Borde #e2e8f0, sombra soft, radius 16, padding 18–22</div></div>
-        <div class="alert success" style="margin-bottom:8px"><span class="a-ico">✓</span><div><b>Success</b> · Operación correcta</div></div>
-        <div class="alert warning" style="margin-bottom:8px"><span class="a-ico">⚠️</span><div><b>Warning</b> · Atención</div></div>
-        <div class="alert danger" style="margin-bottom:8px"><span class="a-ico">⛔</span><div><b>Error</b> · Algo falló</div></div>
-        <div class="alert info"><span class="a-ico">ℹ️</span><div><b>Info</b> · Dato informativo</div></div>
+        <div class="alert success" style="margin-bottom:8px"><span class="a-ico bx bx-check-circle"></span><div><b>Success</b> · Operación correcta</div></div>
+        <div class="alert warning" style="margin-bottom:8px"><span class="a-ico bx bx-error-circle"></span><div><b>Warning</b> · Atención</div></div>
+        <div class="alert danger" style="margin-bottom:8px"><span class="a-ico bx bx-block"></span><div><b>Error</b> · Algo falló</div></div>
+        <div class="alert info"><span class="a-ico bx bx-info-circle"></span><div><b>Info</b> · Dato informativo</div></div>
       </div>
       <div class="card">
         <h3 style="margin-bottom:12px">Empty / Loading / Shadows</h3>
         <div style="border:1px dashed var(--border);border-radius:10px;padding:18px;text-align:center;margin-bottom:10px">
-          <div style="font-size:1.6rem">📭</div><div class="tiny muted">Empty state · Sin datos + CTA</div>
+          <div style="font-size:1.6rem"><i class="bx bx-package" style="font-size:2.5rem"></i></div><div class="tiny muted">Empty state · Sin datos + CTA</div>
         </div>
         <div style="border:1px dashed var(--border);border-radius:10px;padding:18px;text-align:center">
           <div class="spinner" style="width:28px;height:28px;margin:0 auto 8px"></div><div class="tiny muted">Loading · Spinner #40807E</div>
