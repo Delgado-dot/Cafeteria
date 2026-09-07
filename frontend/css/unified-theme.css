@@ -117,6 +117,7 @@ body.is-admin .sb-footer .tiny.muted { color: rgba(255, 255, 255, 0.7) !importan
 body.has-bottom-nav :is(.input, select.input, textarea.input, .dropdown-menu, .modal, .drawer,
   .qty-stepper .qty-val, .floor-tab, .aula-cell) { color: var(--text); }
 body.has-bottom-nav :is(.input, select.input, textarea.input)::placeholder { color: #6f7f7d; opacity: 1; }
+body.has-bottom-nav .header-search .input { color: #fff; }
 body.has-bottom-nav .dropdown-menu :is(a, span, div),
 body.has-bottom-nav .modal :is(.label, .modal-title),
 body.has-bottom-nav .drawer :is(.label, .drawer-title) { color: var(--text); }

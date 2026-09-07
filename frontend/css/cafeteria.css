@@ -20,6 +20,7 @@
   --bg: #f4f7f6;
   --surface: #ffffff;
   --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
+  --student-glass: rgba(10, 46, 48, 0.78);
 }
 
 /* ---------- Base cliente — color que combina, ya no blanco plano ---------- */
@@ -351,7 +352,7 @@ body.has-bottom-nav .summary-card,
 body.has-bottom-nav .capacity-card,
 body.has-bottom-nav .select-card,
 body.has-bottom-nav .file-drop {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--student-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -490,14 +491,14 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
   body.has-bottom-nav .capacity-card,
   body.has-bottom-nav .select-card,
   body.has-bottom-nav .file-drop {
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--student-glass);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
   }
-  body.has-bottom-nav .prod-detail .product-media { background: rgba(0, 0, 0, 0.25); }
+  body.has-bottom-nav .prod-detail .product-media { background: var(--student-glass); }
 
   /* Pedidos: separación constante y lectura clara sobre el cristal. */
   body.has-bottom-nav #currentOrders,
@@ -584,7 +585,7 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
 
   /* Notificaciones: mismo cristal del resto del Panel Cliente. */
   body.has-bottom-nav .toast {
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--student-glass);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.15);

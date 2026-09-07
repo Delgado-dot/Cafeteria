@@ -2,9 +2,19 @@
    data.js — Datos simulados iniciales del sistema (no backend)
    ============================================================ */
 
-const CATEGORIES = ['Bebidas', 'Snacks'];
+const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipapas', 'Bebidas', 'Snacks'];
 
 const DEFAULT_PRODUCTS = [
+  { id: 'p01', name: 'Hamburguesa Clásica', emoji: '🍔', image: '', category: 'Hamburguesas', price: 3.50, stock: 10, minStock: 3, prepMin: 8, available: true, desc: 'Pan, carne, queso, lechuga, tomate y salsas. Jugosa y económica.', addedAt: '2025-01-05' },
+  { id: 'p02', name: 'Hamburguesa Especial', emoji: '🍔', image: '', category: 'Hamburguesas', price: 4.50, stock: 8, minStock: 3, prepMin: 10, available: true, desc: 'Doble carne, tocineta, queso derretido, aros de cebolla y salsa de la casa.', addedAt: '2025-01-05' },
+  { id: 'p03', name: 'Hamburguesa de Pollo', emoji: '🍗', image: '', category: 'Hamburguesas', price: 4.00, stock: 6, minStock: 2, prepMin: 9, available: true, desc: 'Pechuga de pollo empanizada, lechuga, tomate y mayonesa.', addedAt: '2025-01-12' },
+  { id: 'p04', name: 'Hot Dog Clásico', emoji: '🌭', image: '', category: 'Hot Dogs', price: 2.00, stock: 12, minStock: 4, prepMin: 4, available: true, desc: 'Salchicha, pan, cebolla, papitas y salsas a elección.', addedAt: '2025-01-05' },
+  { id: 'p05', name: 'Hot Dog Especial', emoji: '🌭', image: '', category: 'Hot Dogs', price: 2.75, stock: 5, minStock: 2, prepMin: 6, available: true, desc: 'Con tocineta, queso y salsas. El favorito de los viernes.', addedAt: '2025-01-20' },
+  { id: 'p06', name: 'Sándwich de Jamón y Queso', emoji: '🥪', image: '', category: 'Sándwiches', price: 2.50, stock: 9, minStock: 3, prepMin: 5, available: true, desc: 'Pan, jamón, queso, lechuga y tomate.', addedAt: '2025-01-05' },
+  { id: 'p07', name: 'Sándwich Mixto', emoji: '🥪', image: '', category: 'Sándwiches', price: 2.80, stock: 0, minStock: 2, prepMin: 6, available: true, desc: 'Jamón, quesillo y huevo. Rápido y completo.', addedAt: '2025-02-01' },
+  { id: 'p08', name: 'Salchipapa Pequeña', emoji: '🍟', image: '', category: 'Papas y Salchipapas', price: 2.50, stock: 10, minStock: 3, prepMin: 7, available: true, desc: 'Papas fritas con salchicha, salsas y mayonesa.', addedAt: '2025-01-05' },
+  { id: 'p09', name: 'Salchipapa Grande', emoji: '🍟', image: '', category: 'Papas y Salchipapas', price: 3.50, stock: 7, minStock: 2, prepMin: 9, available: true, desc: 'Porción grande para compartir.', addedAt: '2025-01-05' },
+  { id: 'p10', name: 'Papas Fritas', emoji: '🍿', image: '', category: 'Papas y Salchipapas', price: 1.75, stock: 4, minStock: 3, prepMin: 5, available: true, desc: 'Porción de papas fritas con sal y salsas.', addedAt: '2025-01-05' },
   { id: 'p11', name: 'Jugo Natural', emoji: '🧃', image: '', category: 'Bebidas', price: 1.50, stock: 15, minStock: 5, prepMin: 2, available: true, desc: 'Naranja, mora, piña o maracuyá.', addedAt: '2025-01-05' },
   { id: 'p12', name: 'Gaseosa 350ml', emoji: '🥤', image: '', category: 'Bebidas', price: 1.00, stock: 20, minStock: 6, prepMin: 1, available: true, desc: 'Bebida gaseosa fría.', addedAt: '2025-01-05' },
   { id: 'p13', name: 'Agua 600ml', emoji: '💧', image: '', category: 'Bebidas', price: 0.80, stock: 2, minStock: 5, prepMin: 1, available: true, desc: 'Agua natural.', addedAt: '2025-01-05' },
@@ -30,12 +40,6 @@ const DEFAULT_USERS = [
   { id: 'u6', name: 'Docente Demo', email: 'docente@intesud.edu.ec', username: 'docente.demo', role: 'user', cargo: 'Docente', aula: '—', active: false, registeredAt: '2025-04-01', lastAccess: recentDt(12) },
 ];
 
-const DEFAULT_SUPPLIERS = [
-  { id: 's1', name: 'Distribuciones Andinas', type: 'Bebidas', phone: '0991234567' },
-  { id: 's2', name: 'Panadería La Unión', type: 'Panadería', phone: '0987654321' },
-  { id: 's3', name: 'Snacks del Valle', type: 'Snacks', phone: '0998765432' },
-];
-
 const PASSWORDS = {
   'usuario@intesud.edu.ec': 'estudiante123',
   'adminbar@intesud.edu.ec': 'adminbar123',
@@ -58,6 +62,7 @@ const DEFAULT_CONFIG = {
 };
 
 const DEFAULT_AUDIT = [
+  { id: 'a1', user: 'Administradora Bar', action: 'Actualizó stock', target: 'Hamburguesa Clásica', time: '08:42' },
   { id: 'a2', user: 'Administrador Desarrollador', action: 'Modificó permisos', target: 'Administradora Bar', time: '08:50' },
   { id: 'a3', user: 'Estudiante Demo', action: 'Realizó pedido', target: 'PED-004', time: '09:05' },
   { id: 'a4', user: 'Administradora Bar', action: 'Cambió estado de pedido', target: 'PED-001 → Listo', time: '09:12' },
@@ -86,6 +91,11 @@ const DEFAULT_ORDERS = [
 
 const ROLE_LABELS = { user: 'Usuario institucional', adminbar: 'Administradora bar', admindev: 'Administrador desarrollador' };
 
+const DEFAULT_SUPPLIERS = [
+  { id: 's1', name: 'Distribuciones Andinas', type: 'Bebidas', phone: '0991234567' },
+  { id: 's2', name: 'Panadería La Unión', type: 'Panadería', phone: '0987654321' },
+];
+
 const PERMISSION_MATRIX = [
   { fn: 'Inicio', user: '✓', adminbar: '✓', admindev: '✓' },
   { fn: 'Menú', user: '✓', adminbar: '✓', admindev: '✓' },
@@ -98,122 +108,6 @@ const PERMISSION_MATRIX = [
   { fn: 'Roles y permisos', user: '—', adminbar: '—', admindev: '✓' },
   { fn: 'Auditoría', user: '—', adminbar: '—', admindev: '✓' },
 ];
-
-// --- Catálogo granular de permisos ---
-// Permisos con code único "modulo.accion", agrupados por categoría para la UI.
-const PERMISSIONS_CATALOG = [
-  { key: 'users', label: 'Usuarios', icon: '👥', perms: [
-    { code: 'users.view', label: 'Ver usuarios', desc: 'Listar y buscar usuarios' },
-    { code: 'users.create', label: 'Crear usuarios', desc: 'Alta de nuevos usuarios' },
-    { code: 'users.edit', label: 'Editar usuarios', desc: 'Modificar datos y rol' },
-    { code: 'users.delete', label: 'Eliminar usuarios', desc: 'Baja lógica / física' },
-    { code: 'users.toggle_status', label: 'Activar / Desactivar', desc: 'Cambiar estado activo/inactivo' },
-  ]},
-  { key: 'roles', label: 'Roles', icon: '🛡️', perms: [
-    { code: 'roles.view', label: 'Ver roles', desc: 'Consultar roles existentes' },
-    { code: 'roles.create', label: 'Crear roles', desc: 'Agregar roles personalizados' },
-    { code: 'roles.edit', label: 'Editar roles', desc: 'Modificar nombre/descripción' },
-    { code: 'roles.delete', label: 'Eliminar roles', desc: 'Quitar roles no usados' },
-  ]},
-  { key: 'permissions', label: 'Permisos', icon: '🔐', perms: [
-    { code: 'permissions.view', label: 'Ver permisos', desc: 'Consultar matriz por módulo' },
-    { code: 'permissions.edit', label: 'Editar permisos', desc: 'Activar/desactivar permisos por rol' },
-  ]},
-  { key: 'orders', label: 'Pedidos', icon: '📦', perms: [
-    { code: 'orders.view_all', label: 'Ver todos los pedidos', desc: 'Cola completa' },
-    { code: 'orders.view_own', label: 'Ver pedidos propios', desc: 'Solo propios' },
-    { code: 'orders.create', label: 'Crear pedidos', desc: 'Checkout y confirmación' },
-    { code: 'orders.update_status', label: 'Cambiar estado', desc: 'Confirmar / Preparar / Listo' },
-    { code: 'orders.cancel', label: 'Cancelar pedidos', desc: 'Anular en cola' },
-  ]},
-  { key: 'products', label: 'Productos', icon: '🍔', perms: [
-    { code: 'products.view', label: 'Ver productos', desc: 'Menú y catálogo' },
-    { code: 'products.create', label: 'Crear productos', desc: 'Alta de productos' },
-    { code: 'products.edit', label: 'Editar productos', desc: 'Modificar precio/stock' },
-    { code: 'products.delete', label: 'Eliminar productos', desc: 'Baja de productos' },
-  ]},
-  { key: 'stock', label: 'Stock', icon: '📊', perms: [
-    { code: 'stock.view', label: 'Ver stock', desc: 'Niveles y alertas' },
-    { code: 'stock.edit', label: 'Ajustar stock', desc: 'Incrementar / corregir' },
-  ]},
-  { key: 'payments', label: 'Pagos', icon: '💳', perms: [
-    { code: 'payments.view', label: 'Ver pagos', desc: 'Listar pagos por pedido' },
-    { code: 'payments.manage', label: 'Gestionar pagos', desc: 'Aprobar / rechazar comprobantes' },
-    { code: 'payments.refund', label: 'Reembolsar', desc: 'Procesar reembolsos' },
-  ]},
-  { key: 'reports', label: 'Reportes', icon: '📈', perms: [
-    { code: 'reports.view', label: 'Ver reportes', desc: 'Ventas del día / histórico' },
-    { code: 'reports.export', label: 'Exportar', desc: 'CSV / PDF' },
-  ]},
-  { key: 'delivery', label: 'Delivery', icon: '🛵', perms: [
-    { code: 'delivery.request', label: 'Solicitar delivery', desc: 'Pedir a aula/piso' },
-    { code: 'delivery.manage', label: 'Gestionar delivery', desc: 'Configurar pisos/aulas' },
-  ]},
-  { key: 'cafe', label: 'Cafetería', icon: '🏪', perms: [
-    { code: 'cafe.view', label: 'Ver info cafetería', desc: 'Datos, horarios, contacto' },
-    { code: 'cafe.edit', label: 'Editar cafetería', desc: 'Modificar información institucional' },
-  ]},
-  { key: 'config', label: 'Configuración', icon: '⚙️', perms: [
-    { code: 'config.view', label: 'Ver configuración', desc: 'Parámetros globales' },
-    { code: 'config.edit', label: 'Editar configuración', desc: 'Horarios, capacidad, flags' },
-  ]},
-  { key: 'audit', label: 'Auditoría', icon: '📜', perms: [
-    { code: 'audit.view', label: 'Ver auditoría', desc: 'Trazabilidad de acciones' },
-    { code: 'audit.export', label: 'Exportar auditoría', desc: 'Descargar logs' },
-  ]},
-  { key: 'dashboard', label: 'Dashboard', icon: '📊', perms: [
-    { code: 'dashboard.view', label: 'Ver dashboard', desc: 'KPIs y actividad reciente' },
-  ]},
-];
-
-// Defaults por rol (para que "Roles y permisos" no parta en blanco)
-const DEFAULT_ROLE_PERMISSIONS = {
-  user: {
-    'users.view': false, 'users.create': false, 'users.edit': false, 'users.delete': false, 'users.toggle_status': false,
-    'roles.view': false, 'roles.create': false, 'roles.edit': false, 'roles.delete': false,
-    'permissions.view': false, 'permissions.edit': false,
-    'orders.view_all': false, 'orders.view_own': true, 'orders.create': true, 'orders.update_status': false, 'orders.cancel': true,
-    'products.view': true, 'products.create': false, 'products.edit': false, 'products.delete': false,
-    'stock.view': false, 'stock.edit': false,
-    'payments.view': true, 'payments.manage': false, 'payments.refund': false,
-    'reports.view': false, 'reports.export': false,
-    'delivery.request': true, 'delivery.manage': false,
-    'cafe.view': true, 'cafe.edit': false,
-    'config.view': false, 'config.edit': false,
-    'audit.view': false, 'audit.export': false,
-    'dashboard.view': false,
-  },
-  adminbar: {
-    'users.view': false, 'users.create': false, 'users.edit': false, 'users.delete': false, 'users.toggle_status': false,
-    'roles.view': false, 'roles.create': false, 'roles.edit': false, 'roles.delete': false,
-    'permissions.view': false, 'permissions.edit': false,
-    'orders.view_all': true, 'orders.view_own': true, 'orders.create': false, 'orders.update_status': true, 'orders.cancel': true,
-    'products.view': true, 'products.create': true, 'products.edit': true, 'products.delete': true,
-    'stock.view': true, 'stock.edit': true,
-    'payments.view': true, 'payments.manage': true, 'payments.refund': true,
-    'reports.view': true, 'reports.export': true,
-    'delivery.request': false, 'delivery.manage': true,
-    'cafe.view': true, 'cafe.edit': false,
-    'config.view': true, 'config.edit': false,
-    'audit.view': false, 'audit.export': false,
-    'dashboard.view': true,
-  },
-  admindev: {
-    'users.view': true, 'users.create': true, 'users.edit': true, 'users.delete': true, 'users.toggle_status': true,
-    'roles.view': true, 'roles.create': true, 'roles.edit': true, 'roles.delete': true,
-    'permissions.view': true, 'permissions.edit': true,
-    'orders.view_all': true, 'orders.view_own': true, 'orders.create': true, 'orders.update_status': true, 'orders.cancel': true,
-    'products.view': true, 'products.create': true, 'products.edit': true, 'products.delete': true,
-    'stock.view': true, 'stock.edit': true,
-    'payments.view': true, 'payments.manage': true, 'payments.refund': true,
-    'reports.view': true, 'reports.export': true,
-    'delivery.request': true, 'delivery.manage': true,
-    'cafe.view': true, 'cafe.edit': true,
-    'config.view': true, 'config.edit': true,
-    'audit.view': true, 'audit.export': true,
-    'dashboard.view': true,
-  },
-};
 
 /* ---------- Utilidades de persistencia ---------- */
 
@@ -254,70 +148,11 @@ const Store = {
   set stockHistory(v) { this._cache['int_stockHistory'] = v; this.save('int_stockHistory', v); },
   get suppliers() { return this._get('int_suppliers', DEFAULT_SUPPLIERS, 'int_suppliers'); },
   set suppliers(v) { this._cache['int_suppliers'] = v; this.save('int_suppliers', v); },
-  // Permisos granulares por rol (persistidos) — clave: int_rolePerms
-  get rolePerms() {
-    const raw = this._get('int_rolePerms', null, 'int_rolePerms');
-    if (raw) return raw;
-    // seed con defaults profundos
-    const seed = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS));
-    this._cache['int_rolePerms'] = seed;
-    this.save('int_rolePerms', seed);
-    return seed;
-  },
-  set rolePerms(v) { this._cache['int_rolePerms'] = v; this.save('int_rolePerms', v); },
   reset() {
     this._cache = {};
-    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers', 'int_rolePerms'].forEach((k) => localStorage.removeItem(k));
+    ['int_products', 'int_orders', 'int_users', 'int_config', 'int_audit', 'int_stockHistory', 'int_suppliers'].forEach((k) => localStorage.removeItem(k));
   },
 };
-
-// Helpers de permisos — control de acceso en frontend
-function getRolePerms(role) {
-  const all = Store.rolePerms;
-  if (all[role]) return all[role];
-  return {};
-}
-function hasPerm(role, code) {
-  const perms = getRolePerms(role);
-  if (perms[code] !== undefined) return !!perms[code];
-  // fallback a defaults si el rol existe en defaults
-  if (DEFAULT_ROLE_PERMISSIONS[role] && DEFAULT_ROLE_PERMISSIONS[role][code] !== undefined) return !!DEFAULT_ROLE_PERMISSIONS[role][code];
-  return false;
-}
-function can(code) {
-  const u = (typeof Auth !== 'undefined' && Auth.current) ? Auth.current() : null;
-  if (!u) return false;
-  return hasPerm(u.role, code);
-}
-function setRolePerm(role, code, enabled) {
-  const all = Store.rolePerms;
-  if (!all[role]) all[role] = {};
-  all[role][code] = !!enabled;
-  Store.rolePerms = all;
-  try {
-    if (typeof fetch !== 'undefined') {
-      const token = (()=>{ try{ const s=JSON.parse(localStorage.getItem('int_session')); return s?.token||'';}catch(e){return ''}})();
-      fetch('/api/auth/permissions/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token?{Authorization:'Bearer '+token}:{}) },
-        body: JSON.stringify({ role, code, enabled: !!enabled }),
-      }).catch(()=>{});
-    }
-  } catch(e){}
-}
-function setRolePermsBulk(role, permsObj) {
-  const all = Store.rolePerms;
-  if (!all[role]) all[role] = {};
-  Object.entries(permsObj).forEach(([code, val])=> all[role][code]=!!val);
-  Store.rolePerms = all;
-  try {
-    fetch('/api/auth/permissions/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, permissions: permsObj }),
-    }).catch(()=>{});
-  } catch(e){}
-}
 
 function logAudit(action, target) {
   const audit = Store.audit;
