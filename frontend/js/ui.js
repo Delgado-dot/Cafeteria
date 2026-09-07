@@ -139,13 +139,11 @@ window.paymentMethodLabel = paymentMethodLabel;
 
 /* Categoría icono por categoría */
 function catIcon(cat) {
-  if (cat === 'Hamburguesas') return '🍔';
-  if (cat === 'Hot Dogs') return '🌭';
-  if (cat === 'Sándwiches') return '🥪';
-  if (cat === 'Papas y Salchipapas') return '🍟';
-  if (cat === 'Bebidas') return '🥤';
-  if (cat === 'Snacks') return '🍿';
-  return '🍽️';
+  const icons = {
+    'Alimentos Preparados': '🍔', 'Bebidas Frías': '🧃', 'Bebidas Calientes': '☕',
+    'Snacks': '🍿', 'Dulces': '🍪',
+  };
+  return icons[cat] || '🍽️';
 }
 window.catIcon = catIcon;
 
@@ -192,12 +190,11 @@ function svgIcon(name, cls='') {
 window.svgIcon = svgIcon;
 function catSvg(cat) {
   const map = {
-    'Hamburguesas': 'burger',
-    'Hot Dogs': 'hotdog',
-    'Sándwiches': 'sandwich',
-    'Papas y Salchipapas': 'fries',
-    'Bebidas': 'drink',
-    'Snacks': 'snack',
+    'Alimentos Preparados': 'burger',
+    'Bebidas Frías': 'drink',
+    'Bebidas Calientes': 'coffee',
+    'Snacks': 'food',
+    'Dulces': 'cookie',
   };
   return map[cat] || 'bag';
 }

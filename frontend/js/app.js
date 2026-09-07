@@ -20,8 +20,8 @@ window.clientIcon = clientIcon;
 
 function clientCatIcon(category) {
   const icons = {
-    Hamburguesas: 'food', 'Hot Dogs': 'food', Sándwiches: 'food', 'Papas y Salchipapas': 'food',
-    Bebidas: 'food', Snacks: 'food',
+    'Alimentos Preparados': 'restaurant', 'Bebidas Frías': 'coffee', 'Bebidas Calientes': 'coffee',
+    'Snacks': 'food', 'Dulces': 'cookie',
   };
   return clientIcon(icons[category] || 'food');
 }
@@ -430,12 +430,11 @@ function userMenuPage(el) {
 
 /* ---------- Detalle de producto ---------- */
 const ADDONS = {
-  'Hamburguesas': [{ name: 'Doble carne', price: 1.00 }, { name: 'Tocineta', price: 0.80 }, { name: 'Queso extra', price: 0.60 }, { name: 'Huevo', price: 0.50 }],
-  'Hot Dogs': [{ name: 'Tocineta', price: 0.60 }, { name: 'Queso extra', price: 0.50 }, { name: 'Papitas', price: 0.40 }],
-  'Sándwiches': [{ name: 'Huevo extra', price: 0.50 }, { name: 'Queso extra', price: 0.50 }],
-  'Papas y Salchipapas': [{ name: 'Queso extra', price: 0.60 }, { name: 'Salsa adicional', price: 0.30 }],
-  'Bebidas': [],
+  'Alimentos Preparados': [{ name: 'Doble carne', price: 1.00 }, { name: 'Tocineta', price: 0.80 }, { name: 'Queso extra', price: 0.60 }, { name: 'Huevo', price: 0.50 }, { name: 'Papitas', price: 0.40 }, { name: 'Salsa adicional', price: 0.30 }],
+  'Bebidas Frías': [],
+  'Bebidas Calientes': [],
   'Snacks': [],
+  'Dulces': [],
 };
 
 function userProductPage(el) {

@@ -22,12 +22,11 @@ window.lpIcon = lpIcon;
 /* Icono por categoría/producto (para la vista previa del menú). */
 function lpProductIcon(cat) {
   const map = {
-    Hamburguesas: 'burger',
-    'Hot Dogs': 'hotdog',
-    Sándwiches: 'sandwich',
-    'Papas y Salchipapas': 'fries',
-    Bebidas: 'drink',
-    Snacks: 'snack',
+    'Alimentos Preparados': 'restaurant',
+    'Bebidas Frías': 'drink',
+    'Bebidas Calientes': 'coffee',
+    'Snacks': 'food',
+    'Dulces': 'cookie',
   };
   return lpIcon(map[cat] || 'plate');
 }
