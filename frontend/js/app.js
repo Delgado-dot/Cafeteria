@@ -81,11 +81,7 @@ function handleRoute() {
   let r = (window.location.hash || '#home').replace('#', '');
   params.product = null;
 
-  // Cada ruta parte de un estado visual limpio. Antes, al cerrar sesion,
-  // el login/landing heredaba clases del panel anterior y algunos textos
-  // quedaban blancos sobre superficies claras.
-  document.body.classList.remove('is-landing', 'is-auth');
-  syncBodyClass();
+  document.body.classList.remove('is-landing');
 
   // Páginas públicas
   if (r === 'landing') return renderLanding();
@@ -239,79 +235,99 @@ function renderMobileNav(page, app) {
 
 /* ---------- Home (usuario) ---------- */
 function userHome(el) {
-  const cfg = Store.config;
-  const cap = capacityInfo();
-  const products = Store.products;
-  const featured = products.filter((p) => p.available).slice(0, 4);
-  const open = canPlaceOrder();
+  const app = el || $('#mainContent') || $('#app');
+  
+  (async () => {
+    // Cargar configuración y productos
+    const [configRes, productsRes] = await Promise.all([
+      ApiClient.get(API_ENDPOINTS.config.get),
+      ApiClient.get(API_ENDPOINTS.products.list),
+    ]);
+    
+    let cfg = Store.config;
+    let products = Store.products;
+    
+    if (configRes.ok) {
+      cfg = configRes.data;
+      Store.config = cfg;
+    }
+    
+    if (productsRes.ok) {
+      products = apiList(productsRes.data).map(normalizeApiProduct);
+      Store.products = products;
+    }
+    
+    const cap = await fetchCapacityInfo();
+    const featured = products.filter((p) => p.available && p.stock > 0).slice(0, 4);
+    const open = await canPlaceOrder();
 
-  let statusBanner = '';
-  if (!open) {
-    statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Cafetería cerrada.</div>Puedes ver el menú, pero no se aceptan pedidos en este momento<br>(Receso: ${cfg.breakStart} - ${cfg.breakEnd}).</div></div>`;
-  } else if (cap.stateCls === 'warning') {
-    statusBanner = `<div class="alert warning"><span class="a-ico">${clientIcon('warning')}</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
-  } else if (cap.stateCls === 'danger') {
-    statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('capacity')}</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta más tarde.</div></div>`;
-  }
+    let statusBanner = '';
+    if (!open) {
+      statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Cafetería cerrada.</div>Puedes ver el menú, pero no se aceptan pedidos en este momento<br>(Receso: ${cfg.break_start} - ${cfg.break_end}).</div></div>`;
+    } else if (cap.stateCls === 'warning') {
+      statusBanner = `<div class="alert warning"><span class="a-ico">${clientIcon('warning')}</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
+    } else if (cap.stateCls === 'danger') {
+      statusBanner = `<div class="alert danger"><span class="a-ico">${clientIcon('capacity')}</span><div><div class="a-title">Capacidad llena.</div>La capacidad de preparación está completa. Intenta más tarde.</div></div>`;
+    }
 
-  el.innerHTML = `
-    <div class="page-welcome">
-      <div class="home-hero">
-        <span class="hh-photo"></span>
-        <div class="hh-inner">
-          <div class="hh-copy">
-            <span class="hh-eyebrow">${clientIcon('food')} Bar INTESUD</span>
-            <div class="hh-welcome">BIENVENIDO ESTUDIANTE</div>
-            <h1>Tu comida, <span class="hl">lista para el receso</span>.</h1>
-            <p class="hh-sub">Pídelo en segundos y recógelo calientito en la bar o que te lo lleven a tu aula.</p>
-            <div class="hh-actions">
-              <a class="hh-btn" href="#" data-nav2="menu">${clientIcon('menu')} Ver el menú</a>
-              <a class="hh-btn ghost" href="#" data-nav2="cart">${clientIcon('cart')} Mi pedido</a>
-            </div>
-            <div class="hh-status">
-              <span class="dot" style="background:${open ? '#7df0b0' : '#ffb0a8'}"></span>
-              ${open ? 'Abierto · aceptando pedidos' : 'Cerrado ahora — mira el menú igual'}
+    app.innerHTML = `
+      <div class="page-welcome">
+        <div class="home-hero">
+          <span class="hh-photo"></span>
+          <div class="hh-inner">
+            <div class="hh-copy">
+              <span class="hh-eyebrow">${clientIcon('food')} Bar INTESUD</span>
+              <div class="hh-welcome">BIENVENIDO ESTUDIANTE</div>
+              <h1>Tu comida, <span class="hl">lista para el receso</span>.</h1>
+              <p class="hh-sub">Pídelo en segundos y recógelo calientito en la bar o que te lo lleven a tu aula.</p>
+              <div class="hh-actions">
+                <a class="hh-btn" href="#" data-nav2="menu">${clientIcon('menu')} Ver el menú</a>
+                <a class="hh-btn ghost" href="#" data-nav2="cart">${clientIcon('cart')} Mi pedido</a>
+              </div>
+              <div class="hh-status">
+                <span class="dot" style="background:${open ? '#7df0b0' : '#ffb0a8'}"></span>
+                ${open ? 'Abierto · aceptando pedidos' : 'Cerrado ahora — mira el menú igual'}
+              </div>
             </div>
           </div>
-
         </div>
       </div>
-    </div>
 
-    ${statusBanner}
+      ${statusBanner}
 
-    <div class="cat-banner">
-      <div class="cat-banner-inner">
-        <div class="cat-banner-left">
-          <div class="cat-s"><img src="assets/intesud-white-mark.png" alt="Logo oficial INTESUD"></div>
-          <div class="cat-titles">
-            <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
-            <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
+      <div class="cat-banner">
+        <div class="cat-banner-inner">
+          <div class="cat-banner-left">
+            <div class="cat-s"><img src="assets/intesud-white-mark.png" alt="Logo oficial INTESUD"></div>
+            <div class="cat-titles">
+              <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
+              <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
+            </div>
           </div>
+          <div class="cat-banner-deco" aria-hidden="true"></div>
         </div>
-        <div class="cat-banner-deco" aria-hidden="true"></div>
+        <div class="cat-pills">
+          ${CATEGORIES.map((c) => {
+            const n = products.filter((p) => p.category === c).length;
+            return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${clientCatIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+          }).join('')}
+        </div>
       </div>
-      <div class="cat-pills">
-        ${CATEGORIES.map((c) => {
-          const n = products.filter((p) => p.category === c).length;
-          return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${clientCatIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
-        }).join('')}
+
+      <div class="reco-head">
+        <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
+        <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
       </div>
-    </div>
+      <div class="reco-grid" id="featuredGrid"></div>`;
 
-    <div class="reco-head">
-      <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
-      <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
-    </div>
-    <div class="reco-grid" id="featuredGrid"></div>`;
+    $$('[data-nav2]', app).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav2); });
 
-  $$('[data-nav2]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); setRoute(a.dataset.nav2); });
+    const featuredEl = $('#featuredGrid', app);
+    if (!featured.length) featuredEl.innerHTML = emptyState(clientIcon('empty'), 'Sin productos', 'No hay productos disponibles por ahora.');
+    else featured.forEach((p) => featuredEl.appendChild(productCard(p, 'featured')));
 
-  const featuredEl = $('#featuredGrid');
-  if (!featured.length) featuredEl.innerHTML = emptyState(clientIcon('empty'), 'Sin productos', 'No hay productos disponibles por ahora.');
-  featured.forEach((p) => featuredEl.appendChild(productCard(p, 'featured')));
-
-  $$('[data-cat]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); sessionStorage.setItem('int_cat', a.dataset.cat); setRoute('menu'); });
+    $$('[data-cat]', app).forEach((a) => a.onclick = (e) => { e.preventDefault(); sessionStorage.setItem('int_cat', a.dataset.cat); setRoute('menu'); });
+  })();
 }
 
 /* ---------- Card de producto ---------- */
@@ -336,7 +352,7 @@ function productCard(p, size = '') {
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm ${soldOut ? '' : 'btn-outline'}" style="flex:1" ${soldOut ? 'disabled' : ''} data-view="${p.id}">Ver</button>
-        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} ${canPlaceOrder() ? '' : 'disabled'} data-add="${p.id}">${soldOut ? 'Agotado' : '+ Agregar'}</button>
+        <button class="btn btn-sm btn-primary" style="flex:1" ${soldOut ? 'disabled' : ''} data-add="${p.id}">${soldOut ? 'Agotado' : '+ Agregar'}</button>
       </div>
     </div>`;
 
@@ -344,8 +360,9 @@ function productCard(p, size = '') {
   if (view) view.onclick = () => setRoute('product/' + p.id);
   const add = $('[data-add]', card);
   if (add && !soldOut) {
-    add.onclick = () => {
-      if (!canPlaceOrder()) { toast('La cafetería está cerrada. No se aceptan pedidos.', 'warning'); return; }
+    add.onclick = async () => {
+      const canOrder = await canPlaceOrder();
+      if (!canOrder) { toast('La cafetería está cerrada. No se aceptan pedidos.', 'warning'); return; }
       const res = Cart.add(p, 1, [], '');
       if (res.ok) toast(p.name + ' agregado al carrito.', 'success');
       else toast(res.msg, 'warning');
@@ -358,152 +375,180 @@ function productCard(p, size = '') {
 const params = { product: null, cat: null };
 
 function userMenuPage(el) {
-  const products = Store.products;
-  let activeCat = sessionStorage.getItem('int_cat') || 'Todas';
-  let search = sessionStorage.getItem('int_search') || '';
-  sessionStorage.removeItem('int_search');
-  sessionStorage.removeItem('int_cat');
+  const app = el || $('#mainContent') || $('#app');
+  
+  // Cargar productos desde API
+  (async () => {
+    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+    let products = [];
+    
+    if (productsRes.ok) {
+      products = apiList(productsRes.data).map(normalizeApiProduct);
+      Store.products = products;
+    }
+    
+    let activeCat = sessionStorage.getItem('int_cat') || 'Todas';
+    let search = sessionStorage.getItem('int_search') || '';
+    sessionStorage.removeItem('int_search');
+    sessionStorage.removeItem('int_cat');
 
-  el.innerHTML = `
-    <div class="menu-page">
-      <div class="menu-lead">
-        <div>
-          <div class="ml-title">Nuestro <span>menú</span></div>
-          <div class="ml-sub">Todo rico y recién preparado en la cafetería.</div>
-        </div>
-        <span class="ml-badge" id="menuCount"></span>
-      </div>
-
-      <div class="menu-layout">
-        <aside class="menu-side">
-          <div class="menu-side-head">
-            <span class="menu-side-title">Categorías</span>
+    app.innerHTML = `
+      <div class="menu-page">
+        <div class="menu-lead">
+          <div>
+            <div class="ml-title">Nuestro <span>menú</span></div>
+            <div class="ml-sub">Todo rico y recién preparado en la cafetería.</div>
           </div>
-          <div id="menuChips" class="menu-side-list"></div>
-        </aside>
-        <div class="menu-main">
-          <div class="menu-toolbar">
-            <div class="mt-search">
-              <span class="leading-ico">${clientIcon('search')}</span>
-              <input class="input" id="menuSearch" placeholder="Buscar en el menú..." value="${esc(search)}">
+          <span class="ml-badge" id="menuCount"></span>
+        </div>
+
+        <div class="menu-layout">
+          <aside class="menu-side">
+            <div class="menu-side-head">
+              <span class="menu-side-title">Categorías</span>
             </div>
+            <div id="menuChips" class="menu-side-list"></div>
+          </aside>
+          <div class="menu-main">
+            <div class="menu-toolbar">
+              <div class="mt-search">
+                <span class="leading-ico">${clientIcon('search')}</span>
+                <input class="input" id="menuSearch" placeholder="Buscar en el menú..." value="${esc(search)}">
+              </div>
+            </div>
+            <div id="menuGrid" class="grid grid-3"></div>
           </div>
-          <div id="menuGrid" class="grid grid-3"></div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
 
-  const renderChips = () => {
-    const wrap = $('#menuChips');
-    const cats = ['Todas', ...CATEGORIES];
-    const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
-    wrap.innerHTML = cats.map((c) => `
-      <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-        <span class="cp-ico">${clientCatIcon(c)}</span>
-        <span class="cp-name">${esc(c)}</span>
-        <span class="cp-badge">${countFor(c)}</span>
-      </button>`).join('');
-    $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
-      $$('[data-cat]', wrap).forEach((x) => x.classList.remove('active'));
-      c.classList.add('active');
-      activeCat = c.dataset.cat;
-      render();
-    });
-  };
+    const renderChips = () => {
+      const wrap = $('#menuChips');
+      const cats = ['Todas', ...CATEGORIES];
+      const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
+      wrap.innerHTML = cats.map((c) => `
+        <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
+          <span class="cp-ico">${clientCatIcon(c)}</span>
+          <span class="cp-name">${esc(c)}</span>
+          <span class="cp-badge">${countFor(c)}</span>
+        </button>`).join('');
+      $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
+        $$('[data-cat]', wrap).forEach((x) => x.classList.remove('active'));
+        c.classList.add('active');
+        activeCat = c.dataset.cat;
+        render();
+      });
+    };
 
-  const render = () => {
-    let list = products;
-    if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
-    if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
-    const grid = $('#menuGrid');
-    const mc = $('#menuCount');
-    if (mc) mc.textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
-    if (!list.length) { grid.innerHTML = emptyState(clientIcon('search'), 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
-    grid.innerHTML = '';
-    list.forEach((p) => grid.appendChild(productCard(p)));
-  };
+    const render = () => {
+      let list = products;
+      if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
+      if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
+      const grid = $('#menuGrid');
+      const mc = $('#menuCount');
+      if (mc) mc.textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
+      if (!list.length) { grid.innerHTML = emptyState(clientIcon('search'), 'Sin resultados', 'No encontramos productos con ese criterio.'); return; }
+      grid.innerHTML = '';
+      list.forEach((p) => grid.appendChild(productCard(p)));
+    };
 
-  $('#menuSearch').addEventListener('input', (e) => { search = e.target.value; render(); });
-  renderChips();
-  render();
+    $('#menuSearch').addEventListener('input', (e) => { search = e.target.value; render(); });
+    renderChips();
+    render();
+  })();
 }
 
 /* ---------- Detalle de producto ---------- */
-const ADDONS = {
-  'Hamburguesas': [{ name: 'Doble carne', price: 1.00 }, { name: 'Tocineta', price: 0.80 }, { name: 'Queso extra', price: 0.60 }, { name: 'Huevo', price: 0.50 }],
-  'Hot Dogs': [{ name: 'Tocineta', price: 0.60 }, { name: 'Queso extra', price: 0.50 }, { name: 'Papitas', price: 0.40 }],
-  'Sándwiches': [{ name: 'Huevo extra', price: 0.50 }, { name: 'Queso extra', price: 0.50 }],
-  'Papas y Salchipapas': [{ name: 'Queso extra', price: 0.60 }, { name: 'Salsa adicional', price: 0.30 }],
-  'Bebidas': [],
-  'Snacks': [],
-};
+
+async function fetchProductAddons(productId) {
+  try {
+    const response = await ApiClient.get(API_ENDPOINTS.products.detail(productId));
+    if (response.ok && response.data) {
+      return response.data.addons || [];
+    }
+  } catch (error) {
+    console.error('Error fetching addons:', error);
+  }
+  return [];
+}
 
 function userProductPage(el) {
-  const p = Store.products.find((x) => x.id === params.product);
-  if (!p) { setRoute('menu'); return; }
-  const soldOut = !p.available || p.stock === 0;
-  const addons = ADDONS[p.category] || [];
-  const maxQty = p.stock;
+  const app = el || $('#mainContent') || $('#app');
 
-  el.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Volver al menú</button>
-    <div class="card card-flush" style="overflow:hidden">
-      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
-        <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
-          ${clientProductIcon(p)}
-          ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
-        </div>
-        <div style="padding:var(--sp-6)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <span class="badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>
-            ${p.stock === 0 ? '<span class="badge badge-danger">AGOTADO</span>' : p.stock <= p.minStock ? '<span class="badge badge-warning">Stock bajo</span>' : `<span class="badge badge-success">Disponible · ${p.stock} restantes</span>`}
-          </div>
-          <h1>${esc(p.name)}</h1>
-          <p class="muted" style="margin:10px 0 18px;max-width:520px">${esc(p.desc)}</p>
-          <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px">
-            <span style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(p.price)}</span>
-            <span class="small muted">⏱ Tiempo estimado: <b>${p.prepMin} min</b></span>
-          </div>
+  (async () => {
+    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+    let products = Store.products;
+    if (productsRes.ok) {
+      products = apiList(productsRes.data).map(normalizeApiProduct);
+      Store.products = products;
+    }
 
-          <div class="field"><label class="label">Cantidad (máx ${p.stock || 0})</label>
-            <div class="qty-stepper">
-              <button id="qdDec">−</button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
+    const p = products.find((product) => String(product.id) === String(params.product));
+    if (!p) { setRoute('menu'); return; }
+    const soldOut = !p.available || p.stock === 0;
+    const addons = p.addons || [];
+    const maxQty = p.stock;
+    const canOrder = await canPlaceOrder();
+
+    app.innerHTML = `
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Volver al menú</button>
+      <div class="card card-flush" style="overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
+          <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
+            ${clientProductIcon(p)}
+            ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
+          </div>
+          <div style="padding:var(--sp-6)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <span class="badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>
+              ${p.stock === 0 ? '<span class="badge badge-danger">AGOTADO</span>' : p.stock <= (p.minStock || 3) ? '<span class="badge badge-warning">Stock bajo</span>' : `<span class="badge badge-success">Disponible · ${p.stock} restantes</span>`}
             </div>
-          </div>
-
-          ${addons.length ? `
-          <div class="field">
-            <label class="label">Adicionales</label>
-            <div id="addonList" style="display:flex;flex-direction:column;gap:10px">
-              ${addons.map((a, i) => `<label class="checkbox-row"><input type="checkbox" data-addon="${i}"> <span>${esc(a.name)}</span> <span class="muted-3">(+${money(a.price)})</span></label>`).join('')}
+            <h1>${esc(p.name)}</h1>
+            <p class="muted" style="margin:10px 0 18px;max-width:520px">${esc(p.desc)}</p>
+            <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px">
+              <span style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(p.price)}</span>
+              <span class="small muted">⏱ Tiempo estimado: <b>${p.prepMin} min</b></span>
             </div>
-          </div>` : ''}
 
-          <div class="field"><label class="label">Observaciones</label><textarea class="input" id="prodNote" placeholder="Ej: sin cebolla, extra salsa..."></textarea></div>
+            <div class="field"><label class="label">Cantidad (máx ${p.stock || 0})</label>
+              <div class="qty-stepper">
+                <button id="qdDec">−</button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
+              </div>
+            </div>
 
-          ${!canPlaceOrder() ? `<div class="alert danger" style="margin:14px 0"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">La cafetería está cerrada.</div>Puedes ver el menú pero no realizar pedidos.</div></div>` : ''}
+            ${addons.length ? `
+            <div class="field">
+              <label class="label">Adicionales</label>
+              <div id="addonList" style="display:flex;flex-direction:column;gap:10px">
+                ${addons.map((a, i) => `<label class="checkbox-row"><input type="checkbox" data-addon="${i}"> <span>${esc(a.name)}</span> <span class="muted-3">(+${money(a.price)})</span></label>`).join('')}
+              </div>
+            </div>` : ''}
 
-          <button class="btn btn-primary btn-lg btn-block" id="btnAdd" ${soldOut || !canPlaceOrder() ? 'disabled' : ''}>
-            ${soldOut ? 'Producto agotado' : 'Agregar al carrito'}
-          </button>
+            <div class="field"><label class="label">Observaciones</label><textarea class="input" id="prodNote" placeholder="Ej: sin cebolla, extra salsa..."></textarea></div>
+
+            ${!canOrder ? `<div class="alert danger" style="margin:14px 0"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">La cafetería está cerrada.</div>Puedes ver el menú pero no realizar pedidos.</div></div>` : ''}
+
+            <button class="btn btn-primary btn-lg btn-block" id="btnAdd" ${soldOut || !canOrder ? 'disabled' : ''}>
+              ${soldOut ? 'Producto agotado' : 'Agregar al carrito'}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
 
   let qty = 1;
-  const qv = $('#qdVal');
-  const setBtnState = () => { $('#qdDec').disabled = qty <= 1; $('#qdInc').disabled = qty >= maxQty; };
+  const qv = $('#qdVal', app);
+  const setBtnState = () => { $('#qdDec', app).disabled = qty <= 1; $('#qdInc', app).disabled = qty >= maxQty; };
   setBtnState();
-  $('#qdInc').onclick = () => { if (qty < maxQty) { qty++; qv.textContent = qty; setBtnState(); } else toast('Stock máximo: ' + maxQty, 'warning'); };
-  $('#qdDec').onclick = () => { if (qty > 1) { qty--; qv.textContent = qty; setBtnState(); } };
+  $('#qdInc', app).onclick = () => { if (qty < maxQty) { qty++; qv.textContent = qty; setBtnState(); } else toast('Stock máximo: ' + maxQty, 'warning'); };
+  $('#qdDec', app).onclick = () => { if (qty > 1) { qty--; qv.textContent = qty; setBtnState(); } };
 
-  $('#btnAdd').onclick = () => {
-    const addonsSel = $$('#addonList input:checked').map((c) => addons[parseInt(c.dataset.addon)]);
-    const note = $('#prodNote').value.trim();
+  $('#btnAdd', app).onclick = () => {
+    const addonsSel = $$('#addonList input:checked', app).map((c) => addons[parseInt(c.dataset.addon)]);
+    const note = $('#prodNote', app).value.trim();
     const res = Cart.add(p, qty, addonsSel, note);
     if (res.ok) { toast(p.name + ' agregado al carrito.', 'success'); setRoute('cart'); }
     else toast(res.msg, 'warning');
   };
+  })();
 }
 
 /* ---------- Inicialización ---------- */
@@ -514,13 +559,12 @@ function syncBodyClass() {
   if (u && (u.role === 'adminbar' || u.role === 'admindev')) {
     document.body.classList.add('is-admin');
     document.body.classList.toggle('is-adminbar', u.role === 'adminbar');
-    document.body.classList.toggle('is-admindev', u.role === 'admindev');
     document.body.classList.remove('has-bottom-nav');
   } else if (u) {
     document.body.classList.add('has-bottom-nav');
-    document.body.classList.remove('is-admin', 'is-adminbar', 'is-admindev');
+    document.body.classList.remove('is-admin', 'is-adminbar');
   } else {
-    document.body.classList.remove('has-bottom-nav', 'is-admin', 'is-adminbar', 'is-admindev');
+    document.body.classList.remove('has-bottom-nav', 'is-admin', 'is-adminbar');
   }
 }
 window.syncBodyClass = syncBodyClass;

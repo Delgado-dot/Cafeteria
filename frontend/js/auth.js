@@ -1,36 +1,74 @@
 /* ============================================================
-   auth.js — Inicio de sesión, recuperación de contraseña, sesión
+   auth.js — Inicio de sesión, recuperación de contraseña, sesión (API real)
    ============================================================ */
 
 const Auth = {
-  current() { return Store.load('int_session', null); },
-  set(u) { Store.save('int_session', u); },
-  clear() { localStorage.removeItem('int_session'); },
-
-  login(email, password, remember) {
-    const emailUser = (email || '').trim().toLowerCase();
-    if (!emailUser) return { ok: false, field: 'email', msg: 'Ingresa tu usuario o correo.' };
-    let user = null;
-    try {
-      user = Store.users.find((u) => u && u.email && u.email.toLowerCase() === emailUser) || null;
-    } catch (e) {
-      return { ok: false, field: 'email', msg: 'No se pudo verificar el usuario. Intenta de nuevo.' };
-    }
-    if (!user) return { ok: false, field: 'email', msg: 'Usuario no encontrado.' };
-    if (!user.active) return { ok: false, field: 'email', msg: 'Este usuario está desactivado.' };
-    const realPass = PASSWORDS[user.email];
-    if (realPass === undefined) return { ok: false, field: 'password', msg: 'Este usuario aún no tiene contraseña asignada.' };
-    if (realPass !== password) return { ok: false, field: 'password', msg: 'Contraseña incorrecta.' };
-    const now = new Date();
-    user.lastAccess = now.toISOString().slice(0, 10) + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    Store.users = Store.users;
-    this.set({ id: user.id, name: user.name, email: user.email, role: user.role, cargo: user.cargo, aula: user.aula });
-    if (remember) Store.save('int_remember', email);
-    logAudit('Inició sesión', user.name);
-    return { ok: true, user };
+  // Obtener usuario actual desde localStorage
+  current() {
+    return Store.load('int_session', null);
   },
-
-  logout() { this.clear(); logAudit('Cerró sesión', ''); },
+  
+  // Guardar usuario actual
+  set(u) {
+    Store.save('int_session', u);
+  },
+  
+  // Limpiar sesión
+  clear() {
+    localStorage.removeItem('int_session');
+    ApiClient.clearTokens();
+  },
+  
+  // Login contra el backend real
+  async login(usernameOrEmail, password, remember) {
+    try {
+      // Intentar login con el backend
+      const response = await ApiClient.post(API_ENDPOINTS.auth.login, {
+        username: usernameOrEmail,
+        password: password,
+      }, false); // No incluir autorización en login
+      
+      if (!response.ok) {
+        // Manejar errores del servidor
+        const errorMsg = response.data?.detail || response.data?.password?.[0] || response.data?.username?.[0] || response.error || 'Error al iniciar sesión';
+        return { ok: false, field: 'email', msg: errorMsg };
+      }
+      
+      // Guardar tokens JWT
+      if (response.data.access) ApiClient.setToken(response.data.access);
+      if (response.data.refresh) ApiClient.setRefreshToken(response.data.refresh);
+      
+      // Obtener información del usuario autenticado
+      const meResponse = await ApiClient.get(API_ENDPOINTS.auth.me);
+      if (!meResponse.ok) {
+        return { ok: false, field: 'email', msg: 'Error al obtener información del usuario' };
+      }
+      
+      const user = meResponse.data;
+      const sessionData = {
+        id: user.id,
+        name: `${user.first_name} ${user.last_name}`.trim() || user.username,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        cargo: user.cargo,
+        aula: user.aula,
+        avatar: user.avatar,
+      };
+      
+      this.set(sessionData);
+      if (remember) Store.save('int_remember', usernameOrEmail);
+      
+      return { ok: true, user: sessionData };
+    } catch (error) {
+      return { ok: false, field: 'email', msg: error.message || 'Error de conexión' };
+    }
+  },
+  
+  // Logout
+  logout() {
+    this.clear();
+  },
 };
 
 /* ---------- Iconos compartidos con Admin Bar ---------- */
@@ -83,16 +121,6 @@ function renderLogin() {
           </div>
           <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
         </form>
-
-        <div class="divider"></div>
-        <details class="demo-creds" style="font-size:var(--fs-sm)">
-          <summary style="cursor:pointer;color:var(--text-2);font-weight:var(--fw-semibold)">Ver credenciales de demostración</summary>
-          <div class="demo-list" style="margin-top:10px;display:grid;gap:8px;color:var(--text-2)">
-            <div><b>Usuario institucional</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">usuario@intesud.edu.ec</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">estudiante123</code></div>
-            <div><b>Administradora bar</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">adminbar@intesud.edu.ec</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">adminbar123</code></div>
-            <div><b>Admin desarrollador</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">developer@system.local</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">developer123</code></div>
-          </div>
-        </details>
       </div>
     </div>
   </div>`;
@@ -113,7 +141,7 @@ function renderLogin() {
   });
   $('#li_clear').addEventListener('click', () => { $('#li_email').value = ''; setErr('email', ''); });
 
-  $('#loginForm').addEventListener('submit', (e) => {
+  $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = $('#li_email').value.trim();
     const pass = $('#li_pass').value;
@@ -125,34 +153,31 @@ function renderLogin() {
 
     const btn = $('#li_submit');
     btn.disabled = true; btn.textContent = 'Ingresando...';
-    setTimeout(() => {
-      try {
-        const res = Auth.login(email, pass, $('#li_remember').checked);
-        if (res.ok) {
-          toast('¡Bienvenido, ' + res.user.name + '!', 'success');
-          // Redirección por rol: cada perfil aterriza en su propia interfaz.
-          const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
-            : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
-          setTimeout(() => route(dest), 400);
-        } else {
-          setErr(res.field, res.msg);
-          toast(res.msg, 'error');
-          btn.disabled = false; btn.textContent = 'Iniciar sesión';
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        setErr('password', 'Ocurrió un error inesperado. Intenta de nuevo.');
-        toast('Ocurrió un error al iniciar sesión.', 'error');
+    
+    try {
+      const res = await Auth.login(email, pass, $('#li_remember').checked);
+      if (res.ok) {
+        toast('¡Bienvenido, ' + res.user.name + '!', 'success');
+        // Redirección por rol: cada perfil aterriza en su propia interfaz.
+        const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
+          : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
+        setTimeout(() => route(dest), 400);
+      } else {
+        setErr(res.field, res.msg);
+        toast(res.msg, 'error');
         btn.disabled = false; btn.textContent = 'Iniciar sesión';
       }
-    }, 700);
+    } catch (error) {
+      setErr('email', 'Error de conexión con el servidor');
+      toast('Error de conexión. Verifica que el servidor esté disponible.', 'error');
+      btn.disabled = false; btn.textContent = 'Iniciar sesión';
+    }
   });
 }
 
 /* ============================================================
-   RECUPERACIÓN DE CONTRASEÑA (simulada, 6 pasos)
+   RECUPERACIÓN DE CONTRASEÑA
    ============================================================ */
-const RECOVERY_CODE = '2024';
 
 function renderForgot() {
   const app = $('#app');
@@ -161,108 +186,18 @@ function renderForgot() {
     <div class="login-brand">
       <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
-      <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
+      <p>Funcionalidad en desarrollo</p>
     </div>
     <div class="login-section">
       <div class="login-card">
         <div class="login-head">
-          <div id="recoverStepInd"></div>
-          <h2 style="margin-top:16px" id="recoverTitle"></h2>
-          <p id="recoverSub"></p>
+          <h2>Contacta al administrador</h2>
+          <p>Para recuperar tu contraseña, comunícate con el administrador de la cafetería.</p>
         </div>
-        <div id="recoverBody"></div>
+        <button class="btn btn-primary btn-block" id="backBtn">Volver al login</button>
       </div>
     </div>
   </div>`;
-  recoverStep(1);
-}
-
-function recoverStepInd(step) {
-  const steps = ['Correo', 'Código', 'Nueva contraseña', '¡Listo!'];
-  return steps.map((s, i) => {
-    const n = i + 1;
-    const cls = n < step ? 'done' : n === step ? 'current' : '';
-    return `<span class="badge ${cls === 'done' ? 'badge-success' : cls === 'current' ? 'badge-primary' : 'badge-outline'}" style="margin-right:6px">${n}. ${s}</span>`;
-  }).join('');
-}
-
-function recoverStep(step, ctx = { email: '' }) {
-  const body = $('#recoverBody');
-  const title = $('#recoverTitle');
-  const sub = $('#recoverSub');
-  const ind = $('#recoverStepInd');
-  if (!body) return;
-  ind.innerHTML = recoverStepInd(step);
-
-  const errBox = (id) => `<div class="input-err-msg" id="${id}"></div>`;
-
-  if (step === 1) {
-    title.textContent = 'Ingresa tu correo';
-    sub.textContent = 'Te enviaremos un código de verificación (simulado).';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Usuario o correo</label>
-        <input class="input" type="text" id="rvEmail" placeholder="usuario@intesud.edu.ec">
-        ${errBox('rvEmailErr')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvNext">Enviar código</button>`;
-    $('#rvNext').onclick = () => {
-      const email = $('#rvEmail').value.trim();
-      const err = $('#rvEmailErr');
-      if (!email) { err.textContent = 'Ingresa tu correo.'; return; }
-      err.textContent = '';
-      if (!Store.users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-        err.textContent = 'Usuario no encontrado en el sistema.';
-        return;
-      }
-      recoverStep(2, { email });
-    };
-  } else if (step === 2) {
-    title.textContent = 'Código de verificación';
-    sub.textContent = 'Ingresa el código de 4 dígitos enviado a tu correo.';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Código de verificación</label>
-        <input class="input" type="text" id="rvCode" inputmode="numeric" maxlength="4" placeholder="••••">
-        ${errBox('rvCodeErr')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvVerify">Validar código</button>`;
-    $('#rvVerify').onclick = () => {
-      const code = $('#rvCode').value.trim();
-      const err = $('#rvCodeErr');
-      if (!code) { err.textContent = 'El código no puede estar vacío.'; return; }
-      if (code !== RECOVERY_CODE) { err.textContent = 'Código incorrecto. Verifica e intenta de nuevo.'; return; }
-      recoverStep(3, ctx);
-    };
-  } else if (step === 3) {
-    title.textContent = 'Nueva contraseña';
-    sub.textContent = 'Crea tu nueva contraseña (mínimo 6 caracteres).';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Nueva contraseña</label>
-        <input class="input" type="password" id="rvP1" placeholder="••••••">
-        ${errBox('rvP1Err')}
-      </div>
-      <div class="field">
-        <label class="label">Confirmar contraseña</label>
-        <input class="input" type="password" id="rvP2" placeholder="••••••">
-        ${errBox('rvP2Err')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvSave">Guardar nueva contraseña</button>`;
-    $('#rvSave').onclick = () => {
-      const p1 = $('#rvP1').value; const p2 = $('#rvP2').value;
-      const e1 = $('#rvP1Err'); const e2 = $('#rvP2Err');
-      e1.textContent = ''; e2.textContent = '';
-      if (p1.length < 6) { e1.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-      if (p1 !== p2) { e2.textContent = 'Las contraseñas no coinciden.'; return; }
-      recoverStep(4, ctx);
-    };
-  } else if (step === 4) {
-    title.textContent = '¡Contraseña actualizada!';
-    sub.textContent = 'Tu contraseña ha sido restablecida correctamente.';
-    body.innerHTML = `
-      <div class="empty-state" style="padding:20px 0">${AUTH_ICO.done}</div>
-      <button class="btn btn-primary btn-block" id="rvDone">Ir a iniciar sesión</button>`;
-    $('#rvDone').onclick = () => route('login');
-  }
+  
+  $('#backBtn').onclick = () => route('login');
 }

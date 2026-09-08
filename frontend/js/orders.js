@@ -8,14 +8,55 @@ const ORDER_FLOW_LABEL = { queue: 'En cola', confirmed: 'Confirmado', prep: 'En 
 function myOrders() {
   const u = currentUser();
   if (!u) return [];
+  // Nota: Esta función se mantiene por compatibilidad, pero los datos reales vienen de loadMyOrders()
   return Store.orders.filter((o) => o.userEmail === u.email);
 }
 window.myOrders = myOrders;
 
-function renderOrders(el) {
+function mapApiOrder(order) {
+  return {
+    id: order.order_number || order.id,
+    apiId: order.id,
+    userEmail: order.user_email,
+    userName: order.user_name,
+    date: order.created_at ? order.created_at.slice(0, 10) : '',
+    time: order.created_at ? new Date(order.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '',
+    items: (order.items || []).map((item) => ({
+      productId: item.product_id,
+      qty: item.quantity,
+      name: item.product_name,
+      price: Number(item.unit_price),
+      addons: item.addons || [],
+    })),
+    total: Number(order.total),
+    status: order.status,
+    priority: order.priority,
+    delivery: order.delivery_method,
+    deliveryInfo: order.delivery_info,
+    paymentStatus: order.payment_status,
+    prepMin: order.estimated_time,
+    note: order.note || '',
+  };
+}
+
+async function loadMyOrders() {
+  const response = await ApiClient.get(API_ENDPOINTS.orders.list);
+  if (!response.ok) return { ok: false, orders: [], error: response.data?.detail || response.error };
+  const rawOrders = Array.isArray(response.data) ? response.data : (response.data.results || []);
+  const orders = rawOrders.map(mapApiOrder);
+  Store.orders = orders;
+  return { ok: true, orders };
+}
+
+async function renderOrders(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
-  const orders = myOrders();
+  const response = await loadMyOrders();
+  if (!response.ok) {
+    app.innerHTML = emptyState(clientIcon('danger'), 'No se pudieron cargar tus pedidos', 'Verifica la conexión con el servidor e inténtalo de nuevo.');
+    return;
+  }
+  const orders = response.orders;
 
   const active = orders.filter((o) => ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const history = orders.filter((o) => ['delivered', 'cancelled', 'nopickup', 'refunded'].includes(o.status));
@@ -110,11 +151,8 @@ function orderTrackingCard(o) {
     cancelBtn.onclick = async () => {
       const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido? Solo puedes cancelar mientras no esté en preparación.', 'Cancelar pedido', true);
       if (!ok) return;
-      o.status = 'cancelled';
-      o.eta = 'Cancelado';
-      o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
-      Store.orders = Store.orders;
-      logAudit('Canceló pedido', o.id);
+      const response = await ApiClient.patch(API_ENDPOINTS.orders.detail(o.apiId), { status: 'cancelled' });
+      if (!response.ok) { toast(response.data?.detail || 'No se pudo cancelar el pedido.', 'error'); return; }
       toast('Pedido cancelado.', 'success');
       renderOrders();
     };
@@ -173,8 +211,9 @@ function showOrderDetail(o) {
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
     const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
     if (!ok) return;
-    o.status = 'cancelled'; o.eta = 'Cancelado'; o.paymentStatus = o.payment !== 'efectivo' ? 'refunded' : o.paymentStatus;
-    logAudit('Canceló pedido', o.id); d.close(); toast('Pedido cancelado.', 'success'); renderOrders();
+    const response = await ApiClient.patch(API_ENDPOINTS.orders.detail(o.apiId), { status: 'cancelled' });
+    if (!response.ok) { toast(response.data?.detail || 'No se pudo cancelar el pedido.', 'error'); return; }
+    d.close(); toast('Pedido cancelado.', 'success'); renderOrders();
   });
 }
 window.showOrderDetail = showOrderDetail;
@@ -278,16 +317,18 @@ function changePasswordModal() {
       <button class="btn" data-save>Guardar</button>
     </div>`);
   $('[data-close]', ov).onclick = () => ov.remove();
-  $('[data-save]', ov).onclick = () => {
+  $('[data-save]', ov).onclick = async () => {
     const a = $('#cpOld', ov).value, b = $('#cpNew', ov).value, c = $('#cpNew2', ov).value;
     const err = $('#cpErr', ov);
     if (!a || !b || !c) { err.textContent = 'Completa todos los campos.'; return; }
-    if (PASSWORDS[currentUser().email] !== a) { err.textContent = 'La contraseña actual no es correcta.'; return; }
-    if (b.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+    if (b.length < 8) { err.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
     if (b !== c) { err.textContent = 'Las contraseñas no coinciden.'; return; }
-    PASSWORDS[currentUser().email] = b;
+    const response = await ApiClient.post(API_ENDPOINTS.auth.password, { current_password: a, new_password: b });
+    if (!response.ok) {
+      err.textContent = response.data?.current_password?.[0] || response.data?.new_password?.[0] || response.data?.detail || 'No se pudo actualizar la contraseña.';
+      return;
+    }
     toast('Contraseña actualizada.', 'success');
-    logAudit('Cambió su contraseña', '');
     ov.remove();
   };
 }

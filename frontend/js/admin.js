@@ -38,7 +38,7 @@ const paymentStatusLabels = {
 function isPendingPayment(order) {
   return order.paymentStatus === 'pending' && ['queue', 'confirmed', 'prep', 'ready'].includes(order.status);
 }
-function getPendingPayments(orders = Store.orders) {
+function getPendingPayments(orders = []) {
   return orders.filter(isPendingPayment);
 }
 
@@ -145,7 +145,7 @@ function animateSalesMetrics(el) {
   });
 }
 
-function renderBarAdmin(page, params) {
+async function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
   const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
@@ -153,9 +153,16 @@ function renderBarAdmin(page, params) {
   const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
   syncBodyClass();
 
-  const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
-  const prepCount = Store.orders.filter((o) => o.status === 'prep').length;
-  const readyCount = Store.orders.filter((o) => o.status === 'ready').length;
+  let queueCount = 0, prepCount = 0, readyCount = 0;
+  try {
+    const r = await ApiClient.get(API_ENDPOINTS.orders.all);
+    if (r.ok) {
+      const orders = apiList(r.data);
+      queueCount = orders.filter((o) => o.status === 'queue').length;
+      prepCount = orders.filter((o) => o.status === 'prep').length;
+      readyCount = orders.filter((o) => o.status === 'ready').length;
+    }
+  } catch(e) {}
 
   app.innerHTML = `
     <div class="admin-layout">
@@ -319,9 +326,14 @@ const renderers = {
   setTimeout(() => renderers[sec](content, params), 260);
 }
 
-function renderCafePill(el) {
-  const cfg = Store.config;
-  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${cfg.cafeOpen ? '🟢' : '🔴'}</span> ${cfg.cafeOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
+async function renderCafePill(el) {
+  try {
+    const res = await ApiClient.get(API_ENDPOINTS.config.get);
+    const isOpen = res.ok ? !!res.data.is_open : true;
+    el.innerHTML = `<span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
+  } catch (e) {
+    el.innerHTML = `<span class="badge badge-success"><span class="ico">🟢</span> ABIERTA</span>`;
+  }
 }
 
 function renderAdminTabs(el, tabs, initialTab) {
@@ -351,9 +363,30 @@ function barSalesTabs(el, initialTab) {
   ], initialTab);
 }
 
-function barConfigTabs(el, initialTab) {
-  // Layout tipo Settings: 2 columnas (izquierda Horarios, derecha Estado) en vez de pestañas separadas
-  const cfg = Store.config;
+async function barConfigTabs(el, initialTab) {
+  el.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div></div>`;
+  const [configRes, productsRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.config.get),
+    ApiClient.get(API_ENDPOINTS.products.list),
+  ]);
+  if (!configRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudo cargar la configuración');
+    return;
+  }
+  const raw = configRes.data || {};
+  const cfg = {
+    orderOpen: (raw.order_open_time || '09:00').slice(0,5),
+    orderClose: (raw.order_close_time || '09:45').slice(0,5),
+    breakStart: (raw.break_start || '10:00').slice(0,5),
+    breakEnd: (raw.break_end || '10:15').slice(0,5),
+    capacity: String(raw.total_capacity ?? 10),
+    cafeOpen: !!raw.is_open,
+    name: raw.name || 'Cafetería INTESUD',
+    description: raw.description || '',
+    enabledPayments: raw.enabledPayments || { deuna: true, transferencia: true, efectivo: true },
+    _raw: raw,
+  };
+  const products = productsRes.ok ? apiList(productsRes.data).map(normalizeApiProduct) : [];
   const isOpen = cfg.cafeOpen;
   const originalValues = {
     orderOpen: cfg.orderOpen,
@@ -364,7 +397,6 @@ function barConfigTabs(el, initialTab) {
   };
   let hasUnsavedChanges = false;
 
-  // Inicializa métodos de pago habilitados si no existen
   if (!cfg.enabledPayments) cfg.enabledPayments = { deuna: true, transferencia: true, efectivo: true };
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
@@ -408,7 +440,7 @@ function barConfigTabs(el, initialTab) {
             <div style="font-weight:700;margin-bottom:8px">Categorías de productos</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               ${CATEGORIES.map((c) => {
-                const cnt = Store.products.filter((p) => p.category === c).length;
+                const cnt = products.filter((p) => p.category === c).length;
                 return `<span class="badge badge-primary" style="font-size:13px;padding:6px 10px">${esc(c)} · ${cnt}</span>`;
               }).join('')}
             </div>
@@ -426,7 +458,6 @@ function barConfigTabs(el, initialTab) {
         </div>
       </div>
     </div>
-  `;
 
   const btnSave = $('#btnSaveConfigHours', el);
   const indicator = $('#unsavedIndicator', el);
@@ -452,17 +483,21 @@ function barConfigTabs(el, initialTab) {
   if (btnToggle) btnToggle.onclick = () => confirmToggleState(!isOpen, btnToggle);
 }
 
-function barSuppliers(el) {
+async function barSuppliers(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-store"></span> Proveedores</h1><button class="btn btn-primary btn-sm" id="btnAddSupplierPage"><i class="bx bx-plus" style="margin-right:4px"></i>Agregar proveedor</button></div>
-    <div class="card">
-      <div id="suppliersListPage"></div>
-    </div>
+    <div class="card"><div id="suppliersListPage"><div class="skeleton" style="height:100px"></div></div></div>
   `;
-  const renderSuppliersPage = () => {
-    const list = Store.suppliers;
+  const renderSuppliersPage = async () => {
     const wrap = $('#suppliersListPage', el);
     if (!wrap) return;
+    wrap.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
+    const res = await ApiClient.get(API_ENDPOINTS.suppliers.list);
+    if (!res.ok) {
+      wrap.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los proveedores');
+      return;
+    }
+    const list = res.data.results || res.data || [];
     if (!list.length) {
       wrap.innerHTML = `<div style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-store"></i></div><div style="font-weight:600">Aún no hay proveedores</div><div class="tiny muted" style="margin-top:4px">¡Agrega el primero para tener tus contactos a mano!</div></div>`;
       return;
@@ -472,41 +507,48 @@ function barSuppliers(el) {
         <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${esc(s.name.charAt(0).toUpperCase())}</div>
         <div style="flex:1 1 0%;min-width:0;overflow:hidden">
           <div class="bold" style="font-size:14px;line-height:1.2;white-space:normal;word-break:break-word;overflow:visible;text-overflow:clip">${esc(s.name)}</div>
-          <div class="tiny muted" style="white-space:normal;word-break:break-word;line-height:1.3">${esc(s.type)} · ${esc(s.phone)}</div>
+          <div class="tiny muted" style="white-space:normal;word-break:break-word;line-height:1.3">${esc(s.email || s.phone || '—')} · ${esc(s.phone || '')}</div>
         </div>
-        <span class="badge badge-success" style="flex-shrink:0;align-self:center">Activo</span>
+        <span class="badge ${s.active ? 'badge-success' : 'badge-neutral'}" style="flex-shrink:0;align-self:center">${s.active ? 'Activo' : 'Inactivo'}</span>
         <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:88px">
-	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone)}" title="Llamar"><i class="bx bx-phone"></i></a>
-	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc(s.phone.replace(/\D/g,""))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
+	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone || '')}" title="Llamar"><i class="bx bx-phone"></i></a>
+	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc((s.phone || '').replace(/\D/g,''))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
 	         <button class="btn btn-icon-supplier" data-edit-supplier="${s.id}" title="Editar"><i class="bx bx-edit-alt"></i></button>
 	         <button class="btn btn-icon-supplier" data-del-supplier="${s.id}" title="Eliminar"><i class="bx bx-trash"></i></button>
 	         </div>
       </div>
     `).join('')}</div>`;
-    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = () => supplierFormModal(Store.suppliers.find(x => x.id === b.dataset.editSupplier), renderSuppliersPage));
+    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = async () => {
+      const supRes = await ApiClient.get(API_ENDPOINTS.suppliers.detail(b.dataset.editSupplier));
+      if (supRes.ok) supplierFormModal(supRes.data, renderSuppliersPage);
+    });
     $$('[data-del-supplier]', wrap).forEach(b => b.onclick = () => {
-      const sup = Store.suppliers.find(x => x.id === b.dataset.delSupplier);
-      confirmDialog('Eliminar proveedor', `¿Eliminar a ${esc(sup?.name || '')}?`, 'Eliminar', true).then(ok => {
+      confirmDialog('Eliminar proveedor', `¿Eliminar proveedor?`, 'Eliminar', true).then(async ok => {
         if (!ok) return;
-        Store.suppliers = Store.suppliers.filter(x => x.id !== b.dataset.delSupplier);
+        const res = await ApiClient.delete(API_ENDPOINTS.suppliers.detail(b.dataset.delSupplier));
+        if (!res.ok) { toast(res.data?.detail || 'No se pudo eliminar', 'error'); return; }
         toast('Proveedor eliminado', 'success');
         renderSuppliersPage();
       });
     });
   };
-  renderSuppliersPage();
+  await renderSuppliersPage();
   $('#btnAddSupplierPage', el)?.addEventListener('click', () => supplierFormModal(null, renderSuppliersPage));
 }
 
-function barReports(el) {
-  const orders = Store.orders.filter(isValidSale);
+async function barReports(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.payments.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || []}));
+  const orders = ordersNorm.filter(isValidSale);
+  const productsList = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter((o) => o.date === today);
   const totalVentas = orders.reduce((s, o) => s + o.total, 0);
   const totalHoy = todayOrders.reduce((s, o) => s + o.total, 0);
-  // Desglose por método REAL: DEUNA, Transferencia, Efectivo (nunca Tarjeta)
   const byMethod = { deuna: 0, transferencia: 0, efectivo: 0 };
-  orders.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
+  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (byMethod.hasOwnProperty(k)) byMethod[k] += o.total; });
   const totalMetodo = byMethod.deuna + byMethod.transferencia + byMethod.efectivo || 1;
   const pct = (v) => Math.round((v / totalMetodo) * 100);
   // Ventas por hora hoy
@@ -608,8 +650,8 @@ function barReports(el) {
       `;
     } else if (tab === 'productos') {
       const prodSales = {};
-      orders.forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
-      const top = Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,qty])=> ({ product: Store.products.find((p)=>p.id===id), qty})).filter(x=>x.product);
+      orders.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSales[pid] = (prodSales[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
+      const top = Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,qty])=> ({ product: productsList.find((p)=> String(p.id)===String(id)), qty})).filter(x=>x.product);
       rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px">${product.emoji||'📦'}</div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
     } else if (tab === 'pagos') {
       rptContent.innerHTML = `
@@ -642,29 +684,34 @@ function supplierFormModal(supplier, onSave) {
   const isEdit = !!supplier;
   const ov = modal(`
     <h3>${isEdit ? 'Editar' : 'Nuevo'} proveedor</h3>
-    <div class="field"><label class="label">Nombre</label><input class="input" id="supName" value="${isEdit ? esc(supplier.name) : ''}" placeholder="Ej. Distribuciones Andinas"></div>
-    <div class="field"><label class="label">Tipo de insumo</label><input class="input" id="supType" value="${isEdit ? esc(supplier.type) : ''}" placeholder="Ej. Bebidas, Panadería, Snacks"></div>
+    <div class="field"><label class="label">Nombre *</label><input class="input" id="supName" value="${isEdit ? esc(supplier.name) : ''}" placeholder="Ej. Distribuciones Andinas"></div>
+    <div class="field"><label class="label">Contacto</label><input class="input" id="supContact" value="${isEdit ? esc(supplier.contact_name || '') : ''}" placeholder="Persona de contacto"></div>
     <div class="field"><label class="label">Teléfono</label><input class="input" id="supPhone" value="${isEdit ? esc(supplier.phone) : ''}" placeholder="0991234567"></div>
+    <div class="field"><label class="label">Email</label><input class="input" id="supEmail" value="${isEdit ? esc(supplier.email || '') : ''}" placeholder="proveedor@ejemplo.com"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSaveSupplier">${isEdit ? 'Guardar cambios' : 'Crear proveedor'}</button>
     </div>
   `, { wide: false });
   $('[data-cancel]', ov).onclick = () => ov.remove();
-  $('#btnSaveSupplier', ov).onclick = () => {
+  $('#btnSaveSupplier', ov).onclick = async () => {
     const name = $('#supName', ov).value.trim();
-    const type = $('#supType', ov).value.trim();
+    const contact_name = $('#supContact', ov).value.trim();
     const phone = $('#supPhone', ov).value.trim();
-    if (!name || !type || !phone) { toast('Completa todos los campos', 'warning'); return; }
+    const email = $('#supEmail', ov).value.trim();
+    if (!name) { toast('El nombre es obligatorio', 'warning'); return; }
+    const payload = { name, contact_name, phone, email, active: true };
+    let res;
     if (isEdit) {
-      Object.assign(supplier, { name, type, phone });
-      toast('Proveedor actualizado', 'success');
+      res = await ApiClient.patch(API_ENDPOINTS.suppliers.detail(supplier.id), payload);
     } else {
-      const list = Store.suppliers;
-      list.push({ id: 's' + Date.now(), name, type, phone });
-      Store.suppliers = list;
-      toast('Proveedor agregado', 'success');
+      res = await ApiClient.post(API_ENDPOINTS.suppliers.list, payload);
     }
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.name?.[0] || 'Error al guardar proveedor', 'error');
+      return;
+    }
+    toast(isEdit ? 'Proveedor actualizado' : 'Proveedor agregado', 'success');
     ov.remove();
     if (onSave) onSave();
   };
@@ -673,24 +720,46 @@ function supplierFormModal(supplier, onSave) {
 /* ============================================================
    DASHBOARD
    ============================================================ */
-function barDashboard(el) {
-  const orders = Store.orders;
+async function barDashboard(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="grid grid-4" style="margin-top:12px"><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div></div>`;
+  const [ordersRes, productsRes, paymentsRes, configRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.get(API_ENDPOINTS.products.list),
+    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.get(API_ENDPOINTS.config.get),
+  ]);
+  const rawOrders = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  // Normalizar pedidos para compatibilidad con helpers existentes
+  const orders = rawOrders.map(o => ({
+    ...o,
+    date: (o.created_at||'').slice(0,10),
+    time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '',
+    paymentStatus: o.payment_status || o.paymentStatus,
+    delivery: o.delivery_method || o.delivery,
+    prepMin: o.estimated_time ?? o.prepMin,
+    total: parseFloat(o.total ?? 0),
+    items: o.items || o.order_items || [],
+    userName: o.user_name || o.userName || '',
+  }));
+  const productsRaw = productsRes.ok ? apiList(productsRes.data) : [];
+  const products = productsRaw.map(normalizeApiProduct);
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter((o) => o.date === today);
   const queue = orders.filter((o) => o.status === 'queue');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
-  const cap = capacityInfo();
+  const rawCap = configRes.ok ? configRes.data : null;
+  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : capacityInfo();
   const payPending = getPendingPayments(orders).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
 
-  const lowStock = Store.products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
-  const outStock = Store.products.filter((p) => p.stock === 0);
+  const lowStock = products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
+  const outStock = products.filter((p) => p.stock === 0);
   const validSalesDash = orders.filter(isValidSale);
   const prodSalesDash = {};
-  validSalesDash.forEach((o) => o.items.forEach((i) => { prodSalesDash[i.productId] = (prodSalesDash[i.productId] || 0) + i.qty; }));
-  const topProductsDash = Object.entries(prodSalesDash).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,qty])=> ({ product: Store.products.find((p)=>p.id===id), qty})).filter(x=>x.product);
+  validSalesDash.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSalesDash[pid] = (prodSalesDash[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
+  const topProductsDash = Object.entries(prodSalesDash).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,qty])=> ({ product: products.find((p)=> String(p.id)===String(id)), qty})).filter(x=>x.product);
 
   // Pedidos prioritarios: qué atender primero (urgente/prioridad, delivery o pago en revisión)
   const priorityOrders = orders
@@ -792,58 +861,89 @@ function priorityMiniCard(o) {
 }
 
 /* ============================================================
-   PEDIDOS (cola)
+   PEDIDOS (cola) - Con API real
    ============================================================ */
-function barOrders(el) {
-  const orders = Store.orders;
-  const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
+async function barOrders(el) {
+  // Show skeleton
+  el.innerHTML = `
+    <div class="page-title"><h1>Pedidos</h1></div>
+    <div class="skeleton" style="height:40px;width:200px;margin-bottom:16px"></div>
+    <div class="skeleton" style="height:100px;width:100%"></div>
+    <div class="adv-tabs">
+      <button class="category-chip active" data-tab="queue">En cola</button>
+      <button class="category-chip" data-tab="prep">En preparación</button>
+      <button class="category-chip" data-tab="ready">Listos</button>
+      <button class="category-chip" data-tab="delivered">Entregados</button>
+    </div>
+    <div id="queueArea"></div>`;
+
+  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  if (!ordersRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos');
+    return;
+  }
+
+  const orders = ordersRes.data.results || ordersRes.data || [];
+  const today = new Date().toISOString().slice(0, 10);
+  
   const queue = orders.filter((o) => o.status === 'queue');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const delivered = orders.filter((o) => o.status === 'delivered');
-  const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((o) => o.date === today);
+  const todayOrders = orders.filter((o) => o.created_at && o.created_at.slice(0, 10) === today);
   const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
   const confirmedToday = todayOrders.filter((o) => o.status === 'confirmed').length;
   const prepToday = todayOrders.filter((o) => o.status === 'prep').length;
   const readyToday = todayOrders.filter((o) => o.status === 'ready').length;
   const deliveredToday = todayOrders.filter((o) => o.status === 'delivered').length;
-  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.paymentStatus === 'rejected' || o.status === 'refunded').length;
+  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.payment_status === 'rejected' || o.status === 'refunded').length;
+  const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
 
-  el.innerHTML = `
-    <div class="page-title"><h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span></div>
-    <div style="display:flex;justify-content:flex-end;margin:12px 0">
-      <button class="btn btn-primary btn-sm" id="btnConfirmAllReady" ${ready.length ? '' : 'disabled style="opacity:0.6;pointer-events:none"'}><i class="bx bx-check-double" style="margin-right:6px"></i>Confirmar todos los pedidos listos${ready.length ? ` (${ready.length})` : ''}</button>
+  // Update tab counts
+  const tabButtons = $$('[data-tab]', el);
+  if (tabButtons[0]) tabButtons[0].textContent = `En cola (${queue.length})`;
+  if (tabButtons[1]) tabButtons[1].textContent = `En preparación (${prep.length})`;
+  if (tabButtons[2]) tabButtons[2].textContent = `Listos (${ready.length})`;
+  if (tabButtons[3]) tabButtons[3].textContent = `Entregados (${delivered.length})`;
+
+  // Update page title with active count
+  const titleEl = $('#mainContent') || $('#app');
+  const pageTitle = titleEl?.querySelector('.page-title');
+  if (pageTitle) pageTitle.innerHTML = `<h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span>`;
+
+  // Add bulk confirm button
+  const actionsDiv = document.createElement('div');
+  actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;margin:12px 0';
+  actionsDiv.innerHTML = `<button class="btn btn-primary btn-sm" id="btnConfirmAllReady" ${ready.length ? '' : 'disabled style="opacity:0.6;pointer-events:none"'}><i class="bx bx-check-double" style="margin-right:6px"></i>Confirmar todos los pedidos listos${ready.length ? ` (${ready.length})` : ''}</button>`;
+  pageTitle?.parentElement?.insertBefore(actionsDiv, pageTitle.nextSibling);
+
+  // Add today summary card
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card';
+  summaryCard.style.cssText = 'margin-bottom:16px; padding:14px';
+  summaryCard.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:700; font-size:var(--fs-sm); color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
+      <span class="badge badge-neutral">${todayOrders.length} pedidos hoy</span>
     </div>
-    <div class="card" style="margin-bottom:16px; padding:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-weight:700; font-size:var(--fs-sm); color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
-        <span class="badge badge-neutral">${todayOrders.length} pedidos hoy</span>
-      </div>
-      <div class="grid grid-3" style="gap:10px">
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-time muted" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check primary" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check" style="margin-right:4px"></i>Confirmados</div><div class="st-value primary" style="font-size:1.5rem">${confirmedToday}</div></div>
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-restaurant warning" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-restaurant" style="margin-right:4px"></i>En preparación</div><div class="st-value warning" style="font-size:1.5rem">${prepToday}</div></div>
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check-double success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value" style="font-size:1.5rem;color:var(--success)">${readyToday}</div></div>
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-package success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-package" style="margin-right:4px"></i>Entregados</div><div class="st-value success" style="font-size:1.5rem">${deliveredToday}</div></div>
-        <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-x-circle danger" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-x-circle" style="margin-right:4px"></i>Cancelados</div><div class="st-value danger" style="font-size:1.5rem">${cancelledToday}</div></div>
-      </div>
-    </div>
-    <div class="adv-tabs">
-      <button class="category-chip active" data-tab="queue">En cola (${queue.length})</button>
-      <button class="category-chip" data-tab="prep">En preparación (${prep.length})</button>
-      <button class="category-chip" data-tab="ready">Listos (${ready.length})</button>
-      <button class="category-chip" data-tab="delivered">Entregados (${delivered.length})</button>
-    </div>
-    <div id="queueArea"></div>`;
+    <div class="grid grid-3" style="gap:10px">
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-time muted" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check primary" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check" style="margin-right:4px"></i>Confirmados</div><div class="st-value primary" style="font-size:1.5rem">${confirmedToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-restaurant warning" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-restaurant" style="margin-right:4px"></i>En preparación</div><div class="st-value warning" style="font-size:1.5rem">${prepToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check-double success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value" style="font-size:1.5rem;color:var(--success)">${readyToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-package success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-package" style="margin-right:4px"></i>Entregados</div><div class="st-value success" style="font-size:1.5rem">${deliveredToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-x-circle danger" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-x-circle" style="margin-right:4px"></i>Cancelados</div><div class="st-value danger" style="font-size:1.5rem">${cancelledToday}</div></div>
+    </div>`;
+  pageTitle?.parentElement?.insertBefore(summaryCard, actionsDiv);
 
   let tab = 'queue';
+  const queueArea = $('#queueArea');
+
   const render = () => {
-    const area = $('#queueArea');
     const list = tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
-    if (!list.length) { area.innerHTML = emptyState('🧾', 'Sin pedidos', 'No hay pedidos en esta sección.'); return; }
-    area.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
-    bindQueueActions(area);
+    if (!list.length) { queueArea.innerHTML = emptyState('🧾', 'Sin pedidos', 'No hay pedidos en esta sección.'); return; }
+    queueArea.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
+    bindQueueActions(queueArea);
   };
 
   $$('[data-tab]', el).forEach((t) => {
@@ -852,23 +952,28 @@ function barOrders(el) {
       t.classList.add('active'); tab = t.dataset.tab; render();
     };
   });
-  $('#btnConfirmAllReady', el)?.addEventListener('click', () => {
-    const readyOrders = Store.orders.filter((o) => o.status === 'ready');
+
+  $('#btnConfirmAllReady', el)?.addEventListener('click', async () => {
+    const readyOrders = orders.filter((o) => o.status === 'ready');
     if (!readyOrders.length) return;
-    confirmDialog('Confirmar entrega en lote', `¿Confirmar que se entregaron los ${readyOrders.length} pedidos listos?`, `Confirmar ${readyOrders.length} entregas`).then((ok) => {
-      if (!ok) return;
-      readyOrders.forEach((order) => {
-        order.status = 'delivered';
-        order.eta = 'Entregado';
-        if (order.paymentStatus === 'pending') order.paymentStatus = 'paid';
-        if (order.delivery === 'delivery') logAudit('Entregó pedido', order.id);
-      });
-      saveOrders();
-      logAudit('Entrega en lote', `${readyOrders.length} pedidos marcados como entregados`);
-      toast(`${readyOrders.length} pedidos marcados como entregados`, 'success');
+    const ok = await confirmDialog('Confirmar entrega en lote', `¿Confirmar que se entregaron los ${readyOrders.length} pedidos listos?`, `Confirmar ${readyOrders.length} entregas`);
+    if (!ok) return;
+    
+    let successCount = 0;
+    for (const order of readyOrders) {
+      const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(order.id), { status: 'delivered' });
+      if (res.ok) successCount++;
+    }
+    
+    if (successCount > 0) {
+      logAudit('Entrega en lote', `${successCount} pedidos marcados como entregados`);
+      toast(`${successCount} pedidos marcados como entregados`, 'success');
       renderBarAdmin('orders');
-    });
+    } else {
+      toast('Error al confirmar entregas', 'error');
+    }
   });
+
   render();
 }
 
@@ -916,45 +1021,73 @@ function queueOrderCard(o, tab) {
 
 function bindQueueActions(area) {
   $$('[data-act]', area).forEach((btn) => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const card = btn.closest('.queue-order');
-      const order = Store.orders.find((o) => o.id === card.dataset.id);
+      const orderId = card.dataset.id;
       const act = btn.dataset.act;
+      
       if (act === 'cancel') {
-        confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${order.id}?`, 'Cancelar pedido', true).then((ok) => {
-          if (!ok) return;
-          order.status = 'cancelled'; order.eta = 'Cancelado';
-          order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
-          saveOrders(); logAudit('Canceló pedido', order.id); toast('Pedido cancelado.', 'success');
-          renderBarAdmin('orders');
-        });
+        const ok = await confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${orderId}?`, 'Cancelar pedido', true);
+        if (!ok) return;
+        
+        const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: 'cancelled' });
+        if (!res.ok) {
+          toast(res.data?.detail || 'No se pudo cancelar el pedido.', 'error');
+          return;
+        }
+        toast('Pedido cancelado.', 'success');
+        logAudit('Canceló pedido', orderId);
+        renderBarAdmin('orders');
         return;
       }
-      const next = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
-      order.status = next;
-      order.eta = { confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' }[next];
-      order.paymentStatus = act === 'delivered' && order.paymentStatus === 'pending' ? 'paid' : order.paymentStatus;
-      if (act === 'delivered' && order.delivery === 'delivery') logAudit('Entregó pedido', order.id);
-      saveOrders(); logAudit('Cambió estado de pedido', `${order.id} → ${order.eta}`);
+      
+      const nextStatus = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
+      const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: nextStatus });
+      if (!res.ok) {
+        toast(res.data?.detail || 'Error al cambiar estado', 'error');
+        return;
+      }
+      
       const label = { confirm: 'Confirmado', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
-      toast('# ' + order.id + ' ' + label + '.', 'success');
+      toast('#' + orderId + ' ' + label + '.', 'success');
+      logAudit('Cambió estado de pedido', `${orderId} → ${label}`);
       renderBarAdmin('orders');
     };
   });
 }
 
 /* ============================================================
-   PRODUCTOS
+   PRODUCTOS - Con API real
    ============================================================ */
-function barProducts(el) {
+async function barProducts(el) {
   ensureAdminbarPresentationStyles();
-  const products = Store.products;
-  const cats = [...new Set(products.map((p) => p.category))];
+
+  // Show skeleton
+  el.innerHTML = `
+    <div class="page-title"><h1>Productos</h1></div>
+    <button class="btn btn-primary btn-block" id="addProduct" style="width:100%;margin-bottom:16px">+ Agregar producto</button>
+    <div class="skeleton" style="height:100px;width:100%"></div>
+    <div class="adv-tabs">
+      <button class="category-chip active" data-cat="Todas">Todas</button>
+    </div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
+
+  const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+  if (!productsRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los productos');
+    return;
+  }
+
+  const products = apiList(productsRes.data).map(normalizeApiProduct);
+  const cats = [...new Set(products.map((p) => p.category || 'Sin categoría'))];
   let cat = 'Todas';
   let searchTerm = '';
 
   const outOfStock = products.filter((p) => p.stock === 0 && p.available);
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock && p.available);
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.min_stock && p.available);
 
   el.innerHTML = `
     <div class="page-title"><h1>Productos</h1></div>
@@ -973,7 +1106,7 @@ function barProducts(el) {
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas <span style="opacity:0.7;font-weight:400">(${products.length})</span></button>
       ${cats.map((c) => {
-        const cnt = products.filter((p) => p.category === c).length;
+        const cnt = products.filter((p) => (p.category || 'Sin categoría') === c).length;
         return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
       }).join('')}
     </div>
@@ -983,10 +1116,10 @@ function barProducts(el) {
     </table></div>`;
 
   const renderRows = () => {
-    let list = cat === 'Todas' ? products : products.filter((p) => p.category === cat);
+    let list = cat === 'Todas' ? products : products.filter((p) => (p.category || 'Sin categoría') === cat);
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
+      list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.category || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term));
     }
     const tbody = $('#prodRows', el);
     if (!list.length) {
@@ -995,10 +1128,10 @@ function barProducts(el) {
     }
     tbody.innerHTML = list.map((p) => `
       <tr>
-        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category)}">${esc(p.category)}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.desc)}">${esc(p.desc)}</div></div></div></td>
-        <td data-label="Categoría"><span>${esc(p.category)}</span></td>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category || 'Sin categoría')}">${esc(p.category || 'Sin categoría')}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.description || '')}">${esc(p.description || '')}</div></div></div></td>
+        <td data-label="Categoría"><span>${esc(p.category || 'Sin categoría')}</span></td>
         <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
-        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.minStock ? '· bajo' : ''}</span></td>
+        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.min_stock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.min_stock ? '· bajo' : ''}</span></td>
         <td data-label="Prep"><span>${p.prepMin} min</span></td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
@@ -1012,14 +1145,22 @@ function barProducts(el) {
           </td>
       </tr>
     `).join('');
-    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === b.dataset.edit)));
-    $$('[data-toggle]', tbody).forEach((b) => b.onclick = () => {
-      const p = products.find((x) => x.id === b.dataset.toggle);
-      p.available = !p.available;
-      Store.products = products;
-      logAudit(p.available ? 'Activó producto' : 'Desactivó producto', p.name);
-      toast(p.name + (p.available ? ' activado.' : ' desactivado.'), 'success');
-      renderBarAdmin('products');
+    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit))));
+    $$('[data-toggle]', tbody).forEach((b) => {
+      b.onclick = async () => {
+        const productId = b.dataset.toggle;
+        const product = products.find((x) => x.id === parseInt(productId));
+        if (!product) return;
+        const newAvailable = !product.available;
+        const res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        if (!res.ok) {
+          toast('Error al cambiar estado: ' + (res.data?.detail || 'Error desconocido'), 'error');
+          return;
+        }
+        toast(product.name + (newAvailable ? ' activado.' : ' desactivado.'), 'success');
+        logAudit(newAvailable ? 'Activó producto' : 'Desactivó producto', product.name);
+        renderBarAdmin('products');
+      };
     });
     $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
       e.stopPropagation();
@@ -1242,7 +1383,7 @@ function productFormModal(p) {
   });
 
   $('[data-cancel]', ov).onclick = () => ov.remove();
-  btnSave.onclick = () => {
+  btnSave.onclick = async () => {
     const name = $('#pfName', ov).value.trim();
     const price = parseFloat($('#pfPrice', ov).value);
     const stock = parseInt($('#pfStock', ov).value);
@@ -1263,20 +1404,67 @@ function productFormModal(p) {
     btnSave.disabled = true;
     btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
 
-    setTimeout(() => {
-      const products = Store.products;
+    // Small delay for UI feedback, then process
+    setTimeout(async () => {
       const allowExtras = $('#pfExtras', ov).checked;
       const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
-      if (isEdit) {
-        Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available, allowExtras, image: pfImagePreview.src });
-        logAudit('Editó producto', name);
-        toast('Producto actualizado.', 'success');
-      } else {
-        products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available, desc: $('#pfDesc', ov).value, emoji: '', image: pfImagePreview.src || '', allowExtras });
-        logAudit('Creó producto', name);
-        toast('Producto creado.', 'success');
+      const catName = $('#pfCat', ov).value;
+      let categoryId = null;
+      try {
+        const catRes = await ApiClient.get(API_ENDPOINTS.products.categories);
+        if (catRes.ok) {
+          const catList = catRes.data.results || catRes.data;
+          if (Array.isArray(catList)) {
+            const found = catList.find(c => c.name === catName);
+            if (found) categoryId = found.id;
+          }
+        }
+        if (!categoryId) {
+          const createCat = await ApiClient.post(API_ENDPOINTS.products.categories, { name: catName });
+          if (createCat.ok) categoryId = createCat.data.id;
+        }
+      } catch(e) {}
+      const productData = {
+        name,
+        category: categoryId,
+        price,
+        stock,
+        prep_time: prep,
+        min_stock: mn,
+        description: $('#pfDesc', ov).value,
+        available,
+      };
+      if (!productData.category) {
+        toast('Categoría no válida', 'error');
+        btnSave.disabled = false;
+        btnSave.innerHTML = originalText;
+        return;
       }
-      Store.products = products;
+      
+      let res;
+      if (isEdit) {
+        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), productData);
+        if (!res.ok) {
+          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al actualizar';
+          toast('Error: ' + msg, 'error');
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+          return;
+        }
+        logAudit('Editó producto', name);
+        toast('Producto actualizado en PostgreSQL.', 'success');
+      } else {
+        res = await ApiClient.post(API_ENDPOINTS.products.list, productData);
+        if (!res.ok) {
+          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al crear';
+          toast('Error: ' + msg, 'error');
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+          return;
+        }
+        logAudit('Creó producto', name);
+        toast('Producto creado en PostgreSQL.', 'success');
+      }
 
       btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
       btnSave.classList.add('btn-success');
@@ -1299,11 +1487,15 @@ function stockBadge(p) {
 /* ============================================================
    STOCK
    ============================================================ */
-function barStock(el) {
+async function barStock(el) {
   ensureAdminbarPresentationStyles();
-  const products = Store.products;
-  const history = Store.stockHistory;
-
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [productsRes, historyRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.products.list), ApiClient.get(API_ENDPOINTS.stock.movements) ]);
+  if (!productsRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar stock'); return; }
+  const rawProducts = apiList(productsRes.data);
+  const products = rawProducts.map(p=>({ ...normalizeApiProduct(p), stockHistory: p.stock }));
+  const rawHist = historyRes.ok ? (historyRes.data.results || historyRes.data || []) : [];
+  const history = rawHist.map(h=>({ productId: h.product, name: h.product_name, delta: h.quantity * (h.movement_type==='sale' || h.movement_type==='waste' ? -1 : 1), newVal: h.new_stock ?? h.newVal, time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', date: (h.created_at||'').slice(0,10)}));
   const outOfStock = products.filter((p) => p.stock === 0);
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
 
@@ -1384,8 +1576,8 @@ function barStock(el) {
         </td>
       </tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
   };
   $$('[data-stock-cat]', el).forEach((btn) => btn.onclick = () => {
     $$('[data-stock-cat]', el).forEach((x) => x.classList.remove('active'));
@@ -1407,13 +1599,13 @@ function barStock(el) {
         const fillCls = 'background:var(--warning)';
         return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado"><span class="badge badge-warning">Bajo</span></td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
       }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin bajo stock</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
-      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
     } else if (tab === 'agotados') {
       const out = products.filter((p) => p.stock === 0);
       const tbody = $('#stockRows', el);
       tbody.innerHTML = out.map((p) => `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><b>0</b></td><td data-label="Estado"><span class="badge badge-danger">Agotado</span></td><td data-label="Acciones"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin agotados</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
     } else {
       renderRows();
     }
@@ -1429,8 +1621,8 @@ function barStock(el) {
       const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
       return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
   });
   $$('[data-low]', el).forEach((item) => item.onclick = () => {
     const p = products.find((x) => x.id === item.dataset.low);
@@ -1440,16 +1632,13 @@ function barStock(el) {
   const histWrap = $('#stockHist');
   if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
 
-  const adjust = (p, delta) => {
+  const adjust = async (p, delta) => {
     const newVal = p.stock + delta;
     if (newVal < 0) { toast('El stock no puede ser negativo.', 'warning'); return; }
-    const entry = { productId: p.id, name: p.name, delta, newVal, time: nowTime(), date: new Date().toISOString().slice(0, 10) };
-    p.stock = newVal;
-    Store.products = products;
-    history.unshift(entry);
-    Store.stockHistory = history;
+    const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
+    if (!res.ok) { toast(res.data?.detail || 'No se pudo ajustar stock', 'error'); return; }
     logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
-    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades.', 'success');
+    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades. (PostgreSQL)', 'success');
     renderBarAdmin('stock');
   };
 
@@ -1482,18 +1671,18 @@ function nowTime() {
 /* ============================================================
    HISTORIAL DE STOCK
    ============================================================ */
-function barStockHistory(el) {
+async function barStockHistory(el) {
   ensureAdminbarPresentationStyles();
-  const history = Store.stockHistory;
-  const products = Store.products;
-
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-history"></span> Historial de stock</h1></div>
     <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
-      <tbody id="stockHistoryRows"></tbody></table></div>
+      <tbody id="stockHistoryRows"><tr><td colspan="5"><div class="skeleton" style="height:40px"></div></td></tr></tbody></table></div>
   `;
-
+  const res = await ApiClient.get(API_ENDPOINTS.stock.movements);
+  if (!res.ok) { $('#stockHistoryRows',el).innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">No se pudo cargar historial</td></tr>`; return; }
+  const raw = res.data.results || res.data || [];
+  const history = raw.map(h=>({ date:(h.created_at||'').slice(0,10), time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', name: h.product_name, delta: (h.movement_type==='purchase'||h.movement_type==='return'||(h.movement_type==='adjustment' && h.new_stock>h.previous_stock) ? h.quantity : -h.quantity), newVal: h.new_stock, productId: h.product }));
   const renderRows = () => {
     const tbody = $('#stockHistoryRows', el);
     if (!history.length) {
@@ -1533,26 +1722,37 @@ function barStockHistory(el) {
     `).join('');
   };
 
-  // Skeleton + render
-  const tbody = $('#stockHistoryRows', el);
-  tbody.innerHTML = Array.from({ length: 5 }, () => `
-    <tr>
-      <td><div class="skeleton" style="width:90px;height:14px"></div></td>
-      <td><div class="skeleton" style="width:120px;height:16px"></div></td>
-      <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
-      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
-      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
-    </tr>
-  `).join('');
-  setTimeout(renderRows, 350);
+  setTimeout(renderRows, 100);
 }
 
 /* ============================================================
-   PAGOS
+   PAGOS - Con API real (PATCH /api/payments/{id}/review/)
    ============================================================ */
-function barPayments(el) {
-  const orders = Store.orders;
-  const review = orders.filter((o) => o.paymentStatus === 'review');
+async function barPayments(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [paymentsRes, ordersRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.get(API_ENDPOINTS.orders.all),
+  ]);
+  if (!paymentsRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pagos');
+    return;
+  }
+  const payments = paymentsRes.data.results || paymentsRes.data || [];
+  // Mapear payments para compatibilidad visual, manteniendo orders para última transacción
+  const orders = payments.map(p => ({
+    id: p.order_number || p.order,
+    paymentId: p.id,
+    paymentStatus: p.status,
+    payment: p.payment_method_code,
+    total: parseFloat(p.amount),
+    date: (p.created_at || '').slice(0,10),
+    time: p.created_at ? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '',
+    userName: p.user_name || '',
+  }));
+  // Fallback a ordersRes para lastTx si payments vacío
+  const ordersForTx = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const review = payments.filter((p) => p.status === 'review');
   const filters = [
     ['all', 'Todos'], ['pending', 'Pendientes'], ['review', 'En revisión'],
     ['approved', 'Aprobados'], ['paid', 'Pagados'], ['rejected', 'Rechazados'], ['refunded', 'Reembolsados'],
@@ -1597,6 +1797,7 @@ function barPayments(el) {
             <div style="font-weight:700;font-size:14px">${money(byMethod[m.key])}</div>
             <div style="font-size:12px;color:var(--text-2)">${pct(byMethod[m.key])}%</div>
           </div>
+          <button class="btn btn-outline btn-sm" data-configure="${m.key}" style="flex-shrink:0">Configurar</button>
         </div>
       `).join('')}
     </div>
@@ -1629,12 +1830,17 @@ function barPayments(el) {
       <tbody id="paymentRows"></tbody>
     </table></div>`;
 
-  const setPay = (id, status) => {
-    const order = orders.find((o) => o.id === id);
-    order.paymentStatus = status;
-    saveOrders();
-    logAudit('Actualizó pago', `${order.id} → ${status}`);
-    toast('Pago #' + order.id + ' ' + (status === 'approved' ? 'aprobado.' : 'rechazado.'), status === 'approved' ? 'success' : 'error');
+  const setPay = async (id, status) => {
+    // id es paymentId o order id; buscar payment real
+    const target = payments.find(p => String(p.id) === String(id) || String(p.order_number) === String(id));
+    const paymentId = target ? target.id : id;
+    const res = await ApiClient.patch(API_ENDPOINTS.payments.review(paymentId), { status });
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.status?.[0] || 'No se pudo actualizar el pago', 'error');
+      return;
+    }
+    logAudit('Actualizó pago', `${paymentId} → ${status}`);
+    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status), status === 'approved' ? 'success' : 'error');
     renderBarAdmin('payments');
   };
 
@@ -1714,10 +1920,80 @@ function barPayments(el) {
       if (!orders.some((o) => o.paymentStatus === 'refunded')) toast('No hay reembolsos registrados', 'info');
     }
   });
+  $$('[data-configure]', el).forEach(btn => btn.onclick = () => openPaymentMethodConfig(btn.dataset.configure));
 }
 
-function showVoucherModal(orderId) {
-  const order = Store.orders.find((o) => o.id === orderId);
+async function openPaymentMethodConfig(code) {
+  const listRes = await ApiClient.get(API_ENDPOINTS.payments.methodsAdmin);
+  if (!listRes.ok) { toast('No se pudo cargar métodos de pago', 'error'); return; }
+  const methods = listRes.data.results || listRes.data || [];
+  const m = methods.find(x => x.code === code);
+  if (!m) { toast('Método no encontrado', 'error'); return; }
+  const isTransfer = code === 'transferencia';
+  const isDeuna = code === 'deuna';
+  const isEfectivo = code === 'efectivo';
+  const ov = modal(`
+    <h3>Configurar ${esc(m.name)}</h3>
+    <div class="field"><label class="label">Activo</label><label class="checkbox-row"><input type="checkbox" id="pmActive" ${m.active ? 'checked' : ''}> Habilitado</label></div>
+    ${isTransfer ? `
+      <div class="field"><label class="label">Banco</label><input class="input" id="pmBank" value="${esc(m.bank_name || '')}" placeholder="Ej. Banco Sudamericano"></div>
+      <div class="field"><label class="label">Titular</label><input class="input" id="pmHolder" value="${esc(m.account_holder || '')}" placeholder="Bar INTESUD"></div>
+      <div class="field"><label class="label">Tipo de cuenta</label><input class="input" id="pmType" value="${esc(m.account_type || '')}" placeholder="Ahorros / Corriente"></div>
+      <div class="field"><label class="label">Número de cuenta</label><input class="input" id="pmNumber" value="${esc(m.account_number || '')}" placeholder="220 456 7890 1"></div>
+      <div class="field"><label class="label">Identificación</label><input class="input" id="pmId" value="${esc(m.holder_id || '')}" placeholder="0999999999001"></div>
+    ` : ''}
+    ${isDeuna ? `
+      <div class="field"><label class="label">Titular</label><input class="input" id="pmHolder" value="${esc(m.account_holder || '')}" placeholder="Bar INTESUD"></div>
+      <div class="field"><label class="label">Teléfono / Identificador</label><input class="input" id="pmPhone" value="${esc(m.phone || '')}" placeholder="0991234567"></div>
+      <div class="field"><label class="label">QR / Código</label><textarea class="input" id="pmQr" rows="2" placeholder="Información QR">${esc(m.qr_info || '')}</textarea></div>
+    ` : ''}
+    ${isEfectivo ? `` : ''}
+    <div class="field"><label class="label">Instrucciones</label><textarea class="input" id="pmInstr" rows="3" placeholder="Instrucciones para el cliente">${esc(m.instructions || '')}</textarea></div>
+    <div class="field"><label class="label">Descripción</label><input class="input" id="pmDesc" value="${esc(m.description || '')}"></div>
+    <div class="field"><label class="checkbox-row"><input type="checkbox" id="pmVoucher" ${m.requires_voucher ? 'checked' : ''}> Requiere comprobante</label></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="btn btn-neutral" data-cancel>Cancelar</button>
+      <button class="btn btn-primary" id="btnSavePm">Guardar</button>
+    </div>
+  `, { wide: false });
+  $('[data-cancel]', ov).onclick = () => ov.remove();
+  $('#btnSavePm', ov).onclick = async () => {
+    const payload = {
+      active: $('#pmActive', ov).checked,
+      description: $('#pmDesc', ov).value,
+      instructions: $('#pmInstr', ov).value,
+      requires_voucher: $('#pmVoucher', ov).checked,
+    };
+    if (isTransfer) {
+      payload.bank_name = $('#pmBank', ov).value.trim();
+      payload.account_holder = $('#pmHolder', ov).value.trim();
+      payload.account_type = $('#pmType', ov).value.trim();
+      payload.account_number = $('#pmNumber', ov).value.trim();
+      payload.holder_id = $('#pmId', ov).value.trim();
+    } else if (isDeuna) {
+      payload.account_holder = $('#pmHolder', ov).value.trim();
+      payload.phone = $('#pmPhone', ov).value.trim();
+      payload.qr_info = $('#pmQr', ov).value.trim();
+    }
+    const res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), payload);
+    if (!res.ok) { toast(res.data?.detail || 'Error al guardar', 'error'); return; }
+    toast('Método actualizado en PostgreSQL', 'success');
+    ov.remove();
+    renderBarAdmin('payments');
+  };
+}
+
+async function showVoucherModal(orderId) {
+  let order = null;
+  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  if (payAll.ok) {
+    const p=apiList(payAll.data).find(x=> String(x.id)===String(orderId) || String(x.order_number)===String(orderId));
+    if (p) order={ id:p.order_number||p.order, userName:p.user_name, date:(p.created_at||'').slice(0,10), time: p.created_at? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:p.status, total:parseFloat(p.amount||0), payment:p.payment_method_code };
+  }
+  if (!order) {
+    const r=await ApiClient.get(API_ENDPOINTS.orders.detail(orderId));
+    if (r.ok) { const o=r.data; order={ id:o.order_number||o.id, userName:o.user_name, date:(o.created_at||'').slice(0,10), time:o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:o.payment_status, total:parseFloat(o.total||0), payment:o.delivery_method}; }
+  }
   if (!order) return;
   lastVisitedPaymentId = orderId;
   const status = paymentStatusLabels[order.paymentStatus];
@@ -1760,8 +2036,22 @@ function showVoucherModal(orderId) {
   };
 }
 
-function barPaymentDetail(el, id) {
-  const order = Store.orders.find((o) => o.id === id);
+async function barPaymentDetail(el, id) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px"></div>`;
+  let order = null;
+  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  if (payAll.ok) {
+    const foundPay = apiList(payAll.data).find(p=> String(p.id)===String(id) || String(p.order_number)===String(id));
+    if (foundPay) {
+      order = { id: foundPay.order_number || foundPay.order, userName: foundPay.user_name, date: (foundPay.created_at||'').slice(0,10), time: foundPay.created_at? new Date(foundPay.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus: foundPay.status, total: parseFloat(foundPay.amount||0), payment: foundPay.payment_method_code };
+    }
+  }
+  if (!order) {
+    const ordRes = await ApiClient.get(API_ENDPOINTS.orders.detail(id));
+    if (ordRes.ok) {
+      const o=ordRes.data; order={ id: o.order_number || o.id, userName: o.user_name, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus: o.payment_status, total: parseFloat(o.total||0), payment: o.delivery_method };
+    }
+  }
   if (!order) {
     el.innerHTML = emptyState('<i class="bx bx-credit-card"></i>', 'No encontramos ese pago', 'Parece que el pedido que buscas no existe o fue movido. ¡Revisa el listado!');
     return;
@@ -1786,9 +2076,16 @@ function barPaymentDetail(el, id) {
 /* ============================================================
    DASHBOARD DE VENTAS
    ============================================================ */
-function barSalesDashboard(el) {
+async function barSalesDashboard(el) {
   ensureAdminbarPresentationStyles();
-  const orders = Store.orders;
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  if (!ordersRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar ventas'); return; }
+  const raw = ordersRes.data.results || ordersRes.data || [];
+  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
+  const orders = ordersNorm;
+  const productsRaw = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
+  const products = productsRaw;
   const today = new Date().toISOString().slice(0, 10);
   const validSales = orders.filter(isValidSale);
   const todayOrders = validSales.filter((o) => o.date === today);
@@ -1798,11 +2095,11 @@ function barSalesDashboard(el) {
   const salesMonth = validSales.filter((o) => o.date.startsWith(currentMonth)).reduce((s, o) => s + o.total, 0);
 
 const prodSales = {};
-  validSales.forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
+  validSales.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSales[pid] = (prodSales[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
   const topProducts = Object.entries(prodSales)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, qty]) => ({ product: Store.products.find((p) => p.id === id), qty }))
+    .map(([id, qty]) => ({ product: products.find((p) => String(p.id)===String(id)), qty }))
     .filter((p) => p.product);
 
 const days = [];
@@ -2027,7 +2324,9 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
         <div class="tiny muted" style="margin-top:4px">Rendimiento del mes</div>
         <div class="tiny muted" style="margin-top:2px">${money(salesMonth)} este mes</div>
       </div>
-    </div>`;
+    </div>
+    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico">⚠️</span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
+  `;
 
   requestAnimationFrame(() => {
     const ring = container.querySelector('.mom-ring');
@@ -2041,8 +2340,10 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
 /* ============================================================
    HISTORIAL DE VENTAS
    ============================================================ */
-function barSalesHistory(el) {
-  const orders = Store.orders;
+async function barSalesHistory(el) {
+  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const orders = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
   const tbody = $('#salesHistoryRows');
   if (!tbody) {
     el.innerHTML = `
@@ -2082,17 +2383,34 @@ function barSalesHistory(el) {
   setTimeout(renderRows, 350);
 }
  
-function barDelivery(el) {
+async function barDelivery(el) {
   ensureAdminbarPresentationStyles();
-  const orders = Store.orders.filter((o) => o.delivery === 'delivery');
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, deliveryConfigRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.get(API_ENDPOINTS.delivery.config),
+  ]);
+  if (!ordersRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos de delivery');
+    return;
+  }
+  const allOrders = ordersRes.data.results || ordersRes.data || [];
+  const orders = allOrders.filter((o) => o.delivery_method === 'delivery' || o.delivery === 'delivery');
   const pending = orders.filter((o) => ['queue','confirmed','prep'].includes(o.status));
   const enCamino = orders.filter((o) => o.status === 'ready');
   const entregado = orders.filter((o) => o.status === 'delivered');
-  const cfg = Store.config;
+  const rawCfg = deliveryConfigRes.ok ? deliveryConfigRes.data : {};
+  const cfg = {
+    deliveryEnabled: rawCfg.enabled ?? true,
+    deliveryDays: rawCfg.delivery_days || [],
+    orderOpen: (rawCfg.start_time || '09:00').slice(0,5),
+    orderClose: (rawCfg.end_time || '09:45').slice(0,5),
+    deliveryMax: rawCfg.max_capacity ?? 4,
+    deliveryFloors: rawCfg.deliveryFloors || ['Piso 1','Piso 2','Piso 3'],
+    _raw: rawCfg,
+  };
   const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const floors = ['Piso 1', 'Piso 2', 'Piso 3'];
-  
-  // Initialize delivery floors in config if not present
   if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
 
   el.innerHTML = `
@@ -2122,7 +2440,7 @@ function barDelivery(el) {
         <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
           <label class="label">Días de entrega</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
-            ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
+             ${week.map((d, index) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${index}" ${cfg.deliveryDays.includes(index) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
           </div>
         </div>
         <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'};margin-top:12px">
@@ -2196,16 +2514,21 @@ function barDelivery(el) {
     if (w) w.style.display = cfg.deliveryEnabled ? 'none' : 'block';
   };
   const dlSaveBtn = $('#dlSave', el);
-  if (dlSaveBtn) dlSaveBtn.onclick = () => {
-    cfg.orderOpen = $('#dlStart', el).value || cfg.orderOpen;
-    cfg.orderClose = $('#dlEnd', el).value || cfg.orderClose;
-    cfg.deliveryMax = parseInt($('#dlMax', el).value) || cfg.deliveryMax;
-    cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
-    cfg.deliveryFloors = floors.filter((f) => $(`[data-floor="${f}"]`, el)?.checked);
-    cfg.deliveryEnabled = $('#dlEnabled', el).checked;
-    Store.config = cfg;
-    logAudit('Actualizó configuración de delivery', cfg.deliveryEnabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
-    toast('Configuración de delivery guardada.', 'success');
+  if (dlSaveBtn) dlSaveBtn.onclick = async () => {
+    const payload = {
+      enabled: $('#dlEnabled', el).checked,
+      start_time: $('#dlStart', el).value,
+      end_time: $('#dlEnd', el).value,
+      max_capacity: parseInt($('#dlMax', el).value) || 4,
+      delivery_days: [...$$('[data-day]', el)].filter((input) => input.checked).map((input) => Number(input.dataset.day)),
+    };
+    const res = await ApiClient.patch(API_ENDPOINTS.delivery.config, payload);
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.end_time?.[0] || 'Error al guardar delivery', 'error');
+      return;
+    }
+    logAudit('Actualizó configuración de delivery', payload.enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
+    toast('Configuración de delivery guardada en PostgreSQL.', 'success');
     renderBarAdmin('delivery');
   };
 }
@@ -2213,9 +2536,9 @@ function barDelivery(el) {
 /* ============================================================
    CONFIGURACIÓN - HORARIOS
    ============================================================ */
-function barConfigHours(el) {
-  const cfg = Store.config;
-  // Store original values to detect changes
+async function barConfigHours(el) {
+  return barConfigTabs(el, 'hours');
+  const cfg = null;
   const originalValues = {
     orderOpen: cfg.orderOpen,
     orderClose: cfg.orderClose,
@@ -2282,39 +2605,41 @@ function barConfigHours(el) {
   btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
 }
 
-function saveConfigHours(btn, indicator, originalValues) {
+async function saveConfigHours(btn, indicator, originalValues) {
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
-  
-  setTimeout(() => {
-    const cfg = Store.config;
-    cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
-    cfg.orderClose = $('#ohClose').value || cfg.orderClose;
-    cfg.breakStart = $('#brStart').value || cfg.breakStart;
-    cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
-    cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
-    Store.config = cfg;
-    logAudit('Actualizó horarios', 'Horario de pedidos y receso');
-    toast('Horarios guardados.', 'success');
-    
-    btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
-    btn.classList.add('btn-success');
-    btn.classList.remove('btn-primary');
-    if (indicator) indicator.style.display = 'none';
-    
-    setTimeout(() => {
-      renderBarAdmin('config-hours');
-    }, 600);
-  }, 500);
+  const payload = {
+    order_open_time: $('#ohOpen').value,
+    order_close_time: $('#ohClose').value,
+    break_start: $('#brStart').value,
+    break_end: $('#brEnd').value,
+    total_capacity: parseInt($('#cpCap').value),
+  };
+  Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
+  const res = await ApiClient.patch(API_ENDPOINTS.config.update, payload);
+  if (!res.ok) {
+    toast(res.data?.detail || res.data?.order_open_time?.[0] || 'Error al guardar configuración', 'error');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  logAudit('Actualizó horarios', 'Horario de pedidos y receso');
+  toast('Horarios guardados en PostgreSQL.', 'success');
+  btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
+  btn.classList.add('btn-success');
+  btn.classList.remove('btn-primary');
+  if (indicator) indicator.style.display = 'none';
+  setTimeout(() => { renderBarAdmin('config-hours'); }, 600);
 }
 
 /* ============================================================
    CONFIGURACIÓN - ESTADO ABIERTO/CERRADO
    ============================================================ */
-function barConfigStatus(el) {
-  const cfg = Store.config;
-  const isOpen = cfg.cafeOpen;
+async function barConfigStatus(el) {
+  return barConfigTabs(el, 'status');
+  const cfg = null;
+  const isOpen = false;
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración - Estado</h1></div>
     <div class="card" style="width:100%;max-width:none;margin:0">
@@ -2391,6 +2716,64 @@ function barAdminProfile(el) {
       if (btnRemove) { btnRemove.disabled = true; btnRemove.style.opacity = '0.6'; }
     }
   };
+  let hasUnsavedChanges = false;
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.id = 'btnSaveConfigHours';
+  btn.innerHTML = 'Guardar cambios';
+  
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
+    <div class="card" style="width:100%;max-width:none;margin:0">
+      <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+        <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
+      </div>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
+        <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
+      </div>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
+      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
+      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
+          <span class="pulse-dot"></span>
+        </span>
+        <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+  
+  const btnSave = $('#btnSaveConfigHours', el);
+  const indicator = $('#unsavedIndicator', el);
+  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
+  
+  const checkChanges = () => {
+    const currentValues = {
+      orderOpen: $('#ohOpen', el).value,
+      orderClose: $('#ohClose', el).value,
+      breakStart: $('#brStart', el).value,
+      breakEnd: $('#brEnd', el).value,
+      capacity: $('#cpCap', el).value
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
+    indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
+    btnSave.disabled = !hasUnsavedChanges;
+    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
+  };
+  
+  fields.forEach(id => {
+    const field = $('#' + id, el);
+    if (field) {
+      field.addEventListener('input', checkChanges);
+      field.addEventListener('change', checkChanges);
+    }
+  });
+  
+  btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
+}
 
   nameInput.addEventListener('input', () => {
     if (!newPhotoBase64) {
@@ -2418,59 +2801,51 @@ function barAdminProfile(el) {
     };
   }
 
-  $('#btnSaveProfile', el).onclick = () => {
+  $('#btnSaveProfile', el).onclick = async () => {
     const newName = nameInput.value.trim();
     if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    const [first_name, ...rest] = newName.split(' ');
+    const last_name = rest.join(' ');
+    const res = await ApiClient.patch(API_ENDPOINTS.auth.me, { first_name, last_name });
+    if (!res.ok) { toast(res.data?.detail || 'No se pudo actualizar perfil', 'error'); return; }
     const session = Store.load('int_session', null);
     if (session) {
       session.name = newName;
       if (newPhotoBase64 !== undefined) session.photo = newPhotoBase64;
       Store.save('int_session', session);
     }
-    const users = Store.users;
-    const u = users.find(x => x.id === user.id);
-    if (u) {
-      u.name = newName;
-      if (newPhotoBase64 !== undefined) u.photo = newPhotoBase64;
-      Store.users = users;
-    }
     Store.save('int_admin_name_' + user.id, newName);
     Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
-    // Actualiza también la foto en el avatar global si existe
-    toast('Perfil actualizado', 'success');
+    toast('Perfil actualizado en PostgreSQL', 'success');
     renderBarAdmin('profile');
   };
 }
 
-// Helper for config-status toggle - defined globally for onclick handlers
+// Helper for config-status toggle - definido globalmente, persiste en PostgreSQL
 function confirmToggleState(toOpen, btn) {
   const msg = toOpen ? '¿Seguro que quieres abrir la cafetería?' : '¿Seguro que quieres cerrar la cafetería?';
   const originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Procesando...';
-  
-  confirmDialog(msg, msg, 'Confirmar', false).then((ok) => {
+  confirmDialog(msg, msg, 'Confirmar', false).then(async (ok) => {
     if (!ok) {
       btn.disabled = false;
       btn.innerHTML = originalText;
       return;
     }
-    
-    setTimeout(() => {
-      const cfg = Store.config;
-      cfg.cafeOpen = toOpen;
-      Store.config = cfg;
-      logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
-      toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + '.', toOpen ? 'success' : 'warning');
-      
-      btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
-      btn.classList.add('btn-success');
-      btn.classList.remove('btn-primary', 'btn-secondary');
-      
-      setTimeout(() => {
-        renderBarAdmin('config-status');
-      }, 600);
-    }, 500);
+    const res = await ApiClient.patch(API_ENDPOINTS.config.update, { is_open: toOpen });
+    if (!res.ok) {
+      toast(res.data?.detail || 'No se pudo cambiar el estado', 'error');
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+    logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
+    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + ' (PostgreSQL).', toOpen ? 'success' : 'warning');
+    btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-primary', 'btn-secondary');
+    setTimeout(() => { renderBarAdmin('config-hours'); }, 600);
   });
 }
 window.confirmToggleState = confirmToggleState;

@@ -14,7 +14,7 @@ services:
     environment:
       POSTGRES_DB: cafeteria_db
       POSTGRES_USER: cafeteria_user
-      POSTGRES_PASSWORD: cafeteria_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -32,13 +32,13 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: cafeteria_db
       DB_USER: cafeteria_user
-      DB_PASSWORD: cafeteria_password
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       DB_HOST: db
       DB_PORT: 5432
     ports:

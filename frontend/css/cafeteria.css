@@ -338,11 +338,11 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   .menu-page::before { background: rgba(255,255,255,0.16); }
 }
 
-/* Cristal compartido con Landing para las superficies del Panel Cliente. */
+/* Cristal cliente — glassmorphism verde translúcido con #40807E como tinte
+   (restaura la superficie glass original con blur + texto blanco) */
 body.has-bottom-nav .card,
 body.has-bottom-nav .product-card,
 body.has-bottom-nav .order-card,
-body.has-bottom-nav .cat-banner,
 body.has-bottom-nav .cat-pill-card,
 body.has-bottom-nav .menu-side,
 body.has-bottom-nav .menu-side-list .cat-pill,
@@ -351,30 +351,30 @@ body.has-bottom-nav .summary-card,
 body.has-bottom-nav .capacity-card,
 body.has-bottom-nav .select-card,
 body.has-bottom-nav .file-drop {
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  background: rgba(64, 128, 126, 0.40);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(17, 28, 27, 0.14), 0 2px 10px rgba(64, 128, 126, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 body.has-bottom-nav .product-media,
 body.has-bottom-nav .cat-pill-card .cp-ico,
 body.has-bottom-nav .menu-side-list .cat-pill .cp-ico {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 body.has-bottom-nav .product-card .product-name,
-body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-title,
+body.has-bottom-nav .cat-pill-card .cp-name {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
+}
+body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-hint,
-body.has-bottom-nav .menu-lead .ml-title,
-body.has-bottom-nav .menu-lead .ml-sub,
-body.has-bottom-nav .reco-title,
-body.has-bottom-nav .reco-btn,
-body.has-bottom-nav .cat-pill-card .cp-name,
 body.has-bottom-nav .cat-pill-card .cp-count {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
 }
 
 /* ============================================================
@@ -460,11 +460,19 @@ body.has-bottom-nav .page .alert { border-radius: 14px; }
 body.has-bottom-nav .page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
 
 body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-bottom-nav .grid-4 .card {
-  border-radius: 18px; border-color: var(--line); background: #fff; box-shadow: 0 4px 14px rgba(17,28,27,0.06);
+  border-radius: 18px; border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(64, 128, 126, 0.36); backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 8px 28px rgba(17, 28, 27, 0.12), 0 2px 8px rgba(64, 128, 126, 0.18);
 }
-body.has-bottom-nav .card .card-title { color: var(--ink); }
-body.has-bottom-nav .card .card-sub { color: var(--muted); }
-body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .card .kv dd { color: var(--ink); }
+body.has-bottom-nav .card .card-title { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+body.has-bottom-nav .card .card-sub { color: rgba(255, 255, 255, 0.85); }
+body.has-bottom-nav .card .kv dt { color: rgba(255, 255, 255, 0.72); }
+body.has-bottom-nav .card .kv dd { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30); }
+body.has-bottom-nav .card-header,
+body.has-bottom-nav .card-footer,
+body.has-bottom-nav .security-row,
+body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -477,104 +485,106 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
   .home-hero .hh-btn.ghost { display: none; }
 }
 
-  /* Refuerzo final del cristal para evitar overrides de reglas históricas. */
-  body.has-bottom-nav .card,
-  body.has-bottom-nav .product-card,
-  body.has-bottom-nav .order-card,
-  body.has-bottom-nav .cat-banner,
-  body.has-bottom-nav .cat-pill-card,
-  body.has-bottom-nav .menu-side,
-  body.has-bottom-nav .menu-side-list .cat-pill,
-  body.has-bottom-nav .orders-overview,
-  body.has-bottom-nav .summary-card,
-  body.has-bottom-nav .capacity-card,
-  body.has-bottom-nav .select-card,
-  body.has-bottom-nav .file-drop {
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  }
-  body.has-bottom-nav .prod-detail .product-media { background: rgba(0, 0, 0, 0.25); }
+  /* Cristal: product media se integra con el panel glass */
+  body.has-bottom-nav .prod-detail .product-media { background: rgba(64, 128, 126, 0.38); }
 
-  /* Pedidos: separación constante y lectura clara sobre el cristal. */
+  /* Pedidos: separación constante */
   body.has-bottom-nav #currentOrders,
   body.has-bottom-nav #historyOrders {
     display: grid;
     gap: var(--sp-5);
   }
 
-  body.has-bottom-nav .card,
-  body.has-bottom-nav .product-card,
-  body.has-bottom-nav .order-card,
-  body.has-bottom-nav .cat-banner,
-  body.has-bottom-nav .cat-pill-card,
-  body.has-bottom-nav .menu-side,
-  body.has-bottom-nav .menu-side-list .cat-pill,
-  body.has-bottom-nav .orders-overview,
-  body.has-bottom-nav .summary-card,
-  body.has-bottom-nav .capacity-card,
-  body.has-bottom-nav .select-card,
-  body.has-bottom-nav .file-drop {
-    color: #FFFFFF;
-  }
-
-  body.has-bottom-nav .card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .product-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .order-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .cat-banner :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .cat-pill-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .menu-side :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .orders-overview :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .summary-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .capacity-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .select-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .file-drop :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li) {
-    color: #FFFFFF;
-  }
-
-  /* Contraste de iconos y badges con superficies claras. */
-  body.has-bottom-nav .product-card .product-media { color: var(--teal-700); }
-  body.has-bottom-nav .product-media .p-cat { color: #0e7a6e; }
+  /* Cristal: iconos y tags priorizan contraste sobre el verde translúcido */
+  body.has-bottom-nav .product-card .product-media { color: #ffffff; }
+  body.has-bottom-nav .product-media .p-cat,
   body.has-bottom-nav .product-media .p-cat i { color: #0e7a6e; }
-  body.has-bottom-nav .product-card .prep-tag { color: #5a6b69; }
+  body.has-bottom-nav .product-card .prep-tag { color: #ffffff; background: rgba(15, 45, 43, 0.52); border-color: rgba(255, 255, 255, 0.18); }
   body.has-bottom-nav .ci-media,
   body.has-bottom-nav .select-card .sc-ico,
-  body.has-bottom-nav .security-icon { color: var(--teal-700); }
-  body.has-bottom-nav .menu-side-hint { color: var(--muted); }
-  body.has-bottom-nav .badge-primary { color: var(--teal-700); }
-  body.has-bottom-nav .badge-success { color: var(--success-strong); }
-  body.has-bottom-nav .badge-warning { color: var(--warning-strong); }
-  body.has-bottom-nav .badge-danger { color: var(--danger-strong); }
-  body.has-bottom-nav .badge-info { color: var(--info); }
-  body.has-bottom-nav .badge-neutral { color: var(--neutral); }
-  body.has-bottom-nav .badge-outline { color: var(--text-2); }
-  body.has-bottom-nav .alert.success { color: var(--success-strong); }
-  body.has-bottom-nav .alert.warning { color: var(--warning-strong); }
-  body.has-bottom-nav .alert.danger { color: var(--danger-strong); }
-  body.has-bottom-nav .alert.info { color: var(--info); }
-  body.has-bottom-nav .alert.neutral { color: var(--neutral); }
+  body.has-bottom-nav .security-icon { color: #14464b; }
 
-  /* Jerarquía de texto directo en paneles principales. */
+  /* Pills de categoría del menú: texto e interacción coherentes con el cristal */
+  body.has-bottom-nav .menu-side-list .cat-pill { color: #ffffff; }
+  body.has-bottom-nav .menu-side-list .cat-pill:hover { background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.48); color: #ffffff; }
+  body.has-bottom-nav .menu-side-list .cat-pill .cp-name { color: #ffffff; }
+
+  body.has-bottom-nav .badge-primary,
+  body.has-bottom-nav .badge-success,
+  body.has-bottom-nav .badge-warning,
+  body.has-bottom-nav .badge-danger,
+  body.has-bottom-nav .badge-info,
+  body.has-bottom-nav .badge-neutral,
+  body.has-bottom-nav .badge-outline { color: #ffffff; }
+  body.has-bottom-nav .alert.success,
+  body.has-bottom-nav .alert.warning,
+  body.has-bottom-nav .alert.danger,
+  body.has-bottom-nav .alert.info,
+  body.has-bottom-nav .alert.neutral { color: #ffffff; }
+
+  /* Encabezados de página y títulos de sección sobre el fondo difuminado:
+     conservan su color oscuro original (no están sobre el cristal) */
   body.has-bottom-nav .page-title h1,
-  body.has-bottom-nav .section-title,
-  body.has-bottom-nav .card > .card-header .card-title,
-  body.has-bottom-nav .card > .card-header .card-sub,
-  body.has-bottom-nav .profile-hero > div > h2,
-  body.has-bottom-nav .order-card > .order-head .order-num,
-  body.has-bottom-nav .order-card > .order-glance .order-glance-label {
-    color: #FFFFFF;
+  body.has-bottom-nav .section-title { color: var(--ink); }
+  body.has-bottom-nav .page-sub { color: var(--muted); }
+
+  /* Jerarquía de texto sobre el cristal: títulos y cuerpo en blanco legible */
+  body.has-bottom-nav .card > .card-header .card-title {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
   }
+  body.has-bottom-nav .card > .card-header .card-sub { color: rgba(255, 255, 255, 0.85); }
+  body.has-bottom-nav .card .muted,
+  body.has-bottom-nav .order-card .muted { color: rgba(255, 255, 255, 0.78); }
+  body.has-bottom-nav .profile-hero > div > h2 { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+  body.has-bottom-nav .order-card > .order-head .order-num { color: #eafff8; }
+  body.has-bottom-nav .order-card > .order-glance .order-glance-label { color: #ffffff; }
+  body.has-bottom-nav .order-card .order-meta { color: rgba(255, 255, 255, 0.84); }
+  body.has-bottom-nav .order-card .tl-label { color: #ffffff; }
+  body.has-bottom-nav .order-card .tl-time,
+  body.has-bottom-nav .order-card .tl-step.done .tl-label { color: rgba(255, 255, 255, 0.76); }
+  body.has-bottom-nav .order-eta strong { color: #b6ffe9; }
+  body.has-bottom-nav .cart-item .ci-name { color: #ffffff; }
+  body.has-bottom-nav .cart-item .ci-meta { color: rgba(255, 255, 255, 0.84); }
+  body.has-bottom-nav .summary-row { color: rgba(255, 255, 255, 0.84); }
+  body.has-bottom-nav .summary-row.total { color: #ffffff; border-color: rgba(255, 255, 255, 0.28); }
+  body.has-bottom-nav .summary-row.total span:last-child { color: #d4fff0; }
+  body.has-bottom-nav .capacity-head h3,
+  body.has-bottom-nav .capacity-num { color: rgba(255, 255, 255, 0.88); }
+  body.has-bottom-nav .capacity-num b { color: #ffffff; }
+  body.has-bottom-nav .select-card .sc-desc { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .select-card .sc-name { color: #ffffff; }
+  body.has-bottom-nav .select-card.active { background: rgba(255, 255, 255, 0.30); border-color: rgba(255, 255, 255, 0.62); }
+  body.has-bottom-nav .file-drop { color: #ffffff; }
+  body.has-bottom-nav .file-drop:hover { color: var(--teal-700); background: rgba(255, 255, 255, 0.55); border-color: rgba(255, 255, 255, 0.70); }
+  body.has-bottom-nav .file-drop.success { color: var(--success-strong); background: rgba(230, 246, 238, 0.85); }
+
+  /* Resumen de pedidos sobre cristal */
+  body.has-bottom-nav .orders-overview-num { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+  body.has-bottom-nav .orders-overview .muted { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .card .empty-state,
+  body.has-bottom-nav .card .empty-state h3,
+  body.has-bottom-nav .card .empty-state p { color: rgba(255, 255, 255, 0.88); }
+  body.has-bottom-nav .card .empty-state h3 { text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+  /* Detalle de producto dentro del panel glass */
+  body.has-bottom-nav .prod-detail h1,
+  body.has-bottom-nav .prod-detail .label { color: #ffffff; }
+  body.has-bottom-nav .prod-detail h1 { text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+  body.has-bottom-nav .prod-detail .muted { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .prod-detail .checkbox-row { color: rgba(255, 255, 255, 0.90); }
+  body.has-bottom-nav .prod-detail span[style*="primary-strong"] { color: #d4fff0 !important; }
 
   /* Separa el aviso de demanda del panel de capacidad en Mi carrito. */
   body.has-bottom-nav #cartCapacity { margin-top: var(--sp-4); }
 
   /* Historial: número destacado y fecha en una etiqueta visible. */
   body.has-bottom-nav .order-card-history > div:first-child .order-num {
-    color: var(--primary-light);
+    color: #d4fff0;
+    text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
   }
+  body.has-bottom-nav .order-card-history .order-history-meta .bold { color: #d4fff0 !important; }
+  body.has-bottom-nav .security-row b { color: #ffffff; }
   body.has-bottom-nav .order-card-history > div:first-child .badge-outline {
     background: var(--teal);
     border-color: var(--teal);
@@ -582,15 +592,15 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
     margin-left: 6px;
   }
 
-  /* Notificaciones: mismo cristal del resto del Panel Cliente. */
+  /* Notificaciones: mismo cristal verde del resto del Panel Cliente. */
   body.has-bottom-nav .toast {
-    background: rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(64, 128, 126, 0.50);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.30);
     border-left-width: 4px;
     border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 30px rgba(17, 28, 27, 0.18), 0 2px 10px rgba(64, 128, 126, 0.20);
     color: #FFFFFF;
   }
   body.has-bottom-nav .toast .t-ico,

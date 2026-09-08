@@ -24,16 +24,23 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField("fecha", auto_now_add=True)
 
     class Meta:
+        db_table = "auditoria"
         verbose_name = "registro de auditoría"
         verbose_name_plural = "registros de auditoría"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["-created_at"]),
-            models.Index(fields=["action"]),
+            models.Index(fields=["-created_at"], name="audit_created_idx"),
+            models.Index(fields=["action"], name="audit_action_idx"),
+            models.Index(fields=["user", "-created_at"], name="audit_user_created_idx"),
         ]
 
     def __str__(self):
         return f"{self.user_name} - {self.action}"
+
+    def save(self, *args, **kwargs):
+        if self.user_id and not self.user_name:
+            self.user_name = self.user.get_full_name() or self.user.get_username()
+        return super().save(*args, **kwargs)
 
 
 class AuditLogProxy(AuditLog):

@@ -615,10 +615,6 @@
 .perm-yes { color: var(--success); font-weight: var(--fw-bold); }
 .perm-no { color: var(--text-3); }
 
-/* Demo creds login */
-.demo-creds summary { list-style: none; }
-.demo-creds summary::-webkit-details-marker { display: none; }
-
 /* Rellenos varios */
 .stock-bar .fill, .bar-fill { transition: width var(--t-med); }
 
