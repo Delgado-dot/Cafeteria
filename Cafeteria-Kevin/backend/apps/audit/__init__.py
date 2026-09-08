@@ -1,3 +1,0 @@
-"""
-Aplicación de auditoría.
-"""
