@@ -11,11 +11,14 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import (
     RolePermissionSerializer,
+    SelfUserUpdateSerializer,
+    UsernameOrEmailTokenObtainPairSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
+    PasswordChangeSerializer,
 )
-from .permissions import HasRolePermission, IsAdminDeveloper
+from .permissions import IsAdminDeveloper
 
 User = get_user_model()
 
@@ -41,9 +44,9 @@ class RegisterView(APIView):
 
 
 class LoginView(TokenObtainPairView):
-    """Login con JWT."""
+    """Login con JWT mediante nombre de usuario o correo."""
 
-    pass
+    serializer_class = UsernameOrEmailTokenObtainPairSerializer
 
 
 class UserListView(generics.ListAPIView):
@@ -76,11 +79,24 @@ class MeView(APIView):
         return Response(serializer.data)
 
     def patch(self, request):
-        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer = SelfUserUpdateSerializer(
+            request.user, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(request.user).data)
 
+
+class PasswordChangeView(APIView):
+    """Change the authenticated user's password after verifying the current one."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Contraseña actualizada correctamente."})
 
 # --- Roles y permisos (funcional, no en blanco) ---
 from .models import RolePermission  # noqa: E402
@@ -127,3 +143,4 @@ class RolePermissionBulkView(APIView):
 
     def put(self, request):
         return RolePermissionListView().post(request)
+

@@ -2,6 +2,7 @@
 Serializadores de la aplicación de productos.
 """
 
+from django.db import transaction
 from rest_framework import serializers
 
 from .models import Addon, Category, Product
@@ -16,7 +17,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class AddonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Addon
-        fields = ["id", "name", "price"]
+        fields = ["id", "name", "price", "available"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -68,3 +69,35 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             "emoji",
             "category",
         ]
+
+    @transaction.atomic
+    def create(self, validated_data):
+        desired_stock = validated_data.pop("stock", 0)
+        product = Product.objects.create(stock=0, **validated_data)
+        if desired_stock:
+            from apps.stock.models import StockMovementType
+
+            request = self.context.get("request")
+            product.adjust_stock(
+                desired_stock,
+                movement_type=StockMovementType.PURCHASE,
+                user=getattr(request, "user", None),
+                reason="Stock inicial del producto",
+            )
+        return product
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        desired_stock = validated_data.pop("stock", None)
+        product = super().update(instance, validated_data)
+        if desired_stock is not None and desired_stock != product.stock:
+            from apps.stock.models import StockMovementType
+
+            request = self.context.get("request")
+            product.adjust_stock(
+                desired_stock,
+                movement_type=StockMovementType.ADJUSTMENT,
+                user=getattr(request, "user", None),
+                reason="Ajuste manual desde la API de productos",
+            )
+        return product

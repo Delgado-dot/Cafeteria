@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "python -m http.server 8080",
-    "test": "node --test tests/frontend/",
+    "test": "node ../tests/frontend/landing-smoke.test.js",
     "lint": "eslint js/*.js",
     "format": "prettier --write \"js/*.js\" \"css/*.css\" \"index.html\""
   },
@@ -19,6 +19,7 @@
   "license": "MIT",
   "devDependencies": {
     "eslint": "^9.9.0",
+    "jsdom": "^30.0.1",
     "prettier": "^3.3.3"
   }
 }

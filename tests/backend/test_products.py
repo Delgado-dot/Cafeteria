@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from apps.products.models import Category, Product
+from apps.stock.models import StockMovement, StockMovementType
 
 User = get_user_model()
 
@@ -50,12 +51,18 @@ class ProductModelTests(TestCase):
         self.product.decrease_stock(5)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 20)
+        movement = StockMovement.objects.get(product=self.product)
+        self.assertEqual(movement.movement_type, StockMovementType.SALE)
+        self.assertEqual(movement.previous_stock, 25)
+        self.assertEqual(movement.new_stock, 20)
 
-    def test_decrease_stock_never_negative(self):
-        """Prueba de que el stock nunca es negativo."""
-        self.product.decrease_stock(100)
+    def test_decrease_stock_rejects_insufficient_stock_without_mutating(self):
+        """El stock insuficiente revierte la operacion completa."""
+        with self.assertRaises(ValueError):
+            self.product.decrease_stock(100)
         self.product.refresh_from_db()
-        self.assertEqual(self.product.stock, 0)
+        self.assertEqual(self.product.stock, 25)
+        self.assertFalse(StockMovement.objects.exists())
 
     def test_decrease_stock_rejects_negative(self):
         """Prueba de rechazo de cantidades negativas."""

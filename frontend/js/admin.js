@@ -3,42 +3,176 @@
    ============================================================ */
 
 const BAR_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: 'dashboard' },
-  orders: { label: 'Pedidos', icon: 'orders' },
-  preparacion: { label: 'Preparación', icon: 'prep' },
-  listos: { label: 'Pedidos listos', icon: 'ready' },
-  products: { label: 'Productos', icon: 'products' },
-  stock: { label: 'Stock', icon: 'stock' },
-  payments: { label: 'Pagos', icon: 'payments' },
-  sales: { label: 'Ventas', icon: 'sales' },
-  delivery: { label: 'Delivery', icon: 'delivery' },
-  config: { label: 'Configuración', icon: 'config' },
+  orders: { label: 'Pedidos', icon: 'bx-receipt' },
+  dashboard: { label: 'Dashboard', icon: 'bx-grid-alt' },
+  products: { label: 'Productos', icon: 'bx-food-menu' },
+  stock: { label: 'Stock', icon: 'bx-box' },
+  payments: { label: 'Pagos', icon: 'bx-credit-card' },
+  'sales-dashboard': { label: 'Ventas', icon: 'bx-line-chart' },
+  delivery: { label: 'Delivery', icon: 'bx-cycling' },
+  suppliers: { label: 'Proveedores', icon: 'bx-store' },
+  reports: { label: 'Informes', icon: 'bx-bar-chart-alt-2' },
+  'config-hours': { label: 'Configuración', icon: 'bx-cog' },
 };
 
-const BAR_ICON_MAP = { dashboard:'grid', orders:'orders', preparacion:'clock', listos:'check', products:'bag', stock:'bag', payments:'orders', sales:'grid', delivery:'cart', config:'menu' };
-function _barSvg(sec){ return svgIcon(BAR_ICON_MAP[sec]||'grid'); }
+const BAR_PAGES = {
+  ...BAR_SECTIONS,
+  'payment-detail': { label: 'Detalle de pago', icon: 'bx-credit-card' },
+  'sales-history': { label: 'Historial de ventas', icon: 'bx-history' },
+  'stock-history': { label: 'Historial de stock', icon: 'bx-history' },
+  'config-status': { label: 'Estado de cafetería', icon: 'bx-cog' },
+  profile: { label: 'Mi perfil', icon: 'bx-user' },
+};
 
-function renderBarAdmin(page) {
+// Mapeo de presentación de estados de pago (solo label + color, sin tocar valores internos)
+const paymentStatusLabels = {
+  pending: { label: 'Pendiente', cls: 'badge-warning' },
+  review: { label: 'En revisión', cls: 'badge-info' },
+  approved: { label: 'Aprobado', cls: 'badge-success' },
+  paid: { label: 'Pagado', cls: 'badge-success' },
+  rejected: { label: 'Rechazado', cls: 'badge-danger' },
+  refunded: { label: 'Reembolsado', cls: 'badge-neutral' },
+};
+
+// Criterio único para "Por cobrar" — usado en Dashboard y Pagos para evitar desincronización
+function isPendingPayment(order) {
+  return order.paymentStatus === 'pending' && ['queue', 'confirmed', 'prep', 'ready'].includes(order.status);
+}
+function getPendingPayments(orders = []) {
+  return orders.filter(isPendingPayment);
+}
+
+// Track last visited payment order ID for highlight-on-return
+let lastVisitedPaymentId = null;
+
+function isValidSale(order) {
+  return ['approved', 'paid'].includes(order.paymentStatus);
+}
+
+function paymentMethodIcon(method) {
+  return ({ deuna: 'bx-mobile-alt', transferencia: 'bx-transfer-alt', efectivo: 'bx-money' }[method] || 'bx-credit-card');
+}
+
+function ensureAdminbarPresentationStyles() {
+  if (document.getElementById('adminbar-presentation')) return;
+  const style = document.createElement('style');
+  style.id = 'adminbar-presentation';
+  style.textContent = `
+    @keyframes adminbarEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes adminbarBadgePop {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes adminbarModalIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Cards (existing sales summary) */
+    .sales-summary-grid .sales-summary-card { animation: adminbarEnter var(--t-slow) both; }
+    .sales-summary-grid .sales-summary-card:nth-child(2) { animation-delay: 70ms; }
+    .sales-summary-grid .sales-summary-card:nth-child(3) { animation-delay: 140ms; }
+    .sales-summary-grid .sales-summary-card:nth-child(4) { animation-delay: 210ms; }
+
+    /* Stock summary cards (grid-3) - same staggered entrance */
+    .grid-3 .stat-card { animation: adminbarEnter var(--t-slow) both; }
+    .grid-3 .stat-card:nth-child(2) { animation-delay: 70ms; }
+    .grid-3 .stat-card:nth-child(3) { animation-delay: 140ms; }
+
+    /* Table rows - staggered fade-in */
+    .admin-table tbody tr { animation: adminbarEnter var(--t-med) both; }
+    .admin-table tbody tr:nth-child(1)  { animation-delay: 10ms; }
+    .admin-table tbody tr:nth-child(2)  { animation-delay: 25ms; }
+    .admin-table tbody tr:nth-child(3)  { animation-delay: 40ms; }
+    .admin-table tbody tr:nth-child(4)  { animation-delay: 55ms; }
+    .admin-table tbody tr:nth-child(5)  { animation-delay: 70ms; }
+    .admin-table tbody tr:nth-child(6)  { animation-delay: 85ms; }
+    .admin-table tbody tr:nth-child(7)  { animation-delay: 100ms; }
+    .admin-table tbody tr:nth-child(8)  { animation-delay: 115ms; }
+    .admin-table tbody tr:nth-child(9)  { animation-delay: 130ms; }
+    .admin-table tbody tr:nth-child(10) { animation-delay: 145ms; }
+    .admin-table tbody tr:nth-child(11) { animation-delay: 160ms; }
+    .admin-table tbody tr:nth-child(12) { animation-delay: 175ms; }
+    .admin-table tbody tr:nth-child(13) { animation-delay: 190ms; }
+    .admin-table tbody tr:nth-child(14) { animation-delay: 205ms; }
+    .admin-table tbody tr:nth-child(15) { animation-delay: 220ms; }
+    .admin-table tbody tr:nth-child(16) { animation-delay: 235ms; }
+    .admin-table tbody tr:nth-child(17) { animation-delay: 250ms; }
+    .admin-table tbody tr:nth-child(18) { animation-delay: 265ms; }
+    .admin-table tbody tr:nth-child(19) { animation-delay: 280ms; }
+    .admin-table tbody tr:nth-child(20) { animation-delay: 295ms; }
+
+    /* Badges - pop in */
+    .admin-table .badge,
+    .sales-summary-grid .badge,
+    .queue-order .badge,
+    .stat-card .badge { animation: adminbarBadgePop var(--t-fast) both; }
+
+    /* Modals - fade + scale */
+    .modal-overlay .modal { animation: adminbarModalIn var(--t-med) both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sales-summary-grid .sales-summary-card,
+      .grid-3 .stat-card,
+      .admin-table tbody tr,
+      .admin-table .badge,
+      .sales-summary-grid .badge,
+      .queue-order .badge,
+      .stat-card .badge,
+      .modal-overlay .modal { animation: none; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function animateSalesMetrics(el) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const duration = 800;
+  $$('[data-sales-count]', el).forEach((metric) => {
+    const target = Number(metric.dataset.salesCount);
+    const format = metric.dataset.salesFormat;
+    const start = performance.now();
+    const update = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const value = target * (1 - Math.pow(1 - progress, 3));
+      metric.textContent = format === 'money' ? money(value) : String(Math.round(value));
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  });
+}
+
+async function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
-  const sec = BAR_SECTIONS[page] ? page : 'dashboard';
+  const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
+  const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
+  const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
   syncBodyClass();
 
-  const queueCount = Store.orders.filter((o) => o.status === 'queue').length;
-  const prepCount = Store.orders.filter((o) => o.status === 'prep').length;
-  const readyCount = Store.orders.filter((o) => o.status === 'ready').length;
+  let queueCount = 0, prepCount = 0, readyCount = 0;
+  try {
+    const r = await ApiClient.get(API_ENDPOINTS.orders.all);
+    if (r.ok) {
+      const orders = apiList(r.data);
+      queueCount = orders.filter((o) => o.status === 'queue').length;
+      prepCount = orders.filter((o) => o.status === 'prep').length;
+      readyCount = orders.filter((o) => o.status === 'ready').length;
+    }
+  } catch(e) {}
 
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="color:var(--primary)">${svgIcon('coffee')}</span> Cafetería INTESUD</div>
+        <div class="sb-brand"><span style="font-size:1.5rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span></div>
         <nav class="sb-nav">
-          ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-bar="${k}">
-              <span class="sb-ico">${_barSvg(k)}</span>${v.label}
+${Object.entries(BAR_SECTIONS).map(([k, v]) => `
+            <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
+              <span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span>
               ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
-              ${k === 'preparacion' && prepCount ? `<span class="sb-badge" style="background:var(--warning)">${prepCount}</span>` : ''}
-              ${k === 'listos' && readyCount ? `<span class="sb-badge" style="background:var(--success)">${readyCount}</span>` : ''}
             </a>`).join('')}
         </nav>
         <div class="sb-footer">
@@ -48,19 +182,13 @@ function renderBarAdmin(page) {
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="barHamburger" title="Menú">☰</button>
-          <span class="topbar-ico">${_barSvg(sec)}</span>
-          <span class="page-name">${BAR_SECTIONS[sec].label}</span>
-          <div class="admin-topbar-actions" style="margin-left:auto;display:flex;align-items:center;gap:12px">
-            <div class="header-search" style="width:220px;display:flex;align-items:center;position:relative">
-              <span class="ico" style="position:absolute;left:10px;color:var(--text-3);display:flex">${svgIcon('search')}</span>
-              <input class="input" placeholder="Buscar pedido..." style="padding-left:34px;height:34px;font-size:0.88rem;background:var(--surface-3);border-color:transparent;border-radius:999px;width:100%" id="adminSearch">
-            </div>
-            <button class="header-icon-btn" title="Notificaciones" style="width:36px;height:36px">${svgIcon('bell')}<span class="bubble ${queueCount>0?'show':''}" style="position:absolute;top:-4px;right:-4px">${queueCount||''}</span></button>
+          <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
+          <span class="page-name">${BAR_PAGES[sec].label}</span>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <span id="cafePill"></span>
             <div class="profile-chip" id="barUserMenu">
-              <div class="avatar sm">${esc(initials(currentUser().name))}</div>
-              <span class="pname">${esc(currentUser().name)}</span> ▾
+              <div class="avatar sm" style="${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? `background-image:url('${currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')}');background-size:cover;background-position:center;color:transparent` : ''}">${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? '' : esc(initials(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name))}</div>
+              <span class="pname">${esc(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name)}</span> ▾
               <div class="dropdown-menu" id="barUserDropdown" style="display:none">
                 <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
                 <div class="dropdown-sep"></div>
@@ -72,549 +200,751 @@ function renderBarAdmin(page) {
         <div class="admin-content" id="barContent">
         </div>
       </div>
+      <nav class="admin-bottom-nav" id="adminBottomNav">
+        <div class="abn-grid">
+          ${[
+            { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
+            { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
+            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount, center: true },
+            { id: 'stock', label: 'Stock', icon: 'bx-box' },
+            { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
+          ].map((item, idx) => {
+            const isActive = item.id === 'more'
+              ? ['payments','sales-dashboard','sales-history','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
+              : activeSidebarSection === item.id;
+            const isAdjacent = idx === 1 || idx === 3;
+            if (item.center) {
+              return `<a class="abn-item center ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+                <span class="abn-circle"><i class="bx ${item.icon}"></i></span>
+                <span class="abn-label">${item.label}</span>
+                ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
+              </a>`;
+            }
+            return `<a class="abn-item ${isAdjacent ? 'adjacent' : ''} ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+              <span class="abn-ico bx ${item.icon}"></span>
+              <span>${item.label}</span>
+              ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
+            </a>`;
+          }).join('')}
+        </div>
+      </nav>
+      <div id="adminMoreModal" style="display:none"></div>
     </div>`;
 
   renderCafePill($('#cafePill'));
 
+  // Limpieza: elimina toggle/flecha huérfano de arquitecturas anteriores (ya no se usa)
+  document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
+  document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+
   const sidebar = $('.admin-sidebar', app);
-  const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
-  $('#barHamburger')?.addEventListener('click', () => {
-    sidebar?.classList.add('open');
-    if (!$('.sb-scrim')) {
-      const scrim = document.createElement('div');
-      scrim.className = 'sb-scrim';
-      scrim.addEventListener('click', closeSidebar);
-      document.body.appendChild(scrim);
+  const layout = $('.admin-layout', app);
+  const closeSidebar = () => {
+    // Arquitectura híbrida: sidebar móvil oculto, desktop siempre visible → no hay drawer que cerrar, solo limpia scrims huérfanos
+    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+  };
+  // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
+  const moreModal = $('#adminMoreModal', app);
+  const MORE_ITEMS = [
+    { id: 'payments', label: 'Pagos', icon: 'bx-credit-card' },
+    { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
+    { id: 'delivery', label: 'Delivery', icon: 'bx-cycling' },
+    { id: 'suppliers', label: 'Proveedores', icon: 'bx-store' },
+    { id: 'reports', label: 'Informes', icon: 'bx-bar-chart-alt-2' },
+    { id: 'config-hours', label: 'Configuración', icon: 'bx-cog' },
+  ];
+  const closeMoreModal = () => {
+    if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
+  };
+  const openMoreModal = () => {
+    if (!moreModal) return;
+    moreModal.innerHTML = `
+      <div class="admin-more-scrim"></div>
+      <div class="admin-more-sheet">
+        <div class="admin-more-header">
+          <span>Más opciones</span>
+          <button class="btn btn-ghost btn-sm" id="closeMoreBtn">✕</button>
+        </div>
+        ${MORE_ITEMS.map(item => `
+          <a class="admin-more-item ${activeSidebarSection === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
+            <span class="ami-ico bx ${item.icon}"></span>
+            <span>${item.label}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+    moreModal.style.display = 'block';
+    $('.admin-more-scrim', moreModal)?.addEventListener('click', closeMoreModal);
+    $('#closeMoreBtn', moreModal)?.addEventListener('click', closeMoreModal);
+    $$('[data-more]', moreModal).forEach(a => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMoreModal();
+      closeSidebar();
+      setRoute('adminbar/' + a.dataset.more);
+    }));
+  };
+  $$('[data-bnav]', app).forEach(a => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = a.dataset.bnav;
+    if (target === 'more') {
+      openMoreModal();
+    } else {
+      closeSidebar();
+      closeMoreModal();
+      setRoute('adminbar/' + target);
     }
-  });
+  }));
   $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault(); closeSidebar(); setRoute('adminbar/' + a.dataset.bar);
   }));
   const ud = $('#barUserDropdown');
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
-  $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
+  $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { setRoute('adminbar/profile'); ud.style.display = 'none'; } else setRoute(t); });
   $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
-  const adminSearch = $('#adminSearch');
-  if (adminSearch) adminSearch.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && adminSearch.value.trim()){ toast('Búsqueda: '+adminSearch.value,'info'); setRoute('adminbar/orders'); }});
 
   const content = $('#barContent');
-  // limpiar tick operativo si se sale del dashboard
-  if (sec !== 'dashboard' && window._opsTick) { clearInterval(window._opsTick); window._opsTick = null; }
-  const renderers = {
+const renderers = {
     dashboard: barDashboard,
     orders: barOrders,
-    preparacion: (el)=> barOrders(el, 'prep'),
-    listos: (el)=> barOrders(el, 'ready'),
     products: barProducts,
     stock: barStock,
+    'stock-history': barStockHistory,
     payments: barPayments,
-    sales: barSales,
+    'payment-detail': barPaymentDetail,
+    'sales-dashboard': (target) => barSalesTabs(target, 'summary'),
+    'sales-history': (target) => barSalesTabs(target, 'history'),
     delivery: barDelivery,
-    config: barConfig,
+    suppliers: barSuppliers,
+    reports: barReports,
+    'config-hours': (target) => barConfigTabs(target, 'hours'),
+    'config-status': (target) => barConfigTabs(target, 'status'),
+    profile: barAdminProfile,
   };
-  renderers[sec](content);
+  // Skeleton loading al cambiar de pantalla (200-300ms) para transición suave
+  content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
+  setTimeout(() => renderers[sec](content, params), 260);
 }
 
-function renderCafePill(el) {
-  const cfg = Store.config;
-  el.innerHTML = `<span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}">${cfg.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span>`;
-}
-
-/* ============================================================
-   DASHBOARD OPERATIVO — ¿Qué tengo que preparar ahora?
-   Orden: ALERTAS > CAPACIDAD+PEDIDOS > COLA > LISTOS > STOCK/PAGOS/VENTAS
-   ============================================================ */
-
-// helpers de tiempo y prioridad para dashboard operativo
-function _parseHM(hm) {
-  if (!hm || !hm.includes(':')) return 0;
-  const [h, m] = hm.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-function _elapsedMins(o) {
+async function renderCafePill(el) {
   try {
-    const now = new Date();
-    const nowMins = now.getHours() * 60 + now.getMinutes();
-    const orderMins = _parseHM(o.time || '00:00');
-    let diff = nowMins - orderMins;
-    if (o.date) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (o.date !== today) {
-        const d1 = new Date(o.date + 'T00:00:00');
-        const d2 = new Date(today + 'T00:00:00');
-        const dayDiff = Math.round((d2 - d1) / 86400000);
-        if (dayDiff > 0) diff += dayDiff * 1440;
-      }
-    }
-    let v = Math.max(0, diff);
-    // Demo: si el diff es irrealmente grande (ej. probando en la tarde), normalizar a valores demo 3-19 min
-    // para que el dashboard siempre se vea operativo y cumpla el ejemplo del requerimiento.
-    if (v > 90) {
-      // hash determinístico por id para mantener orden estable
-      let h = 0;
-      for (let i = 0; i < String(o.id).length; i++) h = (h * 31 + String(o.id).charCodeAt(i)) % 1000;
-      const demoVals = [5, 8, 12, 18, 3, 9, 14, 6, 16, 4];
-      v = demoVals[h % demoVals.length] + (h % 3);
-      // urgente/priority ya definidos mantienen su peso; ajustar para que se vea la escalada
-      if (o.priority === 'urgent') v = Math.max(v, 16);
-      else if (o.priority === 'priority') v = Math.max(v, 11);
-    }
-    if (v > 60) v = v % 60 + 5;
-    return v;
-  } catch (e) { return 0; }
-}
-function _effectivePriority(o, elapsed) {
-  if (o.priority === 'urgent' || elapsed >= 18) return 'urgent';
-  if (o.priority === 'priority' || elapsed >= 12) return 'priority';
-  if (elapsed >= 8 && o.priority === 'normal') return 'priority';
-  return o.priority || 'normal';
-}
-function _priorityMeta(p) {
-  if (p === 'urgent') return { label: 'URGENTE', icon: '🔴', cls: 'urgent', dot: 'var(--danger)' };
-  if (p === 'priority') return { label: 'ALTA', icon: '🟠', cls: 'priority', dot: 'var(--warning)' };
-  return { label: 'NORMAL', icon: '🟡', cls: 'normal', dot: 'var(--neutral)' };
-}
-function _fmtMM(elapsed) {
-  const m = Math.floor(elapsed);
-  const s = '00';
-  // formato Preparación: MM:SS / MM:00  -> mostramos MM:SS simple
-  // para elapsed > 60 usamos mins totales
-  return String(m).padStart(2, '0') + ':' + s;
-}
-function _fmtElapsedText(elapsed) {
-  if (elapsed < 1) return 'hace un momento';
-  if (elapsed === 1) return '1 min esperando';
-  return elapsed + ' min esperando';
-}
-
-function barDashboard(el) {
-  const orders = Store.orders;
-  const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((o) => o.date === today);
-  // estados
-  const queue = orders.filter((o) => o.status === 'queue');
-  const confirmed = orders.filter((o) => o.status === 'confirmed');
-  const prep = orders.filter((o) => o.status === 'prep');
-  const ready = orders.filter((o) => o.status === 'ready');
-  const deliveredToday = todayOrders.filter((o) => o.status === 'delivered');
-  const pendingPrep = [...queue, ...confirmed, ...prep]; // lo que hay que preparar ahora
-  const cap = capacityInfo();
-  const capUsed = cap.used;
-  const capTotal = cap.total;
-  // pagos
-  const payPaid = orders.filter((o) => ['paid', 'approved'].includes(o.paymentStatus)).length;
-  const payPending = orders.filter((o) => o.paymentStatus === 'pending').length;
-  const payReview = orders.filter((o) => o.paymentStatus === 'review').length;
-  const payRejected = orders.filter((o) => o.paymentStatus === 'rejected').length;
-  // stock
-  const lowStock = Store.products.filter((p) => p.available && p.stock > 0 && p.stock <= p.minStock);
-  const outStock = Store.products.filter((p) => p.stock === 0);
-  const availStock = Store.products.filter((p) => p.stock > p.minStock).length;
-  // ventas
-  const salesTodayVal = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).reduce((s, o) => s + o.total, 0);
-  const countToday = todayOrders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).length;
-
-  // enriquecer cola con tiempos y prioridad efectiva
-  const enriched = pendingPrep.map((o) => {
-    const elapsed = _elapsedMins(o);
-    const effPri = _effectivePriority(o, elapsed);
-    return { o, elapsed, effPri };
-  });
-
-  // alertas operativas
-  const alerts = [];
-  enriched.forEach(({ o, elapsed, effPri }) => {
-    if (elapsed >= 18 || effPri === 'urgent' && o.priority !== 'urgent') {
-      alerts.push({ level: 'danger', icon: '🔴', text: `Pedido <b>#${o.id}</b> lleva <b>${elapsed} min</b> esperando — prioridad elevada a <b>URGENTE</b>.`, orderId: o.id });
-    } else if (elapsed >= 12) {
-      alerts.push({ level: 'warning', icon: '🟠', text: `Pedido <b>#${o.id}</b> lleva <b>${elapsed} min</b> esperando.`, orderId: o.id });
-    }
-  });
-  if (cap.pct >= 100) alerts.push({ level: 'danger', icon: '🔴', text: `<b>CAPACIDAD LLENA</b> — No aceptar nuevos pedidos hasta liberar capacidad (${capUsed}/${capTotal}).` });
-  else if (cap.pct >= 90) alerts.push({ level: 'warning', icon: '🟠', text: `<b>ALTA DEMANDA</b> — La barra está al <b>${cap.pct}%</b> de capacidad (${capUsed}/${capTotal}).` });
-  else if (cap.pct >= 70) alerts.push({ level: 'info', icon: '🟡', text: `Capacidad al <b>${cap.pct}%</b> — ritmo alto, prioriza pedidos urgentes.` });
-  outStock.slice(0, 3).forEach((p) => alerts.push({ level: 'danger', icon: '🔴', text: `Stock: <b>${esc(p.name)}</b> — <b>AGOTADO</b>.` }));
-  if (!outStock.length && lowStock.length) alerts.push({ level: 'warning', icon: '🟡', text: `Stock bajo: <b>${lowStock.slice(0, 3).map((p) => esc(p.name)).join(', ')}</b>${lowStock.length > 3 ? ' +' + (lowStock.length - 3) + ' más' : ''} — reponer pronto.` });
-  const pendingPayOrders = orders.filter((o) => ['pending', 'review'].includes(o.paymentStatus) && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-  if (pendingPayOrders.length) {
-    const reviewOne = pendingPayOrders.find((o) => o.paymentStatus === 'review');
-    if (reviewOne) alerts.push({ level: 'danger', icon: '🔴', text: `Pago pendiente <b>#${reviewOne.id}</b> — ${paymentMethodLabel(reviewOne.payment)} en revisión.` });
-    else alerts.push({ level: 'warning', icon: '🟡', text: `<b>${pendingPayOrders.length}</b> pago(s) pendiente(s) — verificar antes de preparar.` });
+    const res = await ApiClient.get(API_ENDPOINTS.config.get);
+    const isOpen = res.ok ? !!res.data.is_open : true;
+    el.innerHTML = `<span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
+  } catch (e) {
+    el.innerHTML = `<span class="badge badge-success"><span class="ico">🟢</span> ABIERTA</span>`;
   }
+}
 
-  // ordenar cola: prioridad > tiempo espera > hora
-  let sortMode = 'priority';
-  const sortFns = {
-    priority: (a, b) => {
-      const w = { urgent: 3, priority: 2, normal: 1 };
-      const d = (w[b.effPri] || 0) - (w[a.effPri] || 0);
-      if (d !== 0) return d;
-      return b.elapsed - a.elapsed;
-    },
-    wait: (a, b) => b.elapsed - a.elapsed,
-    time: (a, b) => _parseHM(a.o.time) - _parseHM(b.o.time),
-  };
-
-  // agrupar por prioridad para mostrar secciones URGENTE/ALTA/NORMAL
-  const grouped = { urgent: [], priority: [], normal: [] };
-  // se ordenará dinámicamente; por defecto priority
-  let sorted = [...enriched].sort(sortFns[sortMode]);
-  sorted.forEach((x) => grouped[x.effPri].push(x));
-
-  // capacidad hero estado
-  let capState = 'NORMAL';
-  let capCls = 'ok';
-  let capMsg = 'Ritmo normal — se aceptan pedidos.';
-  if (cap.pct >= 100) { capState = 'CAPACIDAD LLENA'; capCls = 'full'; capMsg = 'No aceptar nuevos pedidos hasta liberar capacidad.'; }
-  else if (cap.pct >= 90) { capState = 'ALTA DEMANDA'; capCls = 'high'; capMsg = 'La barra está trabajando al ' + cap.pct + '% de capacidad.'; }
-  else if (cap.pct >= 70) { capState = 'ALTA DEMANDA'; capCls = 'mid'; capMsg = 'Ritmo alto — prioriza urgentes.'; }
-
+function renderAdminTabs(el, tabs, initialTab) {
+  let activeTab = initialTab;
   el.innerHTML = `
-    <div class="ops-dash">
-      <!-- HEADER OPERATIVO -->
-      <div class="ops-header">
-        <div>
-          <h1 class="ops-title">¿Qué tengo que preparar ahora?</h1>
-          <div class="tiny muted" style="margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <span>📅 ${today} · <span id="opsClock">${nowTime()}</span></span>
-            <span class="badge ${Store.config.cafeOpen ? 'badge-success' : 'badge-danger'}">${Store.config.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span>
-            <span class="muted">Receso ${Store.config.breakStart}–${Store.config.breakEnd}</span>
+    <div class="adv-tabs">
+      ${tabs.map((tab) => `<button class="category-chip${tab.id === activeTab ? ' active' : ''}" data-admin-tab="${tab.id}">${tab.label}</button>`).join('')}
+    </div>
+    <div id="adminTabContent"></div>`;
+
+  const renderTab = () => {
+    const tab = tabs.find((item) => item.id === activeTab);
+    tab.render($('#adminTabContent', el));
+  };
+  $$('[data-admin-tab]', el).forEach((button) => button.onclick = () => {
+    activeTab = button.dataset.adminTab;
+    $$('[data-admin-tab]', el).forEach((item) => item.classList.toggle('active', item === button));
+    renderTab();
+  });
+  renderTab();
+}
+
+function barSalesTabs(el, initialTab) {
+  renderAdminTabs(el, [
+    { id: 'summary', label: 'Resumen', render: barSalesDashboard },
+    { id: 'history', label: 'Historial', render: barSalesHistory },
+  ], initialTab);
+}
+
+async function barConfigTabs(el, initialTab) {
+  el.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div></div>`;
+  const [configRes, productsRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.config.get),
+    ApiClient.get(API_ENDPOINTS.products.list),
+  ]);
+  if (!configRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudo cargar la configuración');
+    return;
+  }
+  const raw = configRes.data || {};
+  const cfg = {
+    orderOpen: (raw.order_open_time || '09:00').slice(0,5),
+    orderClose: (raw.order_close_time || '09:45').slice(0,5),
+    breakStart: (raw.break_start || '10:00').slice(0,5),
+    breakEnd: (raw.break_end || '10:15').slice(0,5),
+    capacity: String(raw.total_capacity ?? 10),
+    cafeOpen: !!raw.is_open,
+    name: raw.name || 'Cafetería INTESUD',
+    description: raw.description || '',
+    enabledPayments: raw.enabledPayments || { deuna: true, transferencia: true, efectivo: true },
+    _raw: raw,
+  };
+  const products = productsRes.ok ? apiList(productsRes.data).map(normalizeApiProduct) : [];
+  const isOpen = cfg.cafeOpen;
+  const originalValues = {
+    orderOpen: cfg.orderOpen,
+    orderClose: cfg.orderClose,
+    breakStart: cfg.breakStart,
+    breakEnd: cfg.breakEnd,
+    capacity: String(cfg.capacity)
+  };
+  let hasUnsavedChanges = false;
+
+  if (!cfg.enabledPayments) cfg.enabledPayments = { deuna: true, transferencia: true, efectivo: true };
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
+    <div class="grid grid-2" style="align-items:start;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="width:100%;max-width:none;margin:0">
+          <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">General — Horarios y Estado</div></div>
+          <div style="margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de pedidos</div></div>
+          <div class="grid grid-2">
+            <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+            <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
           </div>
-        </div>
-        <div class="ops-header-actions">
-          <button class="btn btn-outline btn-sm" id="opsRefresh">↻ Actualizar</button>
-          <a class="btn btn-primary btn-sm" href="#" id="opsGoOrders">Ver todos los pedidos →</a>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de receso</div></div>
+          <div class="grid grid-2">
+            <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
+            <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
+          </div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Capacidad</div></div>
+          <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos.</div></div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Estado</div></div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px">
+            <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+            <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'} btn-sm" id="btnToggleCafeStatus" style="margin-left:auto">${isOpen ? 'Cerrar cafetería' : 'Abrir cafetería'}</button>
+          </div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Métodos de pago habilitados</div></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <label class="checkbox-row"><input type="checkbox" id="payDeuna" ${cfg.enabledPayments.deuna ? 'checked' : ''}> DEUNA</label>
+            <label class="checkbox-row"><input type="checkbox" id="payTrans" ${cfg.enabledPayments.transferencia ? 'checked' : ''}> Transferencia</label>
+            <label class="checkbox-row"><input type="checkbox" id="payEfect" ${cfg.enabledPayments.efectivo ? 'checked' : ''}> Efectivo</label>
+          </div>
+          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
+            <span id="unsavedIndicator" class="unsaved-indicator" style="display:none"><span class="pulse-dot"></span></span>
+            <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+          </div>
         </div>
       </div>
-
-      <!-- ALERTAS IMPORTANTES (siempre visible, arriba) -->
-      <section class="ops-alerts" aria-label="Alertas operativas">
-        <div class="ops-section-head"><span class="ops-kicker">⚠️ ALERTAS</span><span class="badge ${alerts.length ? 'badge-danger' : 'badge-success'}">${alerts.length ? alerts.length + ' activa(s)' : 'Sin alertas'}</span></div>
-        ${alerts.length ? `<div class="ops-alerts-list">${alerts.map((a) => `
-          <div class="ops-alert ops-alert-${a.level}">
-            <span class="ops-alert-ico">${a.icon}</span>
-            <div class="ops-alert-text">${a.text}</div>
-            ${a.orderId ? `<span class="badge badge-outline" style="margin-left:auto;flex-shrink:0">#${a.orderId}</span>` : ''}
-          </div>`).join('')}</div>`
-      : `<div class="status-banner success" style="margin:0"><span class="ico">✅</span><div><b>Sin alertas operativas.</b> Todo fluye con normalidad.</div></div>`}
-      </section>
-
-      <!-- CAPACIDAD + RESUMEN PEDIDOS (muy visible) -->
-      <section class="grid ops-cap-row" style="grid-template-columns:1.35fr 1fr;gap:16px">
-        <div class="capacity-hero cap-${capCls}">
-          <div class="capacity-hero-head">
-            <div>
-              <div class="ops-kicker">CAPACIDAD</div>
-              <div class="capacity-hero-state">${capState}</div>
-              <div class="tiny muted">${capMsg}</div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="width:100%;max-width:none;margin:0">
+          <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Preferencias — Categorías y Notificaciones</div></div>
+          <div style="margin-bottom:14px">
+            <div style="font-weight:700;margin-bottom:8px">Categorías de productos</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${CATEGORIES.map((c) => {
+                const cnt = products.filter((p) => p.category === c).length;
+                return `<span class="badge badge-primary" style="font-size:13px;padding:6px 10px">${esc(c)} · ${cnt}</span>`;
+              }).join('')}
             </div>
-            <div class="capacity-hero-pct">${cap.pct}<small>%</small></div>
+            <div class="tiny muted" style="margin-top:6px">Gestiona las categorías desde Productos.</div>
           </div>
-          <div class="bar-track bar-lg" style="margin-top:14px"><div class="bar-fill ${cap.pct >= 100 ? 'danger' : cap.pct >= 70 ? 'warn' : ''}" style="width:${cap.pct}%"></div></div>
-          <div class="capacity-hero-foot">
-            <span><b>${capUsed} / ${capTotal}</b> pedidos en preparación</span>
-            <span class="badge ${cap.pct >= 100 ? 'badge-danger' : cap.pct >= 90 ? 'badge-warning' : 'badge-success'}">${capState}</span>
-          </div>
-          ${cap.pct >= 90 ? `<div class="alert ${cap.pct >= 100 ? 'danger' : 'warning'}" style="margin-top:12px;padding:10px 12px"><span class="a-ico">${cap.pct >= 100 ? '🔴' : '⚠️'}</span><div>${cap.pct >= 100 ? '<b>CAPACIDAD LLENA</b> — No aceptar nuevos pedidos hasta liberar capacidad.' : '<b>ALTA DEMANDA</b> — Prioriza urgentes y libera listos rápido.'}</div></div>` : ''}
-        </div>
-        <div class="ops-counts">
-          <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
-            <div class="stat-card ${queue.length ? 'alert' : ''}" style="border-left:4px solid var(--warning)"><div class="st-label">Pendientes</div><div class="st-value ${queue.length ? 'warning' : ''}">${queue.length}</div><div class="st-sub">en cola</div><div class="tiny muted" style="margin-top:6px">+ ${confirmed.length} confirmados</div></div>
-            <div class="stat-card" style="border-left:4px solid #e09a16"><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">en barra ahora</div><div class="tiny muted" style="margin-top:6px">${capUsed}/${capTotal} capacidad</div></div>
-            <div class="stat-card success-card"><div class="st-label">Listos</div><div class="st-value" style="color:var(--success)">${ready.length}</div><div class="st-sub">para entregar</div><div class="tiny muted" style="margin-top:6px">${ready.length ? '¡Entregar ya!' : 'sin espera'}</div></div>
-            <div class="stat-card"><div class="st-label">Entregados hoy</div><div class="st-value">${deliveredToday.length}</div><div class="st-sub">${today}</div><div class="tiny muted" style="margin-top:6px">${countToday} pedidos totales hoy</div></div>
-          </div>
-          <div class="ops-mini-timer card" style="margin-top:12px;padding:14px;display:flex;justify-content:space-between;align-items:center">
-            <div><div class="tiny muted">Pedidos que necesitan atención ahora</div><div class="bold" style="font-size:1.1rem">${pendingPrep.length} en cola de preparación</div></div>
-            <span class="badge badge-primary" style="font-size:.85rem">${pendingPrep.length ? '▶ Preparar' : '✓ Al día'}</span>
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-weight:700;margin-bottom:8px">Notificaciones</div>
+            <label class="checkbox-row"><input type="checkbox" checked disabled> Notificar pedidos nuevos (próximamente)</label>
+            <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
           </div>
         </div>
-      </section>
-
-      <!-- COLA DE PREPARACIÓN (prioridad operativa) -->
-      <section class="ops-queue-section" aria-label="Cola de preparación">
-        <div class="ops-section-head">
-          <div><span class="ops-kicker">🔥 COLA DE PREPARACIÓN</span><div class="ops-queue-sub">Ordenado por prioridad y tiempo de espera — <b>atiende de arriba hacia abajo</b></div></div>
-          <div class="ops-sort">
-            <span class="tiny muted">Ordenar:</span>
-            <button class="btn btn-sm ${sortMode === 'priority' ? 'btn-primary' : 'btn-outline'}" data-sort="priority">Prioridad</button>
-            <button class="btn btn-sm ${sortMode === 'wait' ? 'btn-primary' : 'btn-outline'}" data-sort="wait">Tiempo espera</button>
-            <button class="btn btn-sm ${sortMode === 'time' ? 'btn-primary' : 'btn-outline'}" data-sort="time">Hora pedido</button>
-          </div>
+        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
+          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
+          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
         </div>
-        <div id="opsQueueList">
-          ${pendingPrep.length ? `
-            ${grouped.urgent.length ? `<div class="ops-group ops-group-urgent"><div class="ops-group-head"><span class="priority-tag urgent">🔴 URGENTE</span><span class="tiny muted">${grouped.urgent.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.urgent.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-            ${grouped.priority.length ? `<div class="ops-group ops-group-priority"><div class="ops-group-head"><span class="priority-tag priority">🟠 ALTA</span><span class="tiny muted">${grouped.priority.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.priority.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-            ${grouped.normal.length ? `<div class="ops-group ops-group-normal"><div class="ops-group-head"><span class="priority-tag normal">🟡 NORMAL</span><span class="tiny muted">${grouped.normal.length} pedido(s)</span></div><div class="ops-queue-grid">${grouped.normal.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-          ` : `<div class="empty-state" style="padding:28px"><div class="es-ico">✅</div><h3>Cola vacía</h3><p>No hay pedidos pendientes de preparación. ¡Buen trabajo!</p></div>`}
-        </div>
-      </section>
-
-      <!-- PEDIDOS LISTOS (muy visible, acción ENTREGADO) -->
-      <section class="ops-ready-section">
-        <div class="ops-section-head">
-          <div><span class="ops-kicker">✅ PEDIDOS LISTOS</span><div class="tiny muted">Listos para retirar — marca <b>ENTREGADO</b> al entregar</div></div>
-          <span class="badge ${ready.length ? 'badge-success' : 'badge-neutral'}">${ready.length} listo(s)</span>
-        </div>
-        <div id="opsReadyList">
-          ${ready.length ? `<div class="ops-ready-grid">${ready.map((o) => opsReadyCard(o)).join('')}</div>` : `<div class="status-banner neutral" style="margin:0"><span class="ico">📦</span><div><b>Sin pedidos listos.</b> Cuando marques un pedido como listo aparecerá aquí.</div></div>`}
-        </div>
-      </section>
-
-      <!-- RESUMEN INFERIOR: STOCK / PAGOS / VENTAS -->
-      <section class="grid grid-3 ops-bottom">
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">📦 STOCK</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/stock">Ver stock →</a></div>
-          <div class="ops-summary-stats">
-            <div class="ops-pill ok">✓ ${availStock} disponibles</div>
-            <div class="ops-pill warn">⚠ ${lowStock.length} bajo</div>
-            <div class="ops-pill danger">⛔ ${outStock.length} agotados</div>
-          </div>
-          <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-            ${outStock.slice(0, 2).map((p) => `<div class="ops-stock-row danger"><span>🥪 ${esc(p.name)}</span><span class="badge badge-danger">AGOTADO</span></div>`).join('')}
-            ${lowStock.slice(0, 2).map((p) => `<div class="ops-stock-row warn"><span>☕ ${esc(p.name)}</span><span class="badge badge-warning">${p.stock} · bajo</span></div>`).join('')}
-            ${!outStock.length && !lowStock.length ? `<div class="tiny muted">Todo el stock está en niveles normales.</div>` : ''}
-          </div>
-        </div>
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">💳 PAGOS</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/payments">Revisar →</a></div>
-          <div class="ops-summary-stats">
-            <div class="ops-pill ok">✓ ${payPaid} pagados</div>
-            <div class="ops-pill warn">⏳ ${payPending} pendientes</div>
-            <div class="ops-pill danger">✕ ${payRejected} rechazados</div>
-          </div>
-          ${payReview ? `<div class="alert warning" style="margin-top:12px;padding:8px 12px"><span class="a-ico">🔍</span><div><b>${payReview} en revisión</b> — aprobar comprobantes</div></div>` : ''}
-          ${pendingPayOrders.slice(0, 1).map((o) => `<div class="ops-pay-row" style="margin-top:10px"><span class="bold">#${o.id}</span><span class="tiny muted">${paymentMethodLabel(o.payment)}</span>${paymentMeta(o.paymentStatus)}</div>`).join('')}
-          ${!pendingPayOrders.length ? `<div class="tiny muted" style="margin-top:10px">Sin pagos pendientes.</div>` : ''}
-        </div>
-        <div class="card ops-summary-card">
-          <div class="ops-summary-head"><span class="ops-kicker">📈 VENTAS HOY</span><a class="tiny bold" style="color:var(--primary)" href="#" data-goto="adminbar/sales">Detalle →</a></div>
-          <div style="margin-top:8px">
-            <div class="ops-sales-big">${money(salesTodayVal)}</div>
-            <div class="tiny muted">${countToday} pedidos · ${today}</div>
-          </div>
-          <div class="divider" style="margin:12px 0"></div>
-          <div class="tiny muted">Total vendido hoy (pedidos activos + entregados).</div>
-          <div style="margin-top:10px;display:flex;gap:8px">
-            <span class="badge badge-success">${deliveredToday.length} entregados</span>
-            <span class="badge badge-neutral">${ready.length + prep.length + queue.length} en curso</span>
-          </div>
-        </div>
-      </section>
-
-      <div class="tiny muted" style="margin-top:16px;text-align:center">Actualización automática cada 60s · <span id="opsLastUpdate">${nowTime()}</span> · Prioridad se eleva automáticamente si el pedido supera el tiempo esperado.</div>
+      </div>
     </div>
   `;
 
-  // bindings
-  $('#opsRefresh')?.addEventListener('click', () => barDashboard(el));
-  $('#opsGoOrders')?.addEventListener('click', (e) => { e.preventDefault(); setRoute('adminbar/orders'); });
-  $$('[data-goto]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); const [s, p] = a.dataset.goto.split('/'); setRoute(s + '/' + p); });
+  const btnSave = $('#btnSaveConfigHours', el);
+  const indicator = $('#unsavedIndicator', el);
+  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
+  const checkChanges = () => {
+    const currentValues = {
+      orderOpen: $('#ohOpen', el).value,
+      orderClose: $('#ohClose', el).value,
+      breakStart: $('#brStart', el).value,
+      breakEnd: $('#brEnd', el).value,
+      capacity: $('#cpCap', el).value
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
+    if (indicator) indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
+    if (btnSave) { btnSave.disabled = !hasUnsavedChanges; btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6'; }
+  };
+  fields.forEach(id => {
+    const field = $('#' + id, el);
+    if (field) { field.addEventListener('input', checkChanges); field.addEventListener('change', checkChanges); }
+  });
+  if (btnSave) btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
+  const btnToggle = $('#btnToggleCafeStatus', el);
+  if (btnToggle) btnToggle.onclick = () => confirmToggleState(!isOpen, btnToggle);
+}
 
-  // ordenar cola
-  $$('[data-sort]', el).forEach((btn) => {
-    btn.addEventListener('click', () => {
-      sortMode = btn.dataset.sort;
-      const newSorted = [...enriched].sort(sortFns[sortMode]);
-      const ng = { urgent: [], priority: [], normal: [] };
-      newSorted.forEach((x) => ng[x.effPri].push(x));
-      const listEl = $('#opsQueueList');
-      if (!newSorted.length) { listEl.innerHTML = `<div class="empty-state" style="padding:28px"><div class="es-ico">✅</div><h3>Cola vacía</h3><p>No hay pedidos pendientes.</p></div>`; return; }
-      listEl.innerHTML = `
-        ${ng.urgent.length ? `<div class="ops-group ops-group-urgent"><div class="ops-group-head"><span class="priority-tag urgent">🔴 URGENTE</span><span class="tiny muted">${ng.urgent.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.urgent.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-        ${ng.priority.length ? `<div class="ops-group ops-group-priority"><div class="ops-group-head"><span class="priority-tag priority">🟠 ALTA</span><span class="tiny muted">${ng.priority.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.priority.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
-        ${ng.normal.length ? `<div class="ops-group ops-group-normal"><div class="ops-group-head"><span class="priority-tag normal">🟡 NORMAL</span><span class="tiny muted">${ng.normal.length} pedido(s)</span></div><div class="ops-queue-grid">${ng.normal.map((x) => opsQueueCard(x.o, x.elapsed, x.effPri)).join('')}</div></div>` : ''}
+async function barSuppliers(el) {
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-store"></span> Proveedores</h1><button class="btn btn-primary btn-sm" id="btnAddSupplierPage"><i class="bx bx-plus" style="margin-right:4px"></i>Agregar proveedor</button></div>
+    <div class="card"><div id="suppliersListPage"><div class="skeleton" style="height:100px"></div></div></div>
+  `;
+  const renderSuppliersPage = async () => {
+    const wrap = $('#suppliersListPage', el);
+    if (!wrap) return;
+    wrap.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
+    const res = await ApiClient.get(API_ENDPOINTS.suppliers.list);
+    if (!res.ok) {
+      wrap.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los proveedores');
+      return;
+    }
+    const list = res.data.results || res.data || [];
+    if (!list.length) {
+      wrap.innerHTML = `<div style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-store"></i></div><div style="font-weight:600">Aún no hay proveedores</div><div class="tiny muted" style="margin-top:4px">¡Agrega el primero para tener tus contactos a mano!</div></div>`;
+      return;
+    }
+    wrap.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map(s => `
+      <div class="stat-card" style="padding:12px;display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${esc(s.name.charAt(0).toUpperCase())}</div>
+        <div style="flex:1 1 0%;min-width:0;overflow:hidden">
+          <div class="bold" style="font-size:14px;line-height:1.2;white-space:normal;word-break:break-word;overflow:visible;text-overflow:clip">${esc(s.name)}</div>
+          <div class="tiny muted" style="white-space:normal;word-break:break-word;line-height:1.3">${esc(s.email || s.phone || '—')} · ${esc(s.phone || '')}</div>
+        </div>
+        <span class="badge ${s.active ? 'badge-success' : 'badge-neutral'}" style="flex-shrink:0;align-self:center">${s.active ? 'Activo' : 'Inactivo'}</span>
+        <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:88px">
+	         <a class="btn btn-icon-supplier" href="tel:${esc(s.phone || '')}" title="Llamar"><i class="bx bx-phone"></i></a>
+	         <a class="btn btn-icon-supplier" href="https://wa.me/${esc((s.phone || '').replace(/\D/g,''))}" target="_blank" title="WhatsApp"><i class="bx bxl-whatsapp"></i></a>
+	         <button class="btn btn-icon-supplier" data-edit-supplier="${s.id}" title="Editar"><i class="bx bx-edit-alt"></i></button>
+	         <button class="btn btn-icon-supplier" data-del-supplier="${s.id}" title="Eliminar"><i class="bx bx-trash"></i></button>
+	         </div>
+      </div>
+    `).join('')}</div>`;
+    $$('[data-edit-supplier]', wrap).forEach(b => b.onclick = async () => {
+      const supRes = await ApiClient.get(API_ENDPOINTS.suppliers.detail(b.dataset.editSupplier));
+      if (supRes.ok) supplierFormModal(supRes.data, renderSuppliersPage);
+    });
+    $$('[data-del-supplier]', wrap).forEach(b => b.onclick = () => {
+      confirmDialog('Eliminar proveedor', `¿Eliminar proveedor?`, 'Eliminar', true).then(async ok => {
+        if (!ok) return;
+        const res = await ApiClient.delete(API_ENDPOINTS.suppliers.detail(b.dataset.delSupplier));
+        if (!res.ok) { toast(res.data?.detail || 'No se pudo eliminar', 'error'); return; }
+        toast('Proveedor eliminado', 'success');
+        renderSuppliersPage();
+      });
+    });
+  };
+  await renderSuppliersPage();
+  $('#btnAddSupplierPage', el)?.addEventListener('click', () => supplierFormModal(null, renderSuppliersPage));
+}
+
+async function barReports(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.payments.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || []}));
+  const orders = ordersNorm.filter(isValidSale);
+  const productsList = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((o) => o.date === today);
+  const totalVentas = orders.reduce((s, o) => s + o.total, 0);
+  const totalHoy = todayOrders.reduce((s, o) => s + o.total, 0);
+  const byMethod = { deuna: 0, transferencia: 0, efectivo: 0 };
+  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (byMethod.hasOwnProperty(k)) byMethod[k] += o.total; });
+  const totalMetodo = byMethod.deuna + byMethod.transferencia + byMethod.efectivo || 1;
+  const pct = (v) => Math.round((v / totalMetodo) * 100);
+  // Ventas por hora hoy
+  const hours = [7,9,11,13,15,17,19];
+  const hourTotals = hours.map((h) => todayOrders.filter((o) => {
+    const hr = parseInt((o.time || '0:0').split(':')[0], 10);
+    return hr >= h && hr < h + 2;
+  }).reduce((s, o) => s + o.total, 0));
+  const maxHour = Math.max(...hourTotals, 1);
+  // Mini datos para sparkline ventas totales (últimos 7 días)
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const date = d.toISOString().slice(0, 10); const t = orders.filter((o) => o.date === date).reduce((s, o) => s + o.total, 0); days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total: t }); }
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-bar-chart-alt-2"></span> Informes</h1></div>
+    <p class="page-sub" style="margin-bottom:16px">Resumen visual adaptado a la lógica real del proyecto</p>
+    <div class="adv-tabs" style="margin-bottom:20px">
+      <button class="category-chip active" data-rpt="ventas">Ventas</button>
+      <button class="category-chip" data-rpt="productos">Productos</button>
+      <button class="category-chip" data-rpt="pagos">Pagos</button>
+      <button class="category-chip" data-rpt="resumen">Resumen</button>
+    </div>
+    <div id="rptContent"></div>
+    <div class="grid grid-3" style="gap:14px;margin-top:20px">
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
+        <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
+        <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+      <div class="stat-card" style="padding:18px;text-align:center">
+        <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
+        <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
+        <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
+        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+      </div>
+    </div>
+  `;
+
+  const rptContent = $('#rptContent', el);
+  const renderTab = (tab) => {
+    if (tab === 'ventas') {
+      rptContent.innerHTML = `
+        <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div>
+              <div class="tiny muted" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Ventas totales</div>
+              <div style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(totalVentas)}</div>
+              <div class="tiny muted">${orders.length} pedidos válidos · ${money(totalHoy)} hoy</div>
+            </div>
+            <svg width="120" height="48" viewBox="0 0 120 48" style="flex-shrink:0">
+              <polyline fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${days.map((d, i) => `${(i / 6) * 110 + 5},${40 - (d.total / Math.max(...days.map(x=>x.total),1)) * 30}`).join(' ')}" />
+              <polygon fill="var(--primary-glass)" stroke="none" points="${days.map((d, i) => `${(i / 6) * 110 + 5},${40 - (d.total / Math.max(...days.map(x=>x.total),1)) * 30}`).join(' ')} 115,40 5,40" />
+            </svg>
+          </div>
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px">Ventas por método de pago</div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <svg width="110" height="110" viewBox="0 0 42 42" style="flex-shrink:0">
+                ${(() => {
+                  const vals = [byMethod.deuna, byMethod.transferencia, byMethod.efectivo];
+                  const colors = ['#40807E', '#3b7cc3', '#22a06b'];
+                  let acc = 0;
+                  return vals.map((v, i) => {
+                    const pctVal = v / totalMetodo;
+                    const dash = pctVal * 100;
+                    const gap = 0.5;
+                    const offset = 25 - acc * 100;
+                    acc += pctVal;
+                    return `<circle r="15.915" cx="21" cy="21" fill="transparent" stroke="${colors[i]}" stroke-width="6" stroke-dasharray="${dash - gap} ${100 - dash + gap}" stroke-dashoffset="${offset}" />`;
+                  }).join('');
+                })()}
+                <circle r="10" cx="21" cy="21" fill="var(--surface)" />
+              </svg>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#40807E"></span>DEUNA</span><span class="bold">${money(byMethod.deuna)} · ${pct(byMethod.deuna)}%</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#3b7cc3"></span>Transferencia</span><span class="bold">${money(byMethod.transferencia)} · ${pct(byMethod.transferencia)}%</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#22a06b"></span>Efectivo</span><span class="bold">${money(byMethod.efectivo)} · ${pct(byMethod.efectivo)}%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div style="font-weight:700;margin-bottom:12px">Ventas por hora (hoy)</div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:140px;padding:8px 8px 0;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md)">
+            ${hours.map((h, i) => {
+              const v = hourTotals[i];
+              const hPct = (v / maxHour) * 100;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${money(v)}</div><div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;height:${Math.max(6, hPct)}%;background:var(--primary);border-radius:6px 6px 0 0"></div></div><div style="font-size:11px;font-weight:700;color:var(--text-2)">${h}h</div></div>`;
+            }).join('')}
+          </div>
+        </div>
       `;
-      bindOpsQueueActions(listEl);
-      // actualizar botones
-      $$('[data-sort]', el).forEach((b) => b.className = b.dataset.sort === sortMode ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline');
-    });
-  });
-
-  bindOpsQueueActions(el);
-  bindOpsReadyActions(el);
-
-  // live tick cada 60s para tiempos
-  if (window._opsTick) clearInterval(window._opsTick);
-  window._opsTick = setInterval(() => {
-    const clk = $('#opsClock');
-    if (clk) clk.textContent = nowTime();
-    const upd = $('#opsLastUpdate');
-    if (upd) upd.textContent = nowTime();
-    // actualizar textos de espera sin re-render completo
-    $$('[data-elapsed]', el).forEach((node) => {
-      const id = node.dataset.elapsed;
-      const ord = Store.orders.find((o) => o.id === id);
-      if (!ord) return;
-      const e = _elapsedMins(ord);
-      node.textContent = e + ' min';
-      const sub = node.nextElementSibling;
-      if (sub && sub.classList.contains('ops-wait-sub')) sub.textContent = _fmtElapsedText(e);
-    });
-    $$('[data-timer]', el).forEach((node) => {
-      const id = node.dataset.timer;
-      const ord = Store.orders.find((o) => o.id === id);
-      if (!ord) return;
-      const e = _elapsedMins(ord);
-      const est = ord.prepMin || 5;
-      const exceeded = e > est;
-      node.textContent = _fmtMM(e) + ' / ' + String(est).padStart(2, '0') + ':00';
-      node.classList.toggle('exceeded', exceeded);
-      const badge = node.parentElement?.querySelector('[data-exceeded]');
-      if (badge) badge.style.display = exceeded ? 'inline-flex' : 'none';
-    });
-  }, 60000);
-}
-
-function opsQueueCard(o, elapsed, effPri) {
-  const pri = _priorityMeta(effPri);
-  const est = o.prepMin || 5;
-  const exceeded = elapsed > est;
-  const remaining = Math.max(0, est - elapsed);
-  const pct = Math.min(100, Math.round((elapsed / est) * 100));
-  const totalItems = o.items.reduce((s, i) => s + i.qty, 0);
-  const isDelivery = o.delivery === 'delivery';
-  const escalated = effPri !== o.priority;
-  return `
-    <div class="ops-q-card pri-${effPri} ${exceeded ? 'exceeded' : ''}" data-qid="${o.id}">
-      <div class="ops-q-head">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="ops-q-num">#${o.id}</span>
-          <span class="priority-tag ${pri.cls}">${pri.icon} ${pri.label}</span>
-          ${escalated ? `<span class="badge badge-warning" title="Prioridad elevada por tiempo de espera">⬆ escalada</span>` : ''}
-          ${statusMeta(o.status)}
+    } else if (tab === 'productos') {
+      const prodSales = {};
+      orders.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSales[pid] = (prodSales[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
+      const top = Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,qty])=> ({ product: productsList.find((p)=> String(p.id)===String(id)), qty})).filter(x=>x.product);
+      rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px">${product.emoji||'📦'}</div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
+    } else if (tab === 'pagos') {
+      rptContent.innerHTML = `
+        <div class="grid grid-3" style="gap:12px">
+          <div class="stat-card"><div class="st-label">DEUNA</div><div class="st-value primary">${money(byMethod.deuna)}</div><div class="st-sub">${pct(byMethod.deuna)}% del total</div></div>
+          <div class="stat-card"><div class="st-label">Transferencia</div><div class="st-value" style="color:var(--info)">${money(byMethod.transferencia)}</div><div class="st-sub">${pct(byMethod.transferencia)}%</div></div>
+          <div class="stat-card"><div class="st-label">Efectivo</div><div class="st-value success">${money(byMethod.efectivo)}</div><div class="st-sub">${pct(byMethod.efectivo)}%</div></div>
         </div>
-        <span class="badge ${isDelivery ? 'badge-info' : 'badge-neutral'}">${isDelivery ? `🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}` : '🏪 Retiro'}</span>
-      </div>
-      <div class="ops-q-meta">
-        <span class="ops-q-client">👤 ${esc(o.userName)}</span>
-        <span class="muted">·</span>
-        <span class="tiny">🕒 ${o.time}</span>
-        <span class="muted">·</span>
-        <span class="tiny"><b data-elapsed="${o.id}">${elapsed} min</b> <span class="ops-wait-sub tiny muted">${_fmtElapsedText(elapsed)}</span></span>
-      </div>
-      <div class="ops-q-items">
-        <div class="tiny muted" style="margin-bottom:4px">${totalItems} producto(s)</div>
-        ${o.items.map((i) => `<div class="ops-q-item"><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
-        ${o.note ? `<div class="tiny muted" style="margin-top:6px">📝 ${esc(o.note)}</div>` : ''}
-      </div>
-      <div class="ops-timer">
-        <div class="ops-timer-head">
-          <span class="tiny bold">Preparación: <span data-timer="${o.id}" class="${exceeded ? 'exceeded' : ''}">${_fmtMM(elapsed)} / ${String(est).padStart(2, '0')}:00</span></span>
-          <span class="badge badge-danger" data-exceeded style="display:${exceeded ? 'inline-flex' : 'none'}">⚠ Tiempo excedido</span>
-          ${!exceeded ? `<span class="tiny muted">restante ${remaining} min</span>` : ''}
+        <div class="card" style="margin-top:16px"><div class="tiny muted">Métodos reales del proyecto: DEUNA, Transferencia y Efectivo. No se usa Tarjeta.</div></div>
+      `;
+    } else {
+      rptContent.innerHTML = `
+        <div class="grid grid-2" style="gap:16px">
+          <div class="card"><div style="font-weight:700;margin-bottom:8px">Resumen general</div><div class="tiny muted">Ventas totales ${money(totalVentas)} en ${orders.length} pedidos. Hoy ${money(totalHoy)}.</div><div style="margin-top:12px;display:flex;gap:8px"><span class="badge badge-primary">DEUNA ${pct(byMethod.deuna)}%</span><span class="badge badge-info">Transferencia ${pct(byMethod.transferencia)}%</span><span class="badge badge-success">Efectivo ${pct(byMethod.efectivo)}%</span></div></div>
+          <div class="card"><div style="font-weight:700;margin-bottom:8px">Accesos rápidos</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" data-goto="adminbar/sales-dashboard">Ver Ventas</button><button class="btn btn-outline btn-sm" data-goto="adminbar/payments">Ver Pagos</button><button class="btn btn-outline btn-sm" data-goto="adminbar/stock">Ver Stock</button></div></div>
         </div>
-        <div class="bar-track bar-sm"><div class="bar-fill ${exceeded ? 'danger' : pct > 80 ? 'warn' : ''}" style="width:${pct}%"></div></div>
-        <div class="tiny muted" style="display:flex;justify-content:space-between;margin-top:4px"><span>Transcurrido ${elapsed} min</span><span>Estimado ${est} min</span></div>
-      </div>
-      <div class="ops-q-foot">
-        <span class="small bold">${money(o.total)}</span>
-        <span class="tiny muted">${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)}</span>
-      </div>
-      <div class="ops-q-actions">
-        ${o.status === 'queue' ? `<button class="btn btn-primary btn-sm" data-act="confirm" data-id="${o.id}">Confirmar</button>` : ''}
-        ${o.status === 'confirmed' ? `<button class="btn btn-warning btn-sm" data-act="prep" data-id="${o.id}">Iniciar preparación</button>` : ''}
-        ${o.status === 'prep' ? `<button class="btn btn-success btn-sm" data-act="ready" data-id="${o.id}">Marcar listo</button>` : ''}
-        ${['queue', 'confirmed'].includes(o.status) ? `<button class="btn btn-neutral btn-sm" data-act="cancel" data-id="${o.id}">Cancelar</button>` : ''}
-      </div>
-    </div>`;
+      `;
+      $$('[data-goto]', rptContent).forEach((a)=> a.onclick=(e)=>{e.preventDefault(); const [s,p]=a.dataset.goto.split('/'); setRoute(s+'/'+p);});
+    }
+  };
+  $$('[data-rpt]', el).forEach((btn)=> btn.onclick=()=>{
+    $$('[data-rpt]', el).forEach((x)=> x.classList.remove('active'));
+    btn.classList.add('active');
+    renderTab(btn.dataset.rpt);
+  });
+  renderTab('ventas');
 }
 
-function opsReadyCard(o) {
-  const elapsed = _elapsedMins(o);
-  const readyWait = Math.max(0, elapsed - (o.prepMin || 5));
-  return `
-    <div class="ops-ready-card" data-rid="${o.id}">
-      <div class="ops-ready-head">
-        <span class="ops-q-num">#${o.id}</span>
-        <span class="badge badge-success">● Listo</span>
-        <span class="tiny muted">terminó ${o.time}</span>
-      </div>
-      <div class="tiny muted" style="margin:6px 0"><b>${esc(o.userName)}</b> · ${o.delivery === 'delivery' ? `🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}` : '🏪 Retiro'} · ${money(o.total)}</div>
-      <div class="ops-q-items" style="margin:8px 0">${o.items.map((i) => `<div class="ops-q-item"><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}</div>
-      <div class="alert ${readyWait > 10 ? 'danger' : readyWait > 5 ? 'warning' : 'success'}" style="padding:8px 12px;margin:8px 0"><span class="a-ico">${readyWait > 10 ? '🔴' : readyWait > 5 ? '⚠️' : '✅'}</span><div><b>Esperando ${readyWait} min</b> para ser retirado.</div></div>
-      <button class="btn btn-success btn-sm btn-block" data-ready-act="delivered" data-id="${o.id}">✓ ENTREGADO</button>
-    </div>`;
-}
-
-function bindOpsQueueActions(root) {
-  $$('[data-act]', root).forEach((btn) => {
-    btn.onclick = () => {
-      const id = btn.dataset.id;
-      const act = btn.dataset.act;
-      const order = Store.orders.find((o) => o.id === id);
-      if (!order) return;
-      if (act === 'cancel') {
-        confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${order.id}?`, 'Cancelar pedido', true).then((ok) => {
-          if (!ok) return;
-          order.status = 'cancelled'; order.eta = 'Cancelado';
-          order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
-          saveOrders(); logAudit('Canceló pedido', order.id); toast('Pedido cancelado.', 'success');
-          const c = document.querySelector('#barContent');
-          if (c) barDashboard(c);
-        });
-        return;
-      }
-      const next = { confirm: 'confirmed', prep: 'prep', ready: 'ready' }[act];
-      order.status = next;
-      order.eta = { confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo' }[next];
-      saveOrders(); logAudit('Cambió estado de pedido', `${order.id} → ${order.eta}`);
-      toast('#' + order.id + ' ' + order.eta + '.', 'success');
-      const c = document.querySelector('#barContent');
-      if (c) barDashboard(c);
-    };
-  });
-}
-function bindOpsReadyActions(root) {
-  $$('[data-ready-act]', root).forEach((btn) => {
-    btn.onclick = () => {
-      const id = btn.dataset.id;
-      const order = Store.orders.find((o) => o.id === id);
-      if (!order) return;
-      order.status = 'delivered'; order.eta = 'Entregado';
-      if (order.paymentStatus === 'pending') order.paymentStatus = 'paid';
-      // liberar capacidad
-      const cfg = Store.config;
-      cfg.currentCapacity = Math.max(0, (cfg.currentCapacity || 0) - 1);
-      Store.config = cfg;
-      saveOrders(); logAudit('Entregó pedido', order.id); toast('#' + order.id + ' entregado.', 'success');
-      const c = document.querySelector('#barContent');
-      if (c) barDashboard(c);
-    };
-  });
+function supplierFormModal(supplier, onSave) {
+  const isEdit = !!supplier;
+  const ov = modal(`
+    <h3>${isEdit ? 'Editar' : 'Nuevo'} proveedor</h3>
+    <div class="field"><label class="label">Nombre *</label><input class="input" id="supName" value="${isEdit ? esc(supplier.name) : ''}" placeholder="Ej. Distribuciones Andinas"></div>
+    <div class="field"><label class="label">Contacto</label><input class="input" id="supContact" value="${isEdit ? esc(supplier.contact_name || '') : ''}" placeholder="Persona de contacto"></div>
+    <div class="field"><label class="label">Teléfono</label><input class="input" id="supPhone" value="${isEdit ? esc(supplier.phone) : ''}" placeholder="0991234567"></div>
+    <div class="field"><label class="label">Email</label><input class="input" id="supEmail" value="${isEdit ? esc(supplier.email || '') : ''}" placeholder="proveedor@ejemplo.com"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="btn btn-neutral" data-cancel>Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveSupplier">${isEdit ? 'Guardar cambios' : 'Crear proveedor'}</button>
+    </div>
+  `, { wide: false });
+  $('[data-cancel]', ov).onclick = () => ov.remove();
+  $('#btnSaveSupplier', ov).onclick = async () => {
+    const name = $('#supName', ov).value.trim();
+    const contact_name = $('#supContact', ov).value.trim();
+    const phone = $('#supPhone', ov).value.trim();
+    const email = $('#supEmail', ov).value.trim();
+    if (!name) { toast('El nombre es obligatorio', 'warning'); return; }
+    const payload = { name, contact_name, phone, email, active: true };
+    let res;
+    if (isEdit) {
+      res = await ApiClient.patch(API_ENDPOINTS.suppliers.detail(supplier.id), payload);
+    } else {
+      res = await ApiClient.post(API_ENDPOINTS.suppliers.list, payload);
+    }
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.name?.[0] || 'Error al guardar proveedor', 'error');
+      return;
+    }
+    toast(isEdit ? 'Proveedor actualizado' : 'Proveedor agregado', 'success');
+    ov.remove();
+    if (onSave) onSave();
+  };
 }
 
 /* ============================================================
-   PEDIDOS (cola)
+   DASHBOARD
    ============================================================ */
-function barOrders(el, initialTab) {
-  const orders = Store.orders;
-  const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
+async function barDashboard(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="grid grid-4" style="margin-top:12px"><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div></div>`;
+  const [ordersRes, productsRes, paymentsRes, configRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.get(API_ENDPOINTS.products.list),
+    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.get(API_ENDPOINTS.config.get),
+  ]);
+  const rawOrders = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  // Normalizar pedidos para compatibilidad con helpers existentes
+  const orders = rawOrders.map(o => ({
+    ...o,
+    date: (o.created_at||'').slice(0,10),
+    time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '',
+    paymentStatus: o.payment_status || o.paymentStatus,
+    delivery: o.delivery_method || o.delivery,
+    prepMin: o.estimated_time ?? o.prepMin,
+    total: parseFloat(o.total ?? 0),
+    items: o.items || o.order_items || [],
+    userName: o.user_name || o.userName || '',
+  }));
+  const productsRaw = productsRes.ok ? apiList(productsRes.data) : [];
+  const products = productsRaw.map(normalizeApiProduct);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((o) => o.date === today);
+  const queue = orders.filter((o) => o.status === 'queue');
+  const prep = orders.filter((o) => o.status === 'prep');
+  const ready = orders.filter((o) => o.status === 'ready');
+  const rawCap = configRes.ok ? configRes.data : null;
+  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : capacityInfo();
+  const payPending = getPendingPayments(orders).length;
+  const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
+  const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
+
+  const lowStock = products.filter((p) => p.available && p.stock <= p.minStock && p.stock > 0);
+  const outStock = products.filter((p) => p.stock === 0);
+  const validSalesDash = orders.filter(isValidSale);
+  const prodSalesDash = {};
+  validSalesDash.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSalesDash[pid] = (prodSalesDash[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
+  const topProductsDash = Object.entries(prodSalesDash).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,qty])=> ({ product: products.find((p)=> String(p.id)===String(id)), qty})).filter(x=>x.product);
+
+  // Pedidos prioritarios: qué atender primero (urgente/prioridad, delivery o pago en revisión)
+  const priorityOrders = orders
+    .filter((o) => ['queue', 'confirmed', 'prep'].includes(o.status))
+    .map((o) => {
+      let w = 0;
+      if (o.priority === 'urgent') w += 4;
+      else if (o.priority === 'priority') w += 3;
+      if (o.delivery === 'delivery') w += 2;
+      if (o.paymentStatus === 'review') w += 1;
+      if (o.paymentStatus === 'pending') w += 0.5;
+      return { o, w };
+    })
+    .filter((x) => x.w >= 2)
+    .sort((a, b) => b.w - a.w)
+    .map((x) => x.o);
+  const hasPriority = priorityOrders.length > 0;
+
+  el.innerHTML = `
+    <div class="page-title"><h1>Panel de la cafetería</h1><span class="muted small">${today}</span></div>
+    <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
+
+    <div class="status-banners-wrap">
+      ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><span class="stat-ico bx bx-time ${queue.length >= 5 ? 'danger' : 'primary'}"></span><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
+      <div class="stat-card"><span class="stat-ico bx bx-restaurant warning"></span><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">preparándose ahora</div></div>
+      <div class="stat-card success-card"><span class="stat-ico bx bx-check-double success"></span><div class="st-label">Listos</div><div class="st-value">${ready.length}</div><div class="st-sub">listos para retirar</div></div>
+      <div class="stat-card ${cap.stateCls === 'danger' ? 'danger-card' : cap.stateCls === 'warning' ? 'alert' : ''}"><span class="stat-ico bx bx-gauge ${cap.stateCls === 'danger' ? 'danger' : cap.stateCls === 'warning' ? 'warning' : 'muted'}"></span><div class="st-label">Capacidad</div><div class="st-value ${cap.stateCls === 'danger' ? 'danger' : ''}">${cap.pct}%</div><div class="st-sub">${cap.state}</div></div>
+    </div>
+
+    <div id="dashCap" style="margin-bottom:20px"></div>
+
+    <div class="card" style="margin-bottom:20px;${hasPriority ? 'border-left:4px solid var(--primary)' : ''}">
+      <div class="card-header">
+        <div><div class="card-title">⚡ Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
+        ${hasPriority ? `<span class="badge badge-primary">${priorityOrders.length} a atender</span>` : ''}
+      </div>
+      <div class="card-body">
+        ${hasPriority ? `<div class="order-queue" style="grid-template-columns:1fr">${priorityOrders.map((o) => priorityMiniCard(o)).join('')}</div>`
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">✅</div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
+      </div>
+    </div>
+
+    <div class="grid grid-4">
+      <div class="stat-card"><span class="stat-ico bx bx-credit-card warning"></span><div class="st-label">Por cobrar</div><div class="st-value warning">${payPending}</div><div class="st-sub"><a href="#" data-goto="adminbar/payments">Revisar</a></div></div>
+      <div class="stat-card"><span class="stat-ico bx bx-cycling primary"></span><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
+      <div class="stat-card success-card"><span class="stat-ico bx bx-line-chart success"></span><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
+      <div class="stat-card"><span class="stat-ico bx bx-x-circle ${outStock.length ? 'danger' : 'muted'}"></span><div class="st-label">Productos agotados</div><div class="st-value ${outStock.length ? 'danger' : ''}">${outStock.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/stock">Ir a stock</a></div></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-weight:700">Productos más vendidos</div>
+        <a href="#" class="tiny" data-goto="adminbar/products" style="color:var(--primary);font-weight:600">Ver todos los productos →</a>
+      </div>
+      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>`
+        <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
+          <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${product.emoji||productIcon(product)}</div>
+          <div style="min-width:0">
+            <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product.name)}</div>
+            <div class="tiny muted">${qty} unidades vendidas</div>
+          </div>
+        </div>
+      `).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
+    </div>`;
+
+  renderCapacityCard(el.querySelector('#dashCap'));
+  $$('[data-goto]', el).forEach((a) => a.onclick = (e) => { e.preventDefault(); const [s, p] = a.dataset.goto.split('/'); setRoute(`${s}/${p}`); });
+  $$('[data-pri]', el).forEach((c) => c.onclick = () => setRoute('adminbar/orders'));
+}
+
+/* Tarjeta compacta para el panel de "Pedidos prioritarios" del dashboard */
+function priorityMiniCard(o) {
+  const priTag = o.priority === 'urgent'
+    ? `<span class="priority-tag urgent">⚡ Urgente</span>`
+    : o.priority === 'priority' ? `<span class="priority-tag priority">⭐ Prioridad</span>` : '';
+  return `
+    <div class="queue-order pri-${o.priority === 'normal' ? 'normal' : o.priority}" style="cursor:pointer" data-pri="${o.id}">
+      <div class="queue-head">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
+          <span class="tiny muted">${o.time}</span>
+          ${priTag}
+          ${statusMeta(o.status)}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${o.delivery === 'delivery' ? `<span class="badge badge-info">🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪</span>`}
+          <span class="small bold">${money(o.total)}</span>
+        </div>
+      </div>
+      <div class="queue-items">
+        ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
+      </div>
+      <div class="tiny muted" style="color:var(--text-2)"><b>${esc(o.userName)}</b> · ${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)} · est. ${o.prepMin} min</div>
+    </div>`;
+}
+
+/* ============================================================
+   PEDIDOS (cola) - Con API real
+   ============================================================ */
+async function barOrders(el) {
+  // Show skeleton
+  el.innerHTML = `
+    <div class="page-title"><h1>Pedidos</h1></div>
+    <div class="skeleton" style="height:40px;width:200px;margin-bottom:16px"></div>
+    <div class="skeleton" style="height:100px;width:100%"></div>
+    <div class="adv-tabs">
+      <button class="category-chip active" data-tab="queue">En cola</button>
+      <button class="category-chip" data-tab="prep">En preparación</button>
+      <button class="category-chip" data-tab="ready">Listos</button>
+      <button class="category-chip" data-tab="delivered">Entregados</button>
+    </div>
+    <div id="queueArea"></div>`;
+
+  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  if (!ordersRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos');
+    return;
+  }
+
+  const orders = ordersRes.data.results || ordersRes.data || [];
+  const today = new Date().toISOString().slice(0, 10);
+  
   const queue = orders.filter((o) => o.status === 'queue');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const delivered = orders.filter((o) => o.status === 'delivered');
+  const todayOrders = orders.filter((o) => o.created_at && o.created_at.slice(0, 10) === today);
+  const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
+  const confirmedToday = todayOrders.filter((o) => o.status === 'confirmed').length;
+  const prepToday = todayOrders.filter((o) => o.status === 'prep').length;
+  const readyToday = todayOrders.filter((o) => o.status === 'ready').length;
+  const deliveredToday = todayOrders.filter((o) => o.status === 'delivered').length;
+  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.payment_status === 'rejected' || o.status === 'refunded').length;
+  const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
 
-  const init = (initialTab && ['queue','prep','ready','delivered'].includes(initialTab)) ? initialTab : 'queue';
-  el.innerHTML = `
-    <div class="page-title"><h1>${init==='prep'?'Preparación':init==='ready'?'Pedidos listos':'Pedidos'}</h1><span class="badge badge-primary">${actives.length} activos</span></div>
-    <div class="adv-tabs">
-      <button class="category-chip ${init==='queue'?'active':''}" data-tab="queue">En cola (${queue.length})</button>
-      <button class="category-chip ${init==='prep'?'active':''}" data-tab="prep">En preparación (${prep.length})</button>
-      <button class="category-chip ${init==='ready'?'active':''}" data-tab="ready">Listos (${ready.length})</button>
-      <button class="category-chip ${init==='delivered'?'active':''}" data-tab="delivered">Entregados (${delivered.length})</button>
+  // Update tab counts
+  const tabButtons = $$('[data-tab]', el);
+  if (tabButtons[0]) tabButtons[0].textContent = `En cola (${queue.length})`;
+  if (tabButtons[1]) tabButtons[1].textContent = `En preparación (${prep.length})`;
+  if (tabButtons[2]) tabButtons[2].textContent = `Listos (${ready.length})`;
+  if (tabButtons[3]) tabButtons[3].textContent = `Entregados (${delivered.length})`;
+
+  // Update page title with active count
+  const titleEl = $('#mainContent') || $('#app');
+  const pageTitle = titleEl?.querySelector('.page-title');
+  if (pageTitle) pageTitle.innerHTML = `<h1>Pedidos</h1><span class="badge badge-primary">${actives.length} activos</span>`;
+
+  // Add bulk confirm button
+  const actionsDiv = document.createElement('div');
+  actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;margin:12px 0';
+  actionsDiv.innerHTML = `<button class="btn btn-primary btn-sm" id="btnConfirmAllReady" ${ready.length ? '' : 'disabled style="opacity:0.6;pointer-events:none"'}><i class="bx bx-check-double" style="margin-right:6px"></i>Confirmar todos los pedidos listos${ready.length ? ` (${ready.length})` : ''}</button>`;
+  pageTitle?.parentElement?.insertBefore(actionsDiv, pageTitle.nextSibling);
+
+  // Add today summary card
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card';
+  summaryCard.style.cssText = 'margin-bottom:16px; padding:14px';
+  summaryCard.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:700; font-size:var(--fs-sm); color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
+      <span class="badge badge-neutral">${todayOrders.length} pedidos hoy</span>
     </div>
-    <div id="queueArea"></div>`;
+    <div class="grid grid-3" style="gap:10px">
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-time muted" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check primary" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check" style="margin-right:4px"></i>Confirmados</div><div class="st-value primary" style="font-size:1.5rem">${confirmedToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-restaurant warning" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-restaurant" style="margin-right:4px"></i>En preparación</div><div class="st-value warning" style="font-size:1.5rem">${prepToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check-double success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value" style="font-size:1.5rem;color:var(--success)">${readyToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-package success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-package" style="margin-right:4px"></i>Entregados</div><div class="st-value success" style="font-size:1.5rem">${deliveredToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-x-circle danger" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-x-circle" style="margin-right:4px"></i>Cancelados</div><div class="st-value danger" style="font-size:1.5rem">${cancelledToday}</div></div>
+    </div>`;
+  pageTitle?.parentElement?.insertBefore(summaryCard, actionsDiv);
 
-  let tab = init;
+  let tab = 'queue';
+  const queueArea = $('#queueArea');
+
   const render = () => {
-    const area = $('#queueArea');
     const list = tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
-    if (!list.length) { area.innerHTML = emptyState('🧾', 'Sin pedidos', 'No hay pedidos en esta sección.'); return; }
-    area.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
-    bindQueueActions(area);
+    if (!list.length) { queueArea.innerHTML = emptyState('🧾', 'Sin pedidos', 'No hay pedidos en esta sección.'); return; }
+    queueArea.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
+    bindQueueActions(queueArea);
   };
 
   $$('[data-tab]', el).forEach((t) => {
@@ -623,6 +953,28 @@ function barOrders(el, initialTab) {
       t.classList.add('active'); tab = t.dataset.tab; render();
     };
   });
+
+  $('#btnConfirmAllReady', el)?.addEventListener('click', async () => {
+    const readyOrders = orders.filter((o) => o.status === 'ready');
+    if (!readyOrders.length) return;
+    const ok = await confirmDialog('Confirmar entrega en lote', `¿Confirmar que se entregaron los ${readyOrders.length} pedidos listos?`, `Confirmar ${readyOrders.length} entregas`);
+    if (!ok) return;
+    
+    let successCount = 0;
+    for (const order of readyOrders) {
+      const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(order.id), { status: 'delivered' });
+      if (res.ok) successCount++;
+    }
+    
+    if (successCount > 0) {
+      logAudit('Entrega en lote', `${successCount} pedidos marcados como entregados`);
+      toast(`${successCount} pedidos marcados como entregados`, 'success');
+      renderBarAdmin('orders');
+    } else {
+      toast('Error al confirmar entregas', 'error');
+    }
+  });
+
   render();
 }
 
@@ -663,145 +1015,467 @@ function queueOrderCard(o, tab) {
         ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
       </div>
       <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(o.userName)} · <b>Entrega:</b> ${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${o.prepMin} min${o.note ? ` · <b>Nota:</b> ${esc(o.note)}` : ''}</div>
-      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico">💳</span><div>Pago ${paymentMethodLabel(o.payment)}: ${o.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(o.paymentStatus)}</div></div>` : ''}
+      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(o.payment)}: ${o.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(o.paymentStatus)}</div></div>` : ''}
       <div class="queue-actions">${actionBtns}</div>
     </div>`;
 }
 
 function bindQueueActions(area) {
   $$('[data-act]', area).forEach((btn) => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const card = btn.closest('.queue-order');
-      const order = Store.orders.find((o) => o.id === card.dataset.id);
+      const orderId = card.dataset.id;
       const act = btn.dataset.act;
+      
       if (act === 'cancel') {
-        confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${order.id}?`, 'Cancelar pedido', true).then((ok) => {
-          if (!ok) return;
-          order.status = 'cancelled'; order.eta = 'Cancelado';
-          order.paymentStatus = order.payment !== 'efectivo' ? 'refunded' : order.paymentStatus;
-          saveOrders(); logAudit('Canceló pedido', order.id); toast('Pedido cancelado.', 'success');
-          renderBarAdmin('orders');
-        });
+        const ok = await confirmDialog('Cancelar pedido', `¿Cancelar el pedido #${orderId}?`, 'Cancelar pedido', true);
+        if (!ok) return;
+        
+        const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: 'cancelled' });
+        if (!res.ok) {
+          toast(res.data?.detail || 'No se pudo cancelar el pedido.', 'error');
+          return;
+        }
+        toast('Pedido cancelado.', 'success');
+        logAudit('Canceló pedido', orderId);
+        renderBarAdmin('orders');
         return;
       }
-      const next = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
-      order.status = next;
-      order.eta = { confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' }[next];
-      order.paymentStatus = act === 'delivered' && order.paymentStatus === 'pending' ? 'paid' : order.paymentStatus;
-      if (act === 'delivered' && order.delivery === 'delivery') logAudit('Entregó pedido', order.id);
-      saveOrders(); logAudit('Cambió estado de pedido', `${order.id} → ${order.eta}`);
+      
+      const nextStatus = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
+      const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: nextStatus });
+      if (!res.ok) {
+        toast(res.data?.detail || 'Error al cambiar estado', 'error');
+        return;
+      }
+      
       const label = { confirm: 'Confirmado', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
-      toast('# ' + order.id + ' ' + label + '.', 'success');
+      toast('#' + orderId + ' ' + label + '.', 'success');
+      logAudit('Cambió estado de pedido', `${orderId} → ${label}`);
       renderBarAdmin('orders');
     };
   });
 }
 
 /* ============================================================
-   PRODUCTOS
+   PRODUCTOS - Con API real
    ============================================================ */
-function barProducts(el) {
-  const products = Store.products;
-  const cats = [...new Set(products.map((p) => p.category))];
-  let cat = 'Todas';
+async function barProducts(el) {
+  ensureAdminbarPresentationStyles();
 
+  // Show skeleton
   el.innerHTML = `
-    <div class="page-title"><h1>Productos</h1><button class="btn" id="addProduct">+ Nuevo producto</button></div>
+    <div class="page-title"><h1>Productos</h1></div>
+    <button class="btn btn-primary btn-block" id="addProduct" style="width:100%;margin-bottom:16px">+ Agregar producto</button>
+    <div class="skeleton" style="height:100px;width:100%"></div>
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
-      ${cats.map((c) => `<button class="category-chip" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
     </div>
-    <div id="prodArea"></div>`;
-
-  const render = () => {
-    const area = $('#prodArea');
-    const list = cat === 'Todas' ? products : products.filter((p) => p.category === cat);
-    if (!list.length) { area.innerHTML = emptyState('🍔', 'Sin productos', 'No hay productos en esta categoría.'); return; }
-    area.innerHTML = `<div class="table-wrap"><table>
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody>${list.map((p) => `
-        <tr>
-          <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center">${productIcon(p)}</div><div><div class="bold">${esc(p.name)}</div><div class="tiny muted">${esc(p.desc)}</div></div></div></td>
-          <td>${esc(p.category)}</td>
-          <td class="bold">${money(p.price)}</td>
-          <td>${stockBadge(p)}</td>
-          <td>${p.prepMin} min</td>
-          <td>${p.available ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" data-edit="${p.id}">Editar</button>
-            <button class="btn btn-neutral btn-sm" data-toggle="${p.id}">${p.available ? 'Desactivar' : 'Activar'}</button>
-          </td>
-        </tr>`).join('')}
-      </tbody></table></div>`;
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
 
-    $$('[data-edit]', area).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === b.dataset.edit)));
-    $$('[data-toggle]', area).forEach((b) => b.onclick = () => {
-      const p = products.find((x) => x.id === b.dataset.toggle);
-      p.available = !p.available;
-      Store.products = products;
-      logAudit(p.available ? 'Activó producto' : 'Desactivó producto', p.name);
-      toast(p.name + (p.available ? ' activado.' : ' desactivado.'), 'success');
-      renderBarAdmin('products');
+  const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+  if (!productsRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los productos');
+    return;
+  }
+
+  const products = apiList(productsRes.data).map(normalizeApiProduct);
+  const cats = [...new Set(products.map((p) => p.category || 'Sin categoría'))];
+  let cat = 'Todas';
+  let searchTerm = '';
+
+  const outOfStock = products.filter((p) => p.stock === 0 && p.available);
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.min_stock && p.available);
+
+  el.innerHTML = `
+    <div class="page-title"><h1>Productos</h1></div>
+    <button class="btn btn-primary btn-block" id="addProduct" style="width:100%;margin-bottom:16px">+ Agregar producto</button>
+    <div class="status-banners-wrap">
+      ${outOfStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Productos agotados:</b> ${outOfStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label class="label">Buscar</label>
+      <div class="input-wrap">
+        <span class="leading-ico"><i class="bx bx-search"></i></span>
+        <input class="input" type="search" id="productSearch" placeholder="Nombre, categoría..." style="padding-left:38px">
+      </div>
+    </div>
+    <div class="adv-tabs">
+      <button class="category-chip active" data-cat="Todas">Todas <span style="opacity:0.7;font-weight:400">(${products.length})</span></button>
+      ${cats.map((c) => {
+        const cnt = products.filter((p) => (p.category || 'Sin categoría') === c).length;
+        return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
+      }).join('')}
+    </div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
+
+  const renderRows = () => {
+    let list = cat === 'Todas' ? products : products.filter((p) => (p.category || 'Sin categoría') === cat);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.category || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term));
+    }
+    const tbody = $('#prodRows', el);
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map((p) => `
+      <tr>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category || 'Sin categoría')}">${esc(p.category || 'Sin categoría')}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.description || '')}">${esc(p.description || '')}</div></div></div></td>
+        <td data-label="Categoría"><span>${esc(p.category || 'Sin categoría')}</span></td>
+        <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
+        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.min_stock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.min_stock ? '· bajo' : ''}</span></td>
+        <td data-label="Prep"><span>${p.prepMin} min</span></td>
+        <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
+        <td data-label="Acciones">
+            <div style="position:relative">
+              <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
+              <div class="dropdown-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:10">
+                <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
+                <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
+              </div>
+            </div>
+          </td>
+      </tr>
+    `).join('');
+    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit))));
+    $$('[data-toggle]', tbody).forEach((b) => {
+      b.onclick = async () => {
+        const productId = b.dataset.toggle;
+        const product = products.find((x) => x.id === parseInt(productId));
+        if (!product) return;
+        const newAvailable = !product.available;
+        const res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        if (!res.ok) {
+          toast('Error al cambiar estado: ' + (res.data?.detail || 'Error desconocido'), 'error');
+          return;
+        }
+        toast(product.name + (newAvailable ? ' activado.' : ' desactivado.'), 'success');
+        logAudit(newAvailable ? 'Activó producto' : 'Desactivó producto', product.name);
+        renderBarAdmin('products');
+      };
     });
+    $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
+      e.stopPropagation();
+      const menu = document.getElementById('prodMenu-' + btn.dataset.menu);
+      if (!menu) return;
+      const isHidden = menu.style.display === 'none';
+      document.querySelectorAll('[id^="prodMenu-"]').forEach((m) => m.style.display = 'none');
+      menu.style.display = isHidden ? 'block' : 'none';
+    });
+    // Cierra menús al hacer clic fuera
+    document.addEventListener('click', () => {
+      document.querySelectorAll('[id^="prodMenu-"]').forEach((m) => m.style.display = 'none');
+    }, { once: false });
   };
+
+  $('#productSearch', el).addEventListener('input', (e) => {
+    searchTerm = e.target.value.trim();
+    renderRows();
+  });
 
   $$('[data-cat]', el).forEach((t) => t.onclick = () => {
     $$('[data-cat]', el).forEach((x) => x.classList.remove('active'));
-    t.classList.add('active'); cat = t.dataset.cat; render();
+    t.classList.add('active'); cat = t.dataset.cat; renderRows();
   });
 
-  $('#addProduct').onclick = () => productFormModal(null);
-  render();
+  $('#addProduct', el).onclick = () => productFormModal(null);
+  renderRows();
 }
 
 function productFormModal(p) {
   const isEdit = !!p;
   const cats = CATEGORIES;
+  const originalValues = isEdit ? {
+    name: p.name,
+    category: p.category,
+    price: p.price,
+    stock: p.stock,
+    prepMin: p.prepMin,
+    minStock: p.minStock,
+    desc: p.desc,
+    available: p.available,
+    allowExtras: p.allowExtras || false,
+    image: p.image || ''
+  } : null;
+  let hasUnsavedChanges = false;
+
+  function setFieldError(fieldId, msg) {
+    const field = $('#' + fieldId, ov);
+    const err = $('#' + fieldId + 'Err', ov);
+    if (field) field.classList.add('field-has-error');
+    if (err) err.textContent = msg || '';
+  }
+  function clearFieldError(fieldId) {
+    const field = $('#' + fieldId, ov);
+    const err = $('#' + fieldId + 'Err', ov);
+    if (field) field.classList.remove('field-has-error');
+    if (err) err.textContent = '';
+  }
+
   const ov = modal(`
-    <h3>${isEdit ? 'Editar' : 'Nuevo'} producto</h3>
-    <div class="field"><label class="label">Nombre</label><input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}"><div class="input-err-msg" id="pfNameErr"></div></div>
-    <div class="field"><label class="label">Categoría</label><select class="input" id="pfCat">${cats.map((c) => `<option ${isEdit && p.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-    <div class="grid grid-2">
-      <div class="field"><label class="label">Precio ($)</label><input class="input" type="number" step="0.05" id="pfPrice" value="${isEdit ? p.price : ''}"><div class="input-err-msg" id="pfPriceErr"></div></div>
-      <div class="field"><label class="label">Stock</label><input class="input" type="number" id="pfStock" value="${isEdit ? p.stock : ''}"><div class="input-err-msg" id="pfStockErr"></div></div>
+    <div class="pf-header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="pf-header-title">${isEdit ? 'Editar producto' : 'Nuevo producto'}</div>
+          <div class="tiny" style="color:rgba(255,255,255,.8)">${isEdit ? 'Actualiza la información del producto' : 'Registra un nuevo producto'}</div>
+        </div>
+        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar">×</button>
+      </div>
     </div>
-    <div class="grid grid-2">
-      <div class="field"><label class="label">Tiempo prep (min)</label><input class="input" type="number" id="pfPrep" value="${isEdit ? p.prepMin : ''}"><div class="input-err-msg" id="pfPrepErr"></div></div>
-      <div class="field"><label class="label">Stock mínimo</label><input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}"><div class="input-err-msg" id="pfMinErr"></div></div>
+    <div class="pf-cols">
+      <div class="pf-left">
+        <div class="field" id="pfNameFld">
+          <label class="label">Nombre</label>
+          <input class="input" id="pfName" value="${isEdit ? esc(p.name) : ''}">
+          <div class="input-err-msg" id="pfNameErr"></div>
+        </div>
+        <div class="field" id="pfDescFld">
+          <label class="label">Descripción</label>
+          <textarea class="input" id="pfDesc" rows="3">${isEdit ? esc(p.desc) : ''}</textarea>
+          <div class="input-err-msg" id="pfDescErr"></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field" id="pfPriceFld">
+            <label class="label">Precio ($)</label>
+            <input class="input" type="number" step="0.05" id="pfPrice" value="${isEdit ? p.price : ''}">
+            <div class="input-err-msg" id="pfPriceErr"></div>
+          </div>
+          <div class="field" id="pfCatFld">
+            <label class="label">Categoría</label>
+            <select class="input" id="pfCat">${cats.map((c) => `<option ${isEdit && p.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field" id="pfPrepFld">
+            <label class="label">Tiempo prep (min)</label>
+            <input class="input" type="number" id="pfPrep" value="${isEdit ? p.prepMin : ''}">
+            <div class="input-err-msg" id="pfPrepErr"></div>
+          </div>
+          <div class="field" id="pfStockFld">
+            <label class="label">Stock</label>
+            <input class="input" type="number" id="pfStock" value="${isEdit ? p.stock : ''}">
+            <div class="input-err-msg" id="pfStockErr"></div>
+          </div>
+        </div>
+        <div class="field" id="pfMinFld">
+          <label class="label">Stock mínimo</label>
+          <input class="input" type="number" id="pfMin" value="${isEdit ? p.minStock : ''}">
+          <div class="input-err-msg" id="pfMinErr"></div>
+        </div>
+        <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
+          <label class="checkbox-row"><input type="checkbox" id="pfExtras" ${isEdit && p.allowExtras ? 'checked' : ''}> <b>Permitir adicionales/observaciones</b></label>
+          <div class="tiny muted" style="margin-left:26px;margin-top:4px">El cliente podrá agregar notas o extras al producto.</div>
+        </div>
+        ${isEdit ? `
+        <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
+          <div class="pf-switch-label">
+            <label class="switch"><input type="checkbox" id="pfActive" ${p.available ? 'checked' : ''}><span class="track"></span><span class="thumb"></span></label>
+            <span style="font-weight:600">Producto activo</span>
+          </div>
+          <div class="tiny muted" style="margin-left:36px;margin-top:4px">Desactiva para ocultar del menú sin eliminarlo.</div>
+        </div>
+        ` : ''}
+      </div>
+      <div class="pf-right">
+        <div class="field">
+          <label class="label">Imagen del producto</label>
+          <div id="pfDropZone" style="border:2px dashed var(--border-strong);border-radius:var(--r-lg);padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:all var(--t-fast);position:relative">
+            <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
+              <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
+              <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+            </div>
+            <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
+            <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
+          </div>
+          <input class="input" type="file" id="pfImage" accept="image/*" style="display:none">
+        </div>
+      </div>
     </div>
-    <div class="field"><label class="label">Descripción</label><textarea class="input" id="pfDesc">${isEdit ? esc(p.desc) : ''}</textarea></div>
-    <div style="display:flex;justify-content:flex-end;gap:10px">
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
-      <button class="btn" data-save>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
+      <button class="btn btn-primary" id="btnSaveProduct" ${isEdit && !hasUnsavedChanges ? 'disabled style="opacity:0.6"' : ''}>${isEdit ? 'Guardar cambios' : 'Crear producto'}</button>
     </div>`, { wide: true });
 
+  const btnSave = $('#btnSaveProduct', ov);
+  const fields = ['pfName', 'pfCat', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin', 'pfDesc', 'pfExtras'];
+  if (isEdit) fields.push('pfActive');
+
+  const checkChanges = () => {
+    if (!isEdit || !originalValues) return;
+    const currentValues = {
+      name: $('#pfName', ov).value.trim(),
+      category: $('#pfCat', ov).value,
+      price: parseFloat($('#pfPrice', ov).value),
+      stock: parseInt($('#pfStock', ov).value),
+      prepMin: parseInt($('#pfPrep', ov).value),
+      minStock: parseInt($('#pfMin', ov).value),
+      desc: $('#pfDesc', ov).value,
+      available: $('#pfActive', ov)?.checked ?? true,
+      allowExtras: $('#pfExtras', ov).checked
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => {
+      if (key === 'price') return currentValues[key] !== originalValues[key];
+      if (key === 'stock' || key === 'prepMin' || key === 'minStock') return currentValues[key] !== originalValues[key];
+      return currentValues[key] !== originalValues[key];
+    });
+    btnSave.disabled = !hasUnsavedChanges;
+    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
+  };
+
+  fields.forEach(id => {
+    const field = $('#' + id, ov);
+    if (field) {
+      field.addEventListener('input', checkChanges);
+      field.addEventListener('change', checkChanges);
+    }
+  });
+
+  const pfImage = $('#pfImage', ov);
+  const pfImagePreview = $('#pfImagePreview', ov);
+  const pfDropZone = $('#pfDropZone', ov);
+  const pfDropPlaceholder = $('#pfDropPlaceholder', ov);
+  const pfRemoveImage = $('#pfRemoveImage', ov);
+  const showPreview = (src) => {
+    pfImagePreview.src = src;
+    pfImagePreview.style.display = 'block';
+    if (pfDropPlaceholder) pfDropPlaceholder.style.display = 'none';
+    if (pfRemoveImage) pfRemoveImage.style.display = 'flex';
+    if (pfDropZone) { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; }
+  };
+  const clearPreview = () => {
+    pfImage.value = '';
+    pfImagePreview.src = '';
+    pfImagePreview.style.display = 'none';
+    if (pfDropPlaceholder) pfDropPlaceholder.style.display = '';
+    if (pfRemoveImage) pfRemoveImage.style.display = 'none';
+  };
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => showPreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
+  if (pfImage && pfImagePreview && pfDropZone) {
+    pfImage.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
+    pfDropZone.addEventListener('click', (e) => { if (e.target.closest('#pfRemoveImage')) return; pfImage.click(); });
+    pfDropZone.addEventListener('dragover', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--primary)'; pfDropZone.style.background = 'var(--primary-soft)'; });
+    pfDropZone.addEventListener('dragleave', () => { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; });
+    pfDropZone.addEventListener('drop', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; handleFile(e.dataTransfer.files?.[0]); });
+    if (pfRemoveImage) pfRemoveImage.addEventListener('click', (e) => { e.stopPropagation(); clearPreview(); });
+    if (pfImagePreview.getAttribute('src')) { showPreview(pfImagePreview.getAttribute('src')); }
+  }
+
+  ['pfName', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin'].forEach(id => {
+    const field = $('#' + id, ov);
+    if (field) {
+      field.addEventListener('input', () => clearFieldError(id));
+      field.addEventListener('change', () => clearFieldError(id));
+    }
+  });
+
   $('[data-cancel]', ov).onclick = () => ov.remove();
-  $('[data-save]', ov).onclick = () => {
+  btnSave.onclick = async () => {
     const name = $('#pfName', ov).value.trim();
     const price = parseFloat($('#pfPrice', ov).value);
     const stock = parseInt($('#pfStock', ov).value);
     const prep = parseInt($('#pfPrep', ov).value);
     const mn = parseInt($('#pfMin', ov).value);
     let ok = true;
-    if (!name) { $('#pfNameErr', ov).textContent = 'El nombre es obligatorio.'; ok = false; }
-    if (isNaN(price) || price <= 0) { $('#pfPriceErr', ov).textContent = 'Precio inválido.'; ok = false; }
-    if (isNaN(stock) || stock < 0) { $('#pfStockErr', ov).textContent = 'Stock inválido.'; ok = false; }
-    if (isNaN(prep) || prep <= 0) { $('#pfPrepErr', ov).textContent = 'Tiempo inválido.'; ok = false; }
-    if (isNaN(mn) || mn < 0) { $('#pfMinErr', ov).textContent = 'Stock mínimo inválido.'; ok = false; }
+
+    ['pfName', 'pfPrice', 'pfStock', 'pfPrep', 'pfMin'].forEach(clearFieldError);
+
+    if (!name) { setFieldError('pfName', 'Requerido'); ok = false; }
+    if (isNaN(price) || price <= 0) { setFieldError('pfPrice', 'Requerido'); ok = false; }
+    if (isNaN(stock) || stock < 0) { setFieldError('pfStock', 'Requerido'); ok = false; }
+    if (isNaN(prep) || prep <= 0) { setFieldError('pfPrep', 'Requerido'); ok = false; }
+    if (isNaN(mn) || mn < 0) { setFieldError('pfMin', 'Requerido'); ok = false; }
     if (!ok) return;
-    const products = Store.products;
-    if (isEdit) {
-      Object.assign(p, { name, category: $('#pfCat', ov).value, price, stock, prepMin: prep, minStock: mn, desc: $('#pfDesc', ov).value, available: p.stock > 0 ? p.available : false });
-      logAudit('Editó producto', name);
-      toast('Producto actualizado.', 'success');
-    } else {
-      products.push({ id: 'p' + Date.now(), name, category: $('#pfCat', ov).value, price, stock, minStock: mn, prepMin: prep, available: stock > 0, desc: $('#pfDesc', ov).value, emoji: '' });
-      logAudit('Creó producto', name);
-      toast('Producto creado.', 'success');
-    }
-    Store.products = products;
-    ov.remove();
-    renderBarAdmin('products');
+
+    const originalText = btnSave.innerHTML;
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
+
+    // Small delay for UI feedback, then process
+    setTimeout(async () => {
+      const allowExtras = $('#pfExtras', ov).checked;
+      const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
+      const catName = $('#pfCat', ov).value;
+      let categoryId = null;
+      try {
+        const catRes = await ApiClient.get(API_ENDPOINTS.products.categories);
+        if (catRes.ok) {
+          const catList = catRes.data.results || catRes.data;
+          if (Array.isArray(catList)) {
+            const found = catList.find(c => c.name === catName);
+            if (found) categoryId = found.id;
+          }
+        }
+        if (!categoryId) {
+          const createCat = await ApiClient.post(API_ENDPOINTS.products.categories, { name: catName });
+          if (createCat.ok) categoryId = createCat.data.id;
+        }
+      } catch(e) {}
+      const productData = {
+        name,
+        category: categoryId,
+        price,
+        stock,
+        prep_time: prep,
+        min_stock: mn,
+        description: $('#pfDesc', ov).value,
+        available,
+      };
+      if (!productData.category) {
+        toast('Categoría no válida', 'error');
+        btnSave.disabled = false;
+        btnSave.innerHTML = originalText;
+        return;
+      }
+      
+      let res;
+      if (isEdit) {
+        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), productData);
+        if (!res.ok) {
+          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al actualizar';
+          toast('Error: ' + msg, 'error');
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+          return;
+        }
+        logAudit('Editó producto', name);
+        toast('Producto actualizado en PostgreSQL.', 'success');
+      } else {
+        res = await ApiClient.post(API_ENDPOINTS.products.list, productData);
+        if (!res.ok) {
+          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al crear';
+          toast('Error: ' + msg, 'error');
+          btnSave.disabled = false;
+          btnSave.innerHTML = originalText;
+          return;
+        }
+        logAudit('Creó producto', name);
+        toast('Producto creado en PostgreSQL.', 'success');
+      }
+
+      btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
+      btnSave.classList.add('btn-success');
+      btnSave.classList.remove('btn-primary');
+
+      setTimeout(() => {
+        ov.remove();
+        renderBarAdmin('products');
+      }, 600);
+    }, 500);
   };
 }
 
@@ -814,57 +1488,174 @@ function stockBadge(p) {
 /* ============================================================
    STOCK
    ============================================================ */
-function barStock(el) {
-  const products = Store.products;
-  const history = Store.stockHistory;
+async function barStock(el) {
+  ensureAdminbarPresentationStyles();
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [productsRes, historyRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.products.list), ApiClient.get(API_ENDPOINTS.stock.movements) ]);
+  if (!productsRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar stock'); return; }
+  const rawProducts = apiList(productsRes.data);
+  const products = rawProducts.map(p=>({ ...normalizeApiProduct(p), stockHistory: p.stock }));
+  const rawHist = historyRes.ok ? (historyRes.data.results || historyRes.data || []) : [];
+  const history = rawHist.map(h=>({ productId: h.product, name: h.product_name, delta: h.quantity * (h.movement_type==='sale' || h.movement_type==='waste' ? -1 : 1), newVal: h.new_stock ?? h.newVal, time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', date: (h.created_at||'').slice(0,10)}));
+  const outOfStock = products.filter((p) => p.stock === 0);
+  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+
   el.innerHTML = `
-    <div class="page-title"><h1>Stock</h1><span class="badge badge-primary">${products.filter((p) => p.stock === 0).length} agotados</span></div>
-    <div class="grid grid-3" style="margin-bottom:20px">
-      <div class="stat-card success-card"><div class="st-label">Disponibles</div><div class="st-value">${products.filter((p) => p.stock > p.minStock).length}</div></div>
-      <div class="stat-card alert"><div class="st-label">Stock bajo</div><div class="st-value warning">${products.filter((p) => p.stock > 0 && p.stock <= p.minStock).length}</div></div>
-      <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${products.filter((p) => p.stock === 0).length}</div></div>
+    <div class="page-title"><h1>Stock</h1></div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="input-wrap" style="flex:1"><span class="leading-ico"><i class="bx bx-search"></i></span><input class="input" id="stockSearch" placeholder="Buscar producto..." style="padding-left:36px"></div>
+      <button class="btn btn-outline btn-sm" id="stockFilterBtn"><i class="bx bx-filter"></i> Filtros</button>
     </div>
-    <div class="table-wrap"><table>
+    <div class="adv-tabs" style="margin-bottom:16px">
+      <button class="category-chip active" data-stock-tab="todos">Todos</button>
+      <button class="category-chip" data-stock-tab="bajo">Bajo stock</button>
+      <button class="category-chip" data-stock-tab="agotados">Agotados</button>
+    </div>
+    <div class="grid grid-3" style="gap:12px;margin-bottom:16px">
+      <div class="stat-card"><div class="st-label">Total productos</div><div class="st-value">${products.length}</div><div class="st-sub">${products.filter((p)=>p.available).length} activos</div><span class="stat-ico bx bx-package muted"></span></div>
+      <div class="stat-card warning-card"><div class="st-label">Bajo stock</div><div class="st-value warning">${lowStock.length}</div><div class="st-sub">requieren reposición</div><span class="stat-ico bx bx-error warning"></span></div>
+      <div class="stat-card danger-card"><div class="st-label">Agotados</div><div class="st-value danger">${outOfStock.length}</div><div class="st-sub">sin existencias</div><span class="stat-ico bx bx-x-circle danger"></span></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Productos con bajo stock</div>
+      <div id="lowStockList" style="display:flex;flex-direction:column;gap:10px">
+        ${lowStock.length ? lowStock.slice(0,4).map((p)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer" data-low="${p.id}">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--warning-soft);display:flex;align-items:center;justify-content:center;color:var(--warning-strong)"><i class="bx bx-error"></i></div>
+            <div style="flex:1;min-width:0"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
+            <span class="badge ${p.stock <= 2 ? 'badge-danger' : 'badge-warning'}">${p.stock <= 2 ? 'Muy bajo' : 'Bajo'}</span>
+            <span class="bold tabular-nums">${p.stock}</span>
+          </div>
+        `).join('') : '<div class="tiny muted" style="text-align:center;padding:12px">Sin productos con bajo stock</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Productos agotados</div>
+      <div id="outStockList" style="display:flex;flex-direction:column;gap:10px">
+        ${outOfStock.length ? outOfStock.slice(0,4).map((p)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md)">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;color:var(--danger)"><i class="bx bx-x-circle"></i></div>
+            <div style="flex:1"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
+            <span class="badge badge-danger">Agotado</span>
+          </div>
+        `).join('') : '<div class="tiny muted" style="text-align:center;padding:12px">Ningún producto agotado</div>'}
+      </div>
+    </div>
+    <div class="table-wrap"><table class="admin-table">
       <thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th><th>Última actualización</th><th></th></tr></thead>
-      <tbody>${products.map((p) => {
-        const h = history.find((x) => x.productId === p.id);
-        const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
-        const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
-        return `<tr>
-          <td><div class="bold">${esc(p.name)}</div></td>
-          <td><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
-          <td>${p.minStock}</td>
-          <td>${stockBadge(p)}</td>
-          <td>${h ? `${h.time} ${h.date}` : '—'}</td>
-          <td>
-            <button class="btn btn-outline btn-sm" data-inc="${p.id}">+ Aumentar</button>
-            <button class="btn btn-neutral btn-sm" data-dec="${p.id}">− Disminuir</button>
-          </td>
-        </tr>`;
-      }).join('')}</tbody></table></div>
+      <tbody id="stockRows"></tbody>
+    </table></div>
     <div style="margin-top:24px">
-      <h3 class="section-title">Historial de cambios</h3>
+      <h3 class="section-title">Movimientos recientes</h3>
       <div class="card" id="stockHist"></div>
     </div>`;
 
-  const histWrap = $('#stockHist');
-  if (!history.length) histWrap.innerHTML = emptyState('📋', 'Sin cambios registrados', 'Modifica el stock para ver el historial.');
+  let stockCat = 'Todas';
+  const renderRows = () => {
+    const list = stockCat === 'Todas' ? products : products.filter((p) => p.category === stockCat);
+    const tbody = $('#stockRows', el);
+    tbody.innerHTML = list.map((p) => {
+      const h = history.find((x) => x.productId === p.id);
+      const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+      const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
+      return `<tr>
+        <td data-label="Producto"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div></td>
+        <td data-label="Stock actual"><div class="stock-line"><b class="tabular-nums">${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td>
+        <td data-label="Stock mínimo"><span class="tabular-nums">${p.minStock}</span></td>
+        <td data-label="Estado">${stockBadge(p)}</td>
+        <td data-label="Última actualización"><span>${h ? `${h.time} ${h.date}` : '—'}</span></td>
+        <td data-label="Acciones">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--success);border-color:var(--success)">
+                <span class="ico bx bx-plus" style="font-size:18px;color:#fff;line-height:1"></span>
+              </button>
+              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+                <span class="ico bx bx-minus" style="font-size:18px;color:var(--danger);line-height:1"></span>
+              </button>
+            </div>
+          </td>
+        </td>
+      </tr>`;
+    }).join('');
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+  };
+  $$('[data-stock-cat]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-stock-cat]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    stockCat = btn.dataset.stockCat;
+    renderRows();
+  });
+  // Tabs stock: Todos / Bajo / Agotados
+  $$('[data-stock-tab]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-stock-tab]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.stockTab;
+    if (tab === 'bajo') {
+      const low = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+      const tbody = $('#stockRows', el);
+      tbody.innerHTML = low.map((p) => {
+        const h = history.find((x) => x.productId === p.id);
+        const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+        const fillCls = 'background:var(--warning)';
+        return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado"><span class="badge badge-warning">Bajo</span></td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+      }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin bajo stock</td></tr>';
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+    } else if (tab === 'agotados') {
+      const out = products.filter((p) => p.stock === 0);
+      const tbody = $('#stockRows', el);
+      tbody.innerHTML = out.map((p) => `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><b>0</b></td><td data-label="Estado"><span class="badge badge-danger">Agotado</span></td><td data-label="Acciones"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin agotados</td></tr>';
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+    } else {
+      renderRows();
+    }
+  });
+  const stockSearch = $('#stockSearch', el);
+  if (stockSearch) stockSearch.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const tbody = $('#stockRows', el);
+    const filtered = products.filter((p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
+    tbody.innerHTML = filtered.map((p) => {
+      const h = history.find((x) => x.productId === p.id);
+      const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
+      const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
+      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+    }).join('');
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+  });
+  $$('[data-low]', el).forEach((item) => item.onclick = () => {
+    const p = products.find((x) => x.id === item.dataset.low);
+    if (p) { stockCat = p.category; $$('[data-stock-cat]', el).forEach((x) => x.classList.toggle('active', x.dataset.stockCat === p.category)); renderRows(); }
+  });
 
-  const adjust = (p, delta) => {
+  const histWrap = $('#stockHist');
+  if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
+
+  const adjust = async (p, delta) => {
     const newVal = p.stock + delta;
     if (newVal < 0) { toast('El stock no puede ser negativo.', 'warning'); return; }
-    const entry = { productId: p.id, name: p.name, delta, newVal, time: nowTime(), date: new Date().toISOString().slice(0, 10) };
-    p.stock = newVal;
-    Store.products = products;
-    history.unshift(entry);
-    Store.stockHistory = history;
+    const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
+    if (!res.ok) { toast(res.data?.detail || 'No se pudo ajustar stock', 'error'); return; }
     logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
-    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades.', 'success');
+    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades. (PostgreSQL)', 'success');
     renderBarAdmin('stock');
   };
 
-  $$('[data-inc]', el).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.inc); adjust(p, 1); });
-  $$('[data-dec]', el).forEach((b) => b.onclick = () => { const p = products.find((x) => x.id === b.dataset.dec); adjust(p, -1); });
+  // Skeleton + render
+  const tbody = $('#stockRows', el);
+  tbody.innerHTML = Array.from({ length: 5 }, () => `
+    <tr>
+      <td><div class="skeleton" style="width:120px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+      <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+      <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+      <td><div class="skeleton" style="width:60px;height:28px;border-radius:var(--r-sm)"></div></td>
+    </tr>
+  `).join('');
+  setTimeout(renderRows, 350);
 
   histWrap.innerHTML = history.slice(0, 15).map((h) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
@@ -879,234 +1670,1162 @@ function nowTime() {
 }
 
 /* ============================================================
-   PAGOS
+   HISTORIAL DE STOCK
    ============================================================ */
-function barPayments(el) {
-  const orders = Store.orders;
-  const payOrders = orders.filter((o) => o.payment !== 'efectivo' || o.paymentStatus !== 'paid');
-  const pending = payOrders.filter((o) => o.paymentStatus === 'pending');
-  const review = payOrders.filter((o) => o.paymentStatus === 'review');
-
+async function barStockHistory(el) {
+  ensureAdminbarPresentationStyles();
   el.innerHTML = `
-    <div class="page-title"><h1>Pagos</h1></div>
-    ${review.length ? `<div class="status-banner info"><span class="ico">🔍</span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
-    <div class="table-wrap"><table>
-      <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
-      <tbody>${orders.map((o) => `
-        <tr>
-          <td class="bold">#${o.id}</td>
-          <td>${esc(o.userName)}</td>
-          <td><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
-          <td class="bold">${money(o.total)}</td>
-          <td>${paymentMeta(o.paymentStatus)}</td>
-          <td class="small muted">${o.date} ${o.time}</td>
-          <td>
-            ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
-            ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
-            ${o.payment === 'transferencia' ? `<button class="btn btn-outline btn-sm" data-v="${o.id}">Ver comprobante</button>` : ''}
-            ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
-          </td>
-        </tr>`).join('')}</tbody></table></div>`;
-
-  $$('[data-v]', el).forEach((b) => b.onclick = () => {
-    const o = orders.find((x) => x.id === b.dataset.v);
-    modal(`<h3>Comprobante de transferencia</h3>
-      <div class="card" style="background:var(--primary-soft);text-align:center;padding:30px;margin-top:12px">
-        <div style="font-size:3rem">🧾</div>
-        <div class="tiny muted">Comprobante simulado</div>
-        <div class="bold" style="margin-top:8px">#${o.id} · ${money(o.total)}</div>
-        <div class="muted small">${o.userName} · ${o.date}</div>
-      </div>
-      <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
-      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn" data-c>Cerrar</button></div>`);
-    const m = $('.modal-overlay');
-    $('[data-c]', m).onclick = () => m.remove();
-  });
-
-  const setPay = (id, status) => {
-    const o = orders.find((x) => x.id === id);
-    o.paymentStatus = status;
-    saveOrders();
-    logAudit('Actualizó pago', `${o.id} → ${status}`);
-    toast('Pago #' + o.id + ' ' + (status === 'approved' ? 'aprobado.' : 'rechazado.'), status === 'approved' ? 'success' : 'error');
-    renderBarAdmin('payments');
+    <div class="page-title"><h1><span class="ico bx bx-history"></span> Historial de stock</h1></div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
+      <tbody id="stockHistoryRows"><tr><td colspan="5"><div class="skeleton" style="height:40px"></div></td></tr></tbody></table></div>
+  `;
+  const res = await ApiClient.get(API_ENDPOINTS.stock.movements);
+  if (!res.ok) { $('#stockHistoryRows',el).innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">No se pudo cargar historial</td></tr>`; return; }
+  const raw = res.data.results || res.data || [];
+  const history = raw.map(h=>({ date:(h.created_at||'').slice(0,10), time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', name: h.product_name, delta: (h.movement_type==='purchase'||h.movement_type==='return'||(h.movement_type==='adjustment' && h.new_stock>h.previous_stock) ? h.quantity : -h.quantity), newVal: h.new_stock, productId: h.product }));
+  const renderRows = () => {
+    const tbody = $('#stockHistoryRows', el);
+    if (!history.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay movimientos de stock</div><div class="tiny muted" style="margin-top:4px">Los ajustes de stock aparecerán aquí</div></td></tr>';
+      return;
+    }
+    
+    // Group by date
+    const byDate = history.reduce((acc, h) => {
+      const date = h.date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(h);
+      return acc;
+    }, {});
+    
+    tbody.innerHTML = Object.entries(byDate).map(([date, entries]) => `
+      <tr class="stock-history-date-header">
+        <td colspan="5" style="background:var(--surface-2); font-weight:var(--fw-semibold); padding:8px 16px; border-bottom:1px solid var(--border);">
+          ${date}
+        </td>
+      </tr>
+      ${entries.map((h) => {
+        const type = h.delta > 0 ? 'entrada' : 'salida';
+        const typeBadge = h.delta > 0 ? 'badge-success' : 'badge-danger';
+        const typeIcon = h.delta > 0 ? '⬆️' : '⬇️';
+        const deltaClass = h.delta > 0 ? 'stock-delta-positive' : 'stock-delta-negative';
+        return `
+          <tr>
+            <td data-label="Fecha/hora"><span class="small" style="white-space:nowrap;">${h.time}</span></td>
+            <td data-label="Producto"><span>${esc(h.name)}</span></td>
+            <td data-label="Tipo"><span class="badge ${typeBadge}">${typeIcon} ${type}</span></td>
+            <td data-label="Cantidad"><span class="bold tabular-nums ${deltaClass}">${h.delta > 0 ? '+' : ''}${h.delta}</span></td>
+            <td data-label="Stock resultante"><span class="tabular-nums">${h.newVal}</span></td>
+          </tr>
+        `;
+      }).join('')}
+    `).join('');
   };
-  $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
-  $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+
+  setTimeout(renderRows, 100);
 }
 
 /* ============================================================
-   VENTAS
+   PAGOS - Con API real (PATCH /api/payments/{id}/review/)
    ============================================================ */
-function barSales(el) {
-  const orders = Store.orders;
+async function barPayments(el) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [paymentsRes, ordersRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.get(API_ENDPOINTS.orders.all),
+  ]);
+  if (!paymentsRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pagos');
+    return;
+  }
+  const payments = paymentsRes.data.results || paymentsRes.data || [];
+  // Mapear payments para compatibilidad visual, manteniendo orders para última transacción
+  const orders = payments.map(p => ({
+    id: p.order_number || p.order,
+    paymentId: p.id,
+    paymentStatus: p.status,
+    payment: p.payment_method_code,
+    total: parseFloat(p.amount),
+    date: (p.created_at || '').slice(0,10),
+    time: p.created_at ? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '',
+    userName: p.user_name || '',
+  }));
+  // Fallback a ordersRes para lastTx si payments vacío
+  const ordersForTx = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const review = payments.filter((p) => p.status === 'review');
+  const filters = [
+    ['all', 'Todos'], ['pending', 'Pendientes'], ['review', 'En revisión'],
+    ['approved', 'Aprobados'], ['paid', 'Pagados'], ['rejected', 'Rechazados'], ['refunded', 'Reembolsados'],
+  ];
+  let selectedFilter = 'all';
+
   const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((o) => o.date === today && ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status));
+  const validToday = orders.filter((o) => o.date === today && isValidSale(o));
+  const totalToday = validToday.reduce((s, o) => s + o.total, 0);
+  const byMethod = { efectivo: 0, deuna: 0, transferencia: 0 };
+  validToday.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
+  const pct = (v) => totalToday ? Math.round((v / totalToday) * 100) : 0;
+
+  // Últimas transacciones para lista compacta
+  const lastTx = [...orders].sort((a,b)=> (b.date+b.time||'').localeCompare(a.date+a.time||'')).slice(0,6);
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
+    ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
+    <div class="card" style="margin-bottom:16px;background:var(--primary);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none">
+      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.14;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;font-weight:600">Total recaudado</div>
+        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px">${money(totalToday)}</div>
+        <div style="font-size:13px;opacity:0.9">en ${validToday.length} transacciones · hoy ${today}</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:14px">Métodos de pago</div>
+      ${[
+        { key: 'deuna', label: 'DEUNA', icon: 'bx-mobile-alt', color: 'var(--primary)' },
+        { key: 'transferencia', label: 'Transferencia', icon: 'bx-transfer-alt', color: 'var(--info)' },
+        { key: 'efectivo', label: 'Efectivo', icon: 'bx-money', color: 'var(--success)' },
+      ].map((m) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:${m.color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="bx ${m.icon}"></i></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${m.label}</div>
+            <div style="height:4px;background:var(--surface-3);border-radius:999px;overflow:hidden;margin-top:6px"><div style="height:100%;width:${pct(byMethod[m.key])}%;background:${m.color};border-radius:999px"></div></div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-weight:700;font-size:14px">${money(byMethod[m.key])}</div>
+            <div style="font-size:12px;color:var(--text-2)">${pct(byMethod[m.key])}%</div>
+          </div>
+          <button class="btn btn-outline btn-sm" data-configure="${m.key}" style="flex-shrink:0">Configurar</button>
+        </div>
+      `).join('')}
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Últimas transacciones</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${lastTx.length ? lastTx.map((o) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span class="tiny muted" style="min-width:42px">${o.time || '--:--'}</span>
+            <span class="bold" style="min-width:70px">#${o.id}</span>
+            <span class="badge badge-primary" style="font-size:11px">${paymentMethodLabel(o.payment)}</span>
+            <span class="bold tabular-nums" style="margin-left:auto">${money(o.total)}</span>
+          </div>
+        `).join('') : '<div class="tiny muted">Sin transacciones aún</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="font-weight:700;margin-bottom:12px">Otras acciones</div>
+      <a href="#" data-quick="history" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);transition:background var(--t-fast)">
+        <span style="width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center"><i class="bx bx-history"></i></span>
+        <span style="flex:1;font-weight:600">Historial de pagos</span>
+        <span style="color:var(--text-3)">›</span>
+      </a>
+    </div>
+    <div class="adv-tabs" style="display:none">
+      ${filters.map(([value, label]) => `<button class="category-chip${value === selectedFilter ? ' active' : ''}" data-payment-filter="${value}">${label}</button>`).join('')}
+    </div>
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Pedido</th><th>Usuario</th><th>Método</th><th>Total</th><th>Estado pago</th><th>Fecha</th><th></th></tr></thead>
+      <tbody id="paymentRows"></tbody>
+    </table></div>`;
+
+  const setPay = async (id, status) => {
+    // id es paymentId o order id; buscar payment real
+    const target = payments.find(p => String(p.id) === String(id) || String(p.order_number) === String(id));
+    const paymentId = target ? target.id : id;
+    const res = await ApiClient.patch(API_ENDPOINTS.payments.review(paymentId), { status });
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.status?.[0] || 'No se pudo actualizar el pago', 'error');
+      return;
+    }
+    logAudit('Actualizó pago', `${paymentId} → ${status}`);
+    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status), status === 'approved' ? 'success' : 'error');
+    renderBarAdmin('payments');
+  };
+
+  const renderSkeletonRows = (count = 5) => {
+    const tbody = $('#paymentRows', el);
+    tbody.innerHTML = Array.from({ length: count }, () => `
+      <tr>
+        <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:100px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        <td><div class="skeleton" style="width:70px;height:16px"></div></td>
+        <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+        <td><div class="skeleton" style="width:60px;height:28px;border-radius:var(--r-sm)"></div></td>
+      </tr>
+    `).join('');
+  };
+
+  const renderRows = () => {
+    const visibleOrders = selectedFilter === 'all' ? orders : selectedFilter === 'pending' ? getPendingPayments(orders) : orders.filter((o) => o.paymentStatus === selectedFilter);
+    $('#paymentRows', el).innerHTML = visibleOrders.length ? visibleOrders.map((o) => {
+        const sInfo = paymentStatusLabels[o.paymentStatus];
+        const badgeCls = sInfo ? sInfo.cls : 'badge-warning';
+        const isVisited = lastVisitedPaymentId === o.id;
+        return `
+        <tr class="${isVisited ? 'visited-row' : ''}" data-order-id="${o.id}">
+          <td data-label="Pedido"><span class="bold">#${o.id}</span></td>
+          <td data-label="Usuario"><span>${esc(o.userName)}</span></td>
+          <td data-label="Método"><span class="badge badge-primary">${paymentMethodLabel(o.payment)}</span></td>
+          <td data-label="Total"><span class="bold tabular-nums">${money(o.total)}</span></td>
+          <td data-label="Estado"><span class="badge ${badgeCls}">${sInfo ? sInfo.label : 'Pendiente'}</span></td>
+          <td data-label="Fecha"><span class="small muted">${o.date} ${o.time || '—'}</span></td>
+          <td data-label="Acciones">
+            ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
+            ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
+            ${['transferencia', 'deuna'].includes(o.payment) ? `<button class="btn btn-outline btn-sm" data-voucher="${o.id}" title="Ver comprobante" aria-label="Ver comprobante"><i class="bx bx-receipt"></i></button>` : ''}
+            ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
+          </td>
+        </tr>
+        `;
+      }).join('') : `<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx ${selectedFilter==='pending' ? 'bx-happy-heart-eyes' : 'bx-search-alt'}"></i></div><div style="font-weight:600">${selectedFilter==='pending' ? '¡Todo al día! No hay pagos pendientes' : 'No encontramos pagos en este estado'}</div><div class="tiny muted" style="margin-top:4px">${selectedFilter==='pending' ? 'Respira tranquilo, por ahora no debes cobrar nada' : 'Prueba con otro filtro'}</div></td></tr>`;
+    $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
+    $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
+    $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+    
+    // Trigger highlight animation for visited row
+    if (lastVisitedPaymentId) {
+      const visitedRow = $('#paymentRows', el).querySelector('.visited-row');
+      if (visitedRow) {
+        visitedRow.classList.add('highlight');
+        setTimeout(() => visitedRow.classList.remove('highlight'), 1500);
+      }
+    }
+  };
+
+  // Show skeleton first, then real data
+  renderSkeletonRows();
+  setTimeout(renderRows, 350);
+
+  $$('[data-payment-filter]', el).forEach((button) => button.onclick = () => {
+    selectedFilter = button.dataset.paymentFilter;
+    $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item === button));
+    renderSkeletonRows();
+    setTimeout(renderRows, 350);
+  });
+  $$('[data-quick]', el).forEach((btn) => btn.onclick = () => {
+    const q = btn.dataset.quick;
+    if (q === 'history') {
+      selectedFilter = 'all';
+      $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'all'));
+      renderSkeletonRows(); setTimeout(renderRows, 350);
+      toast('Historial completo de pagos', 'info');
+    } else if (q === 'refunded') {
+      selectedFilter = 'refunded';
+      $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'refunded'));
+      renderSkeletonRows(); setTimeout(renderRows, 350);
+      if (!orders.some((o) => o.paymentStatus === 'refunded')) toast('No hay reembolsos registrados', 'info');
+    }
+  });
+  $$('[data-configure]', el).forEach(btn => btn.onclick = () => openPaymentMethodConfig(btn.dataset.configure));
+}
+
+async function openPaymentMethodConfig(code) {
+  const listRes = await ApiClient.get(API_ENDPOINTS.payments.methodsAdmin);
+  if (!listRes.ok) { toast('No se pudo cargar métodos de pago', 'error'); return; }
+  const methods = listRes.data.results || listRes.data || [];
+  const m = methods.find(x => x.code === code);
+  if (!m) { toast('Método no encontrado', 'error'); return; }
+  const isTransfer = code === 'transferencia';
+  const isDeuna = code === 'deuna';
+  const isEfectivo = code === 'efectivo';
+  const ov = modal(`
+    <h3>Configurar ${esc(m.name)}</h3>
+    <div class="field"><label class="label">Activo</label><label class="checkbox-row"><input type="checkbox" id="pmActive" ${m.active ? 'checked' : ''}> Habilitado</label></div>
+    ${isTransfer ? `
+      <div class="field"><label class="label">Banco</label><input class="input" id="pmBank" value="${esc(m.bank_name || '')}" placeholder="Ej. Banco Sudamericano"></div>
+      <div class="field"><label class="label">Titular</label><input class="input" id="pmHolder" value="${esc(m.account_holder || '')}" placeholder="Bar INTESUD"></div>
+      <div class="field"><label class="label">Tipo de cuenta</label><input class="input" id="pmType" value="${esc(m.account_type || '')}" placeholder="Ahorros / Corriente"></div>
+      <div class="field"><label class="label">Número de cuenta</label><input class="input" id="pmNumber" value="${esc(m.account_number || '')}" placeholder="220 456 7890 1"></div>
+      <div class="field"><label class="label">Identificación</label><input class="input" id="pmId" value="${esc(m.holder_id || '')}" placeholder="0999999999001"></div>
+    ` : ''}
+    ${isDeuna ? `
+      <div class="field"><label class="label">Titular</label><input class="input" id="pmHolder" value="${esc(m.account_holder || '')}" placeholder="Bar INTESUD"></div>
+      <div class="field"><label class="label">Teléfono / Identificador</label><input class="input" id="pmPhone" value="${esc(m.phone || '')}" placeholder="0991234567"></div>
+      <div class="field"><label class="label">QR / Código</label><textarea class="input" id="pmQr" rows="2" placeholder="Información QR">${esc(m.qr_info || '')}</textarea></div>
+    ` : ''}
+    ${isEfectivo ? `` : ''}
+    <div class="field"><label class="label">Instrucciones</label><textarea class="input" id="pmInstr" rows="3" placeholder="Instrucciones para el cliente">${esc(m.instructions || '')}</textarea></div>
+    <div class="field"><label class="label">Descripción</label><input class="input" id="pmDesc" value="${esc(m.description || '')}"></div>
+    <div class="field"><label class="checkbox-row"><input type="checkbox" id="pmVoucher" ${m.requires_voucher ? 'checked' : ''}> Requiere comprobante</label></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button class="btn btn-neutral" data-cancel>Cancelar</button>
+      <button class="btn btn-primary" id="btnSavePm">Guardar</button>
+    </div>
+  `, { wide: false });
+  $('[data-cancel]', ov).onclick = () => ov.remove();
+  $('#btnSavePm', ov).onclick = async () => {
+    const payload = {
+      active: $('#pmActive', ov).checked,
+      description: $('#pmDesc', ov).value,
+      instructions: $('#pmInstr', ov).value,
+      requires_voucher: $('#pmVoucher', ov).checked,
+    };
+    if (isTransfer) {
+      payload.bank_name = $('#pmBank', ov).value.trim();
+      payload.account_holder = $('#pmHolder', ov).value.trim();
+      payload.account_type = $('#pmType', ov).value.trim();
+      payload.account_number = $('#pmNumber', ov).value.trim();
+      payload.holder_id = $('#pmId', ov).value.trim();
+    } else if (isDeuna) {
+      payload.account_holder = $('#pmHolder', ov).value.trim();
+      payload.phone = $('#pmPhone', ov).value.trim();
+      payload.qr_info = $('#pmQr', ov).value.trim();
+    }
+    const res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), payload);
+    if (!res.ok) { toast(res.data?.detail || 'Error al guardar', 'error'); return; }
+    toast('Método actualizado en PostgreSQL', 'success');
+    ov.remove();
+    renderBarAdmin('payments');
+  };
+}
+
+async function showVoucherModal(orderId) {
+  let order = null;
+  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  if (payAll.ok) {
+    const p=apiList(payAll.data).find(x=> String(x.id)===String(orderId) || String(x.order_number)===String(orderId));
+    if (p) order={ id:p.order_number||p.order, userName:p.user_name, date:(p.created_at||'').slice(0,10), time: p.created_at? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:p.status, total:parseFloat(p.amount||0), payment:p.payment_method_code };
+  }
+  if (!order) {
+    const r=await ApiClient.get(API_ENDPOINTS.orders.detail(orderId));
+    if (r.ok) { const o=r.data; order={ id:o.order_number||o.id, userName:o.user_name, date:(o.created_at||'').slice(0,10), time:o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:o.payment_status, total:parseFloat(o.total||0), payment:o.delivery_method}; }
+  }
+  if (!order) return;
+  lastVisitedPaymentId = orderId;
+  const status = paymentStatusLabels[order.paymentStatus];
+  const overlay = modal(`
+    <div style="text-align:center">
+      <div style="font-size:3rem"><i class="bx bx-receipt"></i></div>
+      <div class="tiny muted">Comprobante de transferencia simulado</div>
+      <div class="bold" style="margin-top:8px">${money(order.total)}</div>
+      <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;text-align:left">
+        <div><span class="bold">Pedido:</span> #${order.id}</div>
+        <div><span class="bold">Usuario:</span> ${esc(order.userName)}</div>
+        <div><span class="bold">Fecha:</span> ${order.date} ${order.time || '—'}</div>
+        <div><span class="bold">Método:</span> ${paymentMethodLabel(order.payment)}</div>
+        <div><span class="bold">Estado:</span> <span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
+        ${order.paymentStatus === 'review' ? `<div class="alert warning" style="margin-top:12px"><span class="a-ico"><i class="bx bx-error"></i></span><div>Este pago está en revisión. Verifica el comprobante antes de aprobar.</div></div>` : ''}
+      </div>
+    </div>
+    <div class="modal-footer" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" id="voucherCloseBtn">Cerrar</button>
+    </div>`, { wide: true, title: 'Comprobante de pago', sub: `Pedido #${order.id} · ${esc(order.userName)}` });
+  
+  // Attach close handler to footer button (modal() only binds the header × button)
+  $('#voucherCloseBtn', overlay).onclick = () => overlay.remove();
+  
+  // Handle Escape key
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+  
+  // Clean up on close
+  const originalClose = overlay.remove.bind(overlay);
+  overlay.remove = () => {
+    document.removeEventListener('keydown', handleEscape);
+    originalClose();
+  };
+}
+
+async function barPaymentDetail(el, id) {
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px"></div>`;
+  let order = null;
+  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  if (payAll.ok) {
+    const foundPay = apiList(payAll.data).find(p=> String(p.id)===String(id) || String(p.order_number)===String(id));
+    if (foundPay) {
+      order = { id: foundPay.order_number || foundPay.order, userName: foundPay.user_name, date: (foundPay.created_at||'').slice(0,10), time: foundPay.created_at? new Date(foundPay.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus: foundPay.status, total: parseFloat(foundPay.amount||0), payment: foundPay.payment_method_code };
+    }
+  }
+  if (!order) {
+    const ordRes = await ApiClient.get(API_ENDPOINTS.orders.detail(id));
+    if (ordRes.ok) {
+      const o=ordRes.data; order={ id: o.order_number || o.id, userName: o.user_name, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus: o.payment_status, total: parseFloat(o.total||0), payment: o.delivery_method };
+    }
+  }
+  if (!order) {
+    el.innerHTML = emptyState('<i class="bx bx-credit-card"></i>', 'No encontramos ese pago', 'Parece que el pedido que buscas no existe o fue movido. ¡Revisa el listado!');
+    return;
+  }
+  lastVisitedPaymentId = id;
+  const status = paymentStatusLabels[order.paymentStatus];
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-receipt"></span> Detalle de pago</h1></div>
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Pedido #${order.id}</div><div class="card-sub">${esc(order.userName)} · ${order.date} ${order.time || ''}</div></div><span class="badge ${status?.cls || 'badge-warning'}">${status?.label || 'Pendiente'}</span></div>
+      <div class="card-body" style="text-align:center">
+        <div style="font-size:3rem"><i class="bx bx-receipt"></i></div>
+        <div class="tiny muted">Comprobante de transferencia simulado</div>
+        <div class="bold" style="margin-top:8px">${money(order.total)}</div>
+        <div class="muted small" style="margin-top:12px">Imagen del comprobante cargada por el usuario (simulada).</div>
+        <button class="btn btn-outline" style="margin-top:20px" id="backToPayments">Volver a pagos</button>
+      </div>
+    </div>`;
+  $('#backToPayments', el).onclick = () => setRoute('adminbar/payments');
+}
+
+/* ============================================================
+   DASHBOARD DE VENTAS
+   ============================================================ */
+async function barSalesDashboard(el) {
+  ensureAdminbarPresentationStyles();
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  if (!ordersRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar ventas'); return; }
+  const raw = ordersRes.data.results || ordersRes.data || [];
+  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
+  const orders = ordersNorm;
+  const productsRaw = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
+  const products = productsRaw;
+  const today = new Date().toISOString().slice(0, 10);
+  const validSales = orders.filter(isValidSale);
+  const todayOrders = validSales.filter((o) => o.date === today);
   const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
   const countToday = todayOrders.length;
+  const currentMonth = today.slice(0, 7);
+  const salesMonth = validSales.filter((o) => o.date.startsWith(currentMonth)).reduce((s, o) => s + o.total, 0);
 
-  // product sales
-  const prodSales = {};
-  orders.filter((o) => o.status === 'delivered' || o.status === 'ready').forEach((o) => o.items.forEach((i) => { prodSales[i.productId] = (prodSales[i.productId] || 0) + i.qty; }));
-  let best = null, worst = null;
-  Object.entries(prodSales).forEach(([id, qty]) => {
-    if (!best || qty > best.qty) best = { id, qty };
-    if (!worst || qty < worst.qty) worst = { id, qty };
-  });
-  const bestProduct = best ? Store.products.find((p) => p.id === best.id) : null;
-  const worstProduct = worst ? Store.products.find((p) => p.id === worst.id) : null;
+const prodSales = {};
+  validSales.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSales[pid] = (prodSales[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
+  const topProducts = Object.entries(prodSales)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, qty]) => ({ product: products.find((p) => String(p.id)===String(id)), qty }))
+    .filter((p) => p.product);
 
-  // last 7 days chart
-  const days = [];
+const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0, 10);
-    const s = orders.filter((o) => o.date === ds).reduce((ss, o) => ss + o.total, 0);
-    days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total: s });
+    const date = d.toISOString().slice(0, 10);
+    const total = validSales.filter((o) => o.date === date).reduce((sum, o) => sum + o.total, 0);
+    days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total });
   }
   const maxDay = Math.max(...days.map((d) => d.total), 1);
 
+  // Month-over-month comparison
+  const currentMonthStart = new Date(today.slice(0, 7) + '-01');
+  const prevMonthEnd = new Date(currentMonthStart);
+  prevMonthEnd.setDate(0);
+  const prevMonthStr = prevMonthEnd.toISOString().slice(0, 7);
+  const salesPrevMonth = validSales.filter((o) => o.date.startsWith(prevMonthStr)).reduce((s, o) => s + o.total, 0);
+  const momChange = salesPrevMonth > 0 ? ((salesMonth - salesPrevMonth) / salesPrevMonth) * 100 : (salesMonth > 0 ? 100 : 0);
+  const momPositive = momChange >= 0;
+  const momAbsChange = Math.abs(momChange);
+
+  // Micro-mensaje contextual dinámico (solo si hay datos suficientes, nunca muestra undefined)
+  let microMsg = '';
+  if (validSales.length >= 3 && days.length === 7) {
+    const avgWeek = days.reduce((s, d) => s + d.total, 0) / 7;
+    const bestDay = [...days].sort((a, b) => b.total - a.total)[0];
+    if (avgWeek > 0 && salesToday > avgWeek * 1.1) {
+      microMsg = `Hoy vas mejor que el promedio de la semana ✨`;
+    } else if (bestDay && bestDay.total > 0 && bestDay.total > avgWeek * 1.2) {
+      microMsg = `Tu día más fuerte esta semana fue ${esc(bestDay.label)} con ${money(bestDay.total)}`;
+    } else if (avgWeek > 0 && salesToday > 0) {
+      microMsg = `Promedio semanal: ${money(avgWeek)} — hoy llevas ${money(salesToday)}`;
+    }
+  }
+
   el.innerHTML = `
-    <div class="page-title"><h1>Ventas</h1></div>
-    <div class="grid grid-4" style="margin-bottom:20px">
-      <div class="stat-card success-card"><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div></div>
-      <div class="stat-card"><div class="st-label">Pedidos del día</div><div class="st-value primary">${countToday}</div></div>
-      <div class="stat-card"><div class="st-label">Más vendido</div><div class="st-value" style="font-size:1rem">${bestProduct ? esc(bestProduct.name) : '—'}</div><div class="st-sub">${best?.qty || 0} unidades</div></div>
-      <div class="stat-card"><div class="st-label">Menos vendido</div><div class="st-value" style="font-size:1rem">${worstProduct ? esc(worstProduct.name) : '—'}</div><div class="st-sub">${worst?.qty || 0} unidades</div></div>
+    <div class="page-title"><h1><span class="ico bx bx-line-chart"></span> Ventas</h1></div>
+    ${microMsg ? `<div class="status-banner info"><span class="ico"><i class="bx bx-trending-up"></i></span><div>${microMsg}</div></div>` : ''}
+<div class="grid grid-4 sales-summary-grid" style="margin-bottom:24px">
+      <div class="stat-card success-card sales-summary-card"><span class="stat-ico bx bx-dollar success"></span><div class="st-label">Ventas del día</div><div class="st-value" data-sales-count="${salesToday}" data-sales-format="money">${money(0)}</div></div>
+      <div class="stat-card sales-summary-card"><span class="stat-ico bx bx-receipt muted"></span><div class="st-label">Ticket promedio</div><div class="st-value" ${countToday > 0 ? `data-sales-count="${salesToday / countToday}" data-sales-format="money"` : ''}>${countToday > 0 ? money(0) : '—'}</div></div>
+      <div class="stat-card sales-summary-card"><span class="stat-ico bx bx-cart primary"></span><div class="st-label">Número de ventas</div><div class="st-value primary" data-sales-count="${countToday}" data-sales-format="number">0</div></div>
+      <div class="stat-card sales-summary-card"><span class="stat-ico bx bx-calendar muted"></span><div class="st-label">Total del mes</div><div class="st-value" data-sales-count="${salesMonth}" data-sales-format="money">${money(0)}</div></div>
     </div>
-    <div class="card" style="margin-bottom:20px">
-      <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
-      <div class="bar-chart">
-        ${days.map((d) => `<div class="bc-col"><div class="bc-bar${d === days[days.length - 1] ? ' hl' : ''}" style="height:${Math.max(3, (d.total / maxDay) * 100)}%"></div><div class="bc-label">${d.label}</div><div class="bc-label bold">${money(d.total)}</div></div>`).join('')}
-      </div>
+
+<div class="grid grid-2" style="margin-bottom:24px;align-items:stretch">
+      <div class="card mom-performance-card" style="display:flex;flex-direction:column;min-height:360px"><h3 style="margin-bottom:16px">Rendimiento del mes</h3><div id="momDonutChart" class="mom-donut-chart" style="flex:1;display:flex;align-items:center;justify-content:center"></div></div>
+
+  <div class="card" style="display:flex;flex-direction:column;min-height:360px">
+    <h3 style="margin-bottom:16px">Ventas por día (últimos 7 días)</h3>
+    <div id="salesLineChart" class="sales-line-chart" style="flex:1;display:flex;align-items:center;justify-content:center"></div>
+  </div>
+</div>
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Ventas por hora (hoy)</h3>
+      <div id="salesHourChart" style="display:flex;align-items:flex-end;gap:8px;height:160px;padding:12px 8px 0;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)"></div>
+      <div class="tiny muted" style="margin-top:8px;text-align:center">Agrupado por franja horaria del día actual</div>
     </div>
-    <h3 class="section-title">Historial de ventas</h3>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Entrega</th><th>Pago</th><th>Total</th><th>Estado</th></tr></thead>
-      <tbody>${orders.filter((o) => ['delivered', 'ready', 'prep', 'queue', 'confirmed'].includes(o.status)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((o) => `
-        <tr><td class="bold">#${o.id}</td><td class="small">${o.date} ${o.time}</td><td>${esc(o.userName)}</td><td>${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'}</td><td>${paymentMethodLabel(o.payment)}</td><td class="bold">${money(o.total)}</td><td>${statusMeta(o.status)}</td></tr>`).join('')}
-      </tbody></table></div>`;
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 style="margin-bottom:16px">Productos más vendidos</h3>
+      ${topProducts.length ? `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+          ${topProducts.map(({ product, qty }) => `
+            <div class="stat-card" style="padding:16px;text-align:center">
+              <div style="font-size:2.5rem;margin-bottom:8px">${product.emoji || productIcon(product)}</div>
+              <div class="bold" style="font-size:var(--fs-sm);margin-bottom:4px">${esc(product.name)}</div>
+              <div class="stat-value primary tabular-nums" style="font-size:1.5rem">${qty}</div>
+              <div class="tiny muted">unidades</div>
+            </div>
+          `).join('')}
+        </div>` : `<div style="text-align:center;padding:24px 12px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-bar-chart-alt-2"></i></div><div style="font-weight:600">Aún no hay ventas registradas</div><div class="tiny muted" style="margin-top:4px">Cuando haya movimiento, verás aquí tus productos estrella</div></div>`}
+    </div>
+  `;
+  animateSalesMetrics(el);
+  renderSalesLineChart(el, days);
+  renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth);
+  renderSalesHourChart(el, todayOrders);
 }
 
-/* ============================================================
-   DELIVERY
-   ============================================================ */
-function barDelivery(el) {
-  const cfg = Store.config;
-  const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-  el.innerHTML = `
-    <div class="page-title"><h1>Delivery interno</h1></div>
-    <div class="grid grid-2">
-      <div class="card">
-        <h3 style="margin-bottom:14px">Configuración del delivery</h3>
-        <div class="field"><label class="checkbox-row"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label><div class="tiny muted" style="margin-left:26px">Cobertura exclusiva dentro del edificio INTESUD (Piso 1 - 3).</div></div>
-        <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
-          <label class="label">Días de entrega</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
-            ${week.map((d) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${d}" ${cfg.deliveryDays.includes(d) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
-          </div>
-        </div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}"></div>
-          <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}"></div>
-        </div>
-        <div class="field"><label class="label">Capacidad máxima de delivery</label><input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}"><div class="tiny muted">Pedidos de delivery que pueden atenderse simultáneamente.</div></div>
-        <button class="btn" id="dlSave">Guardar configuración</button>
+function renderSalesLineChart(el, days) {
+  const container = $('#salesLineChart', el);
+  if (!container) return;
+  const totals = days.map((d) => d.total);
+  const maxVal = Math.max(...totals, 1);
+  const minVal = Math.min(...totals, 0);
+  const range = maxVal - minVal || 1;
+  const padding = { top: 24, right: 16, bottom: 36, left: 56 };
+  const width = container.clientWidth || 600;
+  const height = 220;
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const x = (i) => padding.left + (i / (days.length - 1)) * innerW;
+  const y = (val) => padding.top + innerH * (1 - (val - minVal) / range);
+
+  const points = days.map((d, i) => `${x(i)},${y(d.total)}`).join(' ');
+  const areaPoints = `${padding.left},${padding.top + innerH} ${points} ${padding.left + innerW},${padding.top + innerH}`;
+
+  const pathLen = 1000;
+
+  container.innerHTML = `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="sales-chart-svg" role="img" aria-label="Gráfico de ventas de los últimos 7 días">
+      <defs>
+        <linearGradient id="salesAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#40807E" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#40807E" stop-opacity="0.02"/>
+        </linearGradient>
+        <linearGradient id="salesLineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#40807E"/>
+          <stop offset="100%" stop-color="#2f605e"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      <g class="chart-grid" stroke="var(--border)" stroke-width="0.5">
+        ${[0, 0.25, 0.5, 0.75, 1].map((f) => {
+          const gy = padding.top + innerH * f;
+          const gv = maxVal - range * f;
+          return `<line x1="${padding.left}" y1="${gy}" x2="${padding.left + innerW}" y2="${gy}"/><text x="${padding.left - 8}" y="${gy + 4}" text-anchor="end" font-size="10" fill="var(--text-3)">${money(gv)}</text>`;
+        }).join('')}
+      </g>
+      <!-- Area -->
+      <polygon class="sales-area" points="${areaPoints}" fill="url(#salesAreaGrad)"/>
+      <!-- Line -->
+      <polyline class="sales-line" points="${points}" fill="none" stroke="url(#salesLineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:${pathLen}; stroke-dashoffset:${pathLen};"/>
+      <!-- Points -->
+      <g class="sales-points">
+        ${days.map((d, i) => `
+          <g class="sales-point-group" data-index="${i}" style="cursor:pointer">
+            <circle class="sales-point" cx="${x(i)}" cy="${y(d.total)}" r="5" fill="var(--surface)" stroke="#40807E" stroke-width="2.5"/>
+            <title>${d.label}: ${money(d.total)}</title>
+            <text class="sales-tooltip" x="${x(i)}" y="${y(d.total) - 18}" text-anchor="middle" font-size="11" fill="var(--text)" opacity="0" pointer-events="none" style="white-space:nowrap">${money(d.total)}</text>
+          </g>
+        `).join('')}
+      </g>
+      <!-- X-axis labels -->
+      <g class="chart-x-labels" font-size="11" fill="var(--text-3)" text-anchor="middle">
+        ${days.map((d, i) => `<text x="${x(i)}" y="${height - 6}">${d.label}</text>`).join('')}
+      </g>
+    </svg>`;
+
+  requestAnimationFrame(() => {
+    const line = container.querySelector('.sales-line');
+    if (line) {
+      line.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+      line.style.strokeDashoffset = '0';
+    }
+  });
+
+  container.querySelectorAll('.sales-point-group').forEach((g) => {
+    g.addEventListener('mouseenter', () => {
+      const tooltip = g.querySelector('.sales-tooltip');
+      const point = g.querySelector('.sales-point');
+      if (tooltip) tooltip.style.opacity = '1';
+      if (point) point.setAttribute('r', '7');
+    });
+    g.addEventListener('mouseleave', () => {
+      const tooltip = g.querySelector('.sales-tooltip');
+      const point = g.querySelector('.sales-point');
+      if (tooltip) tooltip.style.opacity = '0';
+      if (point) point.setAttribute('r', '5');
+    });
+  });
+}
+
+function renderSalesHourChart(el, todayOrders) {
+  const container = $('#salesHourChart', el);
+  if (!container) return;
+  const hours = [7,9,11,13,15,17,19];
+  const totals = hours.map((h) => {
+    return todayOrders.filter((o) => {
+      const hour = parseInt((o.time || '0:0').split(':')[0], 10);
+      return hour >= h && hour < h + 2;
+    }).reduce((s, o) => s + o.total, 0);
+  });
+  const max = Math.max(...totals, 1);
+  container.innerHTML = hours.map((h, i) => {
+    const val = totals[i];
+    const pct = (val / max) * 100;
+    const height = Math.max(8, pct);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="font-size:10px;color:var(--text-3);font-weight:600">${money(val)}</div>
+      <div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end">
+        <div style="width:100%;height:${height}%;background:linear-gradient(180deg,var(--primary),var(--primary-hover));border-radius:6px 6px 0 0;transition:height 0.6s ease;min-height:${val ? '4px' : '0'}"></div>
       </div>
-      <div>
-        <div class="capacity-card" style="margin-bottom:16px">
-          <div class="capacity-header"><h3>Capacidad de delivery</h3><span class="badge ${cfg.deliveryEnabled ? 'badge-success' : 'badge-danger'}">${cfg.deliveryEnabled ? 'Disponible' : parseInt(cfg.deliveryCurrent) >= parseInt(cfg.deliveryMax) ? 'Capacidad llena' : 'Activo'}</span></div>
-          <div class="bar-track"><div class="bar-fill ${cfg.deliveryEnabled && cfg.deliveryCurrent >= cfg.deliveryMax ? 'danger' : ''}" style="width:${Math.min(100, (cfg.deliveryCurrent / cfg.deliveryMax) * 100)}%"></div></div>
-          <div style="display:flex;justify-content:space-between;margin-top:8px"><span class="muted small">${cfg.deliveryCurrent} / ${cfg.deliveryMax} pedidos de delivery</span></div>
-        </div>
-        <div class="card">
-          <h3 style="margin-bottom:10px">Pedidos de delivery</h3>
-          <div id="dlOrders"></div>
-        </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text-2)">${h}h</div>
+    </div>`;
+  }).join('');
+}
+ 
+function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMonth, salesPrevMonth) {
+  const container = $('#momDonutChart', el);
+  if (!container) return;
+  const size = 140;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(momAbsChange, 200) / 200;
+  const dashOffset = circumference * (1 - progress);
+  const color = momPositive ? '#22a06b' : '#e09a16';
+  const arrowColor = momPositive ? 'var(--success)' : 'var(--warning)';
+  const sign = momPositive ? '+' : '';
+  const prevMonthLabel = salesPrevMonth > 0 ? money(salesPrevMonth) : '—';
+
+  container.innerHTML = `
+    <div class="mom-donut-wrap" style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="mom-donut-svg" role="img" aria-label="Rendimiento del mes">
+        <defs>
+          <linearGradient id="momGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="${color}"/>
+            <stop offset="100%" stop-color="${momPositive ? '#178a5a' : '#c07d08'}"/>
+          </linearGradient>
+        </defs>
+        <!-- Background track -->
+        <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="var(--surface-3)" stroke-width="${strokeWidth}"/>
+        <!-- Progress ring -->
+        <circle class="mom-ring" cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="url(#momGrad)" stroke-width="${strokeWidth}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})" style="stroke-dasharray:${circumference}; stroke-dashoffset:${circumference};"/>
+      </svg>
+      <div class="mom-donut-center" style="text-align:center">
+        <div style="font-size:2.2rem;font-weight:var(--fw-extrabold);color:${arrowColor};line-height:1.1"><span style="font-size:1.6rem">${sign}${momAbsChange.toFixed(1)}%</span></div>
+        <div class="tiny muted" style="margin-top:4px">Rendimiento del mes</div>
+        <div class="tiny muted" style="margin-top:2px">${money(salesMonth)} este mes</div>
       </div>
     </div>`;
 
-  if (!cfg.deliveryEnabled) {
-    el.querySelector('#dlOrders').innerHTML = `<div class="status-banner danger" style="margin:0"><span class="ico">🚫</span><div><b>Delivery no disponible</b><br>Habilita el servicio para recibir pedidos de delivery.</div></div>`;
-    el.querySelector('.capacity-card .capacity-header .badge').textContent = 'No disponible';
+  requestAnimationFrame(() => {
+    const ring = container.querySelector('.mom-ring');
+    if (ring) {
+      ring.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1)';
+      ring.style.strokeDashoffset = String(dashOffset);
+    }
+  });
+}
+
+/* ============================================================
+   HISTORIAL DE VENTAS
+   ============================================================ */
+async function barSalesHistory(el) {
+  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
+  const orders = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
+  const tbody = $('#salesHistoryRows');
+  if (!tbody) {
+    el.innerHTML = `
+      <div class="page-title"><h1><span class="ico bx bx-history"></span> Historial de ventas</h1></div>
+      <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
+        <tbody id="salesHistoryRows"></tbody></table></div>
+    `;
   } else {
-    const dlOrders = Store.orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-    $('#dlOrders').innerHTML = dlOrders.length ? dlOrders.map((o) => `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);align-items:center">
-        <div><div class="bold small">#${o.id} · P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</div><div class="tiny muted">${esc(o.userName)} · ${money(o.total)}</div></div>
-        ${statusMeta(o.status)}
-      </div>`).join('') : emptyState('🛵', 'Sin pedidos de delivery', 'Por ahora no hay pedidos de delivery.');
+    tbody.innerHTML = '';
   }
 
-  $('#dlEnabled').onchange = () => {
-    cfg.deliveryEnabled = $('#dlEnabled').checked;
-    const field = $('#dlDaysField');
-    field.style.opacity = cfg.deliveryEnabled ? '' : '.5';
-    field.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none';
+  const renderSkeletonRows = (count = 5) => {
+    const tbodyEl = $('#salesHistoryRows', el);
+    if (tbodyEl) {
+      tbodyEl.innerHTML = Array.from({ length: count }, () => `
+        <tr>
+          <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+          <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:70px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        </tr>
+      `).join('');
+    }
   };
 
-  $('#dlSave').onclick = () => {
-    cfg.orderOpen = $('#dlStart').value || cfg.orderOpen;
-    cfg.orderClose = $('#dlEnd').value || cfg.orderClose;
-    cfg.deliveryMax = parseInt($('#dlMax').value) || cfg.deliveryMax;
-    cfg.deliveryDays = week.filter((d) => $(`[data-day="${d}"]`, el)?.checked);
-    const enabled = $('#dlEnabled').checked;
-    cfg.deliveryEnabled = enabled;
-    Store.config = cfg;
-    logAudit('Actualizó configuración de delivery', enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
-    toast('Configuración de delivery guardada.', 'success');
+  const renderRows = () => {
+    const tbodyEl = $('#salesHistoryRows', el);
+    if (!tbodyEl) return;
+    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+    tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
+      <tr><td data-label="Fecha/hora"><span class="small">${o.date} ${o.time || '—'}</span></td><td data-label="Pedido"><span class="bold">#${o.id}</span></td><td data-label="Monto"><span class="bold tabular-nums">${money(o.total)}</span></td><td data-label="Método pago"><span>${paymentMethodLabel(o.payment)}</span></td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
+  };
+
+  renderSkeletonRows();
+  setTimeout(renderRows, 350);
+}
+ 
+async function barDelivery(el) {
+  ensureAdminbarPresentationStyles();
+  el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
+  const [ordersRes, deliveryConfigRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.get(API_ENDPOINTS.delivery.config),
+  ]);
+  if (!ordersRes.ok) {
+    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos de delivery');
+    return;
+  }
+  const allOrders = ordersRes.data.results || ordersRes.data || [];
+  const orders = allOrders.filter((o) => o.delivery_method === 'delivery' || o.delivery === 'delivery');
+  const pending = orders.filter((o) => ['queue','confirmed','prep'].includes(o.status));
+  const enCamino = orders.filter((o) => o.status === 'ready');
+  const entregado = orders.filter((o) => o.status === 'delivered');
+  const rawCfg = deliveryConfigRes.ok ? deliveryConfigRes.data : {};
+  const cfg = {
+    deliveryEnabled: rawCfg.enabled ?? true,
+    deliveryDays: rawCfg.delivery_days || [],
+    orderOpen: (rawCfg.start_time || '09:00').slice(0,5),
+    orderClose: (rawCfg.end_time || '09:45').slice(0,5),
+    deliveryMax: rawCfg.max_capacity ?? 4,
+    deliveryFloors: rawCfg.deliveryFloors || ['Piso 1','Piso 2','Piso 3'],
+    _raw: rawCfg,
+  };
+  const week = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const floors = ['Piso 1', 'Piso 2', 'Piso 3'];
+  if (!cfg.deliveryFloors) cfg.deliveryFloors = floors;
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-cycling"></span> Delivery <span class="badge badge-primary">${orders.length} pedidos</span></h1></div>
+    <p class="page-sub" style="margin-bottom:16px">Delivery interno INTESUD — por pisos, sin repartidores externos</p>
+    <div class="adv-tabs" style="margin-bottom:16px">
+      <button class="category-chip active" data-dtab="pendiente">Pendiente (${pending.length})</button>
+      <button class="category-chip" data-dtab="encamino">En camino (${enCamino.length})</button>
+      <button class="category-chip" data-dtab="entregado">Entregado (${entregado.length})</button>
+      <button class="category-chip" data-dtab="config">Configuración</button>
+    </div>
+    <div id="deliveryArea"></div>
+    <div id="deliveryConfig" style="display:none">
+      <div class="card" style="width:100%;max-width:none;margin:0">
+        <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Servicio</div></div>
+        <div class="field" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px">
+          <label class="checkbox-row"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label>
+          <div class="tiny muted" style="margin-left:26px;margin-top:4px">Cobertura exclusiva dentro del edificio INTESUD.</div>
+        </div>
+        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Pisos habilitados</div></div>
+        <div class="field" id="dlFloorsField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlFloors">
+            ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
+          </div>
+        </div>
+        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Días y horario</div></div>
+        <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+          <label class="label">Días de entrega</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
+             ${week.map((d, index) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-day="${index}" ${cfg.deliveryDays.includes(index) ? 'checked' : ''} style="margin-right:4px">${d}</label>`).join('')}
+          </div>
+        </div>
+        <div class="grid grid-2" id="dlTimeFields" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'};margin-top:12px">
+          <div class="field"><label class="label">Hora inicio</label><input class="input" type="time" id="dlStart" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+          <div class="field"><label class="label">Hora fin</label><input class="input" type="time" id="dlEnd" value="${cfg.orderClose}" style="max-width: 200px"></div>
+        </div>
+        <div class="field" id="dlMaxField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
+          <label class="label">Capacidad máxima simultánea</label>
+          <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Pedidos de delivery que pueden atenderse simultáneamente.</div>
+        </div>
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+          <button class="btn btn-primary" id="dlSave">Guardar configuración</button>
+        </div>
+      </div>
+    </div>
+    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico">⚠️</span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
+  `;
+
+  let dtab = 'pendiente';
+  const renderDelivery = () => {
+    const area = $('#deliveryArea', el);
+    const configDiv = $('#deliveryConfig', el);
+    const warning = $('#dlWarning', el);
+    if (dtab === 'config') {
+      area.style.display = 'none';
+      if (warning) warning.style.display = 'none';
+      configDiv.style.display = 'block';
+      return;
+    } else {
+      area.style.display = 'block';
+      if (warning) warning.style.display = cfg.deliveryEnabled ? 'none' : 'block';
+      configDiv.style.display = 'none';
+    }
+    const list = dtab === 'pendiente' ? pending : dtab === 'encamino' ? enCamino : entregado;
+    if (!list.length) {
+      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico">📦</div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
+      return;
+    }
+    area.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map((o) => `
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
+          <span class="badge ${o.status === 'ready' ? 'badge-warning' : o.status === 'delivered' ? 'badge-success' : 'badge-info'}">${o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep' ? 'Pendiente' : o.status === 'ready' ? 'En camino' : 'Entregado'}</span>
+        </div>
+        <div class="tiny muted"><b>Estudiante:</b> ${esc(o.userName)} · <b>Piso ${esc(o.deliveryInfo?.piso || '—')}</b> Aula ${esc(o.deliveryInfo?.aula || '—')}</div>
+        <div style="font-size:var(--fs-sm)">${o.items.map((i)=>`${esc(i.name)} ×${i.qty}`).join(', ')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span class="bold tabular-nums">${money(o.total)}</span>
+          <span class="tiny muted">${o.time} · ${o.date}</span>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  };
+  $$('[data-dtab]', el).forEach((btn) => btn.onclick = () => {
+    $$('[data-dtab]', el).forEach((x) => x.classList.remove('active'));
+    btn.classList.add('active');
+    dtab = btn.dataset.dtab;
+    renderDelivery();
+  });
+  renderDelivery();
+  // Configuración handlers
+  const dlEnabledEl = $('#dlEnabled', el);
+  const dlFields = ['dlDaysField','dlFloorsField','dlTimeFields','dlMaxField'];
+  if (dlEnabledEl) dlEnabledEl.onchange = () => {
+    cfg.deliveryEnabled = dlEnabledEl.checked;
+    dlFields.forEach(id => {
+      const f = $('#' + id, el);
+      if (f) { f.style.opacity = cfg.deliveryEnabled ? '' : '.5'; f.style.pointerEvents = cfg.deliveryEnabled ? '' : 'none'; }
+    });
+    const w = $('#dlWarning', el);
+    if (w) w.style.display = cfg.deliveryEnabled ? 'none' : 'block';
+  };
+  const dlSaveBtn = $('#dlSave', el);
+  if (dlSaveBtn) dlSaveBtn.onclick = async () => {
+    const payload = {
+      enabled: $('#dlEnabled', el).checked,
+      start_time: $('#dlStart', el).value,
+      end_time: $('#dlEnd', el).value,
+      max_capacity: parseInt($('#dlMax', el).value) || 4,
+      delivery_days: [...$$('[data-day]', el)].filter((input) => input.checked).map((input) => Number(input.dataset.day)),
+    };
+    const res = await ApiClient.patch(API_ENDPOINTS.delivery.config, payload);
+    if (!res.ok) {
+      toast(res.data?.detail || res.data?.end_time?.[0] || 'Error al guardar delivery', 'error');
+      return;
+    }
+    logAudit('Actualizó configuración de delivery', payload.enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
+    toast('Configuración de delivery guardada en PostgreSQL.', 'success');
     renderBarAdmin('delivery');
   };
 }
 
 /* ============================================================
-   CONFIGURACIÓN DE CAFETERÍA
+   CONFIGURACIÓN - HORARIOS
    ============================================================ */
-function barConfig(el) {
-  const cfg = Store.config;
+async function barConfigHours(el) {
+  return barConfigTabs(el, 'hours');
+  const cfg = null;
+  const originalValues = {
+    orderOpen: cfg.orderOpen,
+    orderClose: cfg.orderClose,
+    breakStart: cfg.breakStart,
+    breakEnd: cfg.breakEnd,
+    capacity: String(cfg.capacity)
+  };
+  let hasUnsavedChanges = false;
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.id = 'btnSaveConfigHours';
+  btn.innerHTML = 'Guardar cambios';
+  
   el.innerHTML = `
-    <div class="page-title"><h1>Configuración de la cafetería</h1></div>
-    <div class="grid grid-2">
-      <div class="card">
-        <h3 style="margin-bottom:14px">Estado de la cafetería</h3>
-        <div class="capacity-card" style="text-align:center">
-          <div><span class="badge ${cfg.cafeOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1rem">${cfg.cafeOpen ? '● ABIERTA' : '● CERRADA'}</span></div>
-          <button class="btn btn-outline" style="margin-top:14px" id="toggleCafe">${cfg.cafeOpen ? 'Cambiar a cerrada' : 'Cambiar a abierta'}</button>
-          <div class="tiny muted" style="margin-top:10px">Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.</div>
-        </div>
+    <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
+    <div class="card" style="width:100%;max-width:none;margin:0">
+      <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
+        <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom:14px">Horario de pedidos</h3>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}"></div>
-          <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}"></div>
-        </div>
-        <div class="grid grid-2">
-          <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}"></div>
-          <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}"></div>
-        </div>
-        <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}"><div class="tiny muted">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-        <button class="btn" id="ohSave">Guardar horario y capacidad</button>
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
+        <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
       </div>
-    </div>`;
+      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
+      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
+      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
+          <span class="pulse-dot"></span>
+        </span>
+        <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+  
+  const btnSave = $('#btnSaveConfigHours', el);
+  const indicator = $('#unsavedIndicator', el);
+  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
+  
+  const checkChanges = () => {
+    const currentValues = {
+      orderOpen: $('#ohOpen', el).value,
+      orderClose: $('#ohClose', el).value,
+      breakStart: $('#brStart', el).value,
+      breakEnd: $('#brEnd', el).value,
+      capacity: $('#cpCap', el).value
+    };
+    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
+    indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
+    btnSave.disabled = !hasUnsavedChanges;
+    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
+  };
+  
+  fields.forEach(id => {
+    const field = $('#' + id, el);
+    if (field) {
+      field.addEventListener('input', checkChanges);
+      field.addEventListener('change', checkChanges);
+    }
+  });
+  
+  btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
+}
 
-  $('#toggleCafe').onclick = () => {
-    cfg.cafeOpen = !cfg.cafeOpen;
-    Store.config = cfg;
-    logAudit('Cambió estado de la cafetería', cfg.cafeOpen ? 'Abierta' : 'Cerrada');
-    toast('La cafetería está ' + (cfg.cafeOpen ? 'ABIERTA' : 'CERRADA') + '.', cfg.cafeOpen ? 'success' : 'warning');
-    renderBarAdmin('config');
+async function saveConfigHours(btn, indicator, originalValues) {
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
+  const payload = {
+    order_open_time: $('#ohOpen').value,
+    order_close_time: $('#ohClose').value,
+    break_start: $('#brStart').value,
+    break_end: $('#brEnd').value,
+    total_capacity: parseInt($('#cpCap').value),
+  };
+  Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
+  const res = await ApiClient.patch(API_ENDPOINTS.config.update, payload);
+  if (!res.ok) {
+    toast(res.data?.detail || res.data?.order_open_time?.[0] || 'Error al guardar configuración', 'error');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  logAudit('Actualizó horarios', 'Horario de pedidos y receso');
+  toast('Horarios guardados en PostgreSQL.', 'success');
+  btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
+  btn.classList.add('btn-success');
+  btn.classList.remove('btn-primary');
+  if (indicator) indicator.style.display = 'none';
+  setTimeout(() => { renderBarAdmin('config-hours'); }, 600);
+}
+
+/* ============================================================
+   CONFIGURACIÓN - ESTADO ABIERTO/CERRADO
+   ============================================================ */
+async function barConfigStatus(el) {
+  return barConfigTabs(el, 'status');
+  const cfg = null;
+  const isOpen = false;
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración - Estado</h1></div>
+    <div class="card" style="width:100%;max-width:none;margin:0">
+      <div style="text-align:center;margin-bottom:24px">
+        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
+      </div>
+      <div style="text-align:center">
+        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
+          ${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}
+        </button>
+      </div>
+      <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)">
+        <b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.
+      </div>
+    </div>
+  `;
+  $('#btnToggleCafeStatus', el).onclick = () => confirmToggleState(!isOpen, $('#btnToggleCafeStatus', el));
+}
+
+function barAdminProfile(el) {
+  const user = currentUser();
+  if (!user) return route('login');
+  const storedPhoto = Store.load('int_admin_photo_' + user.id, null) || user.photo || '';
+  const currentPhoto = storedPhoto;
+  const currentName = Store.load('int_admin_name_' + user.id, null) || user.name || '';
+
+  el.innerHTML = `
+    <div class="page-title"><h1><span class="ico bx bx-user"></span> Mi perfil</h1></div>
+    <div class="card" style="max-width:560px">
+      <div style="display:flex;gap:18px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+        <div id="profileAvatarPreview" class="avatar lg" style="width:80px;height:80px;font-size:1.8rem;flex-shrink:0;${currentPhoto ? `background-image:url('${currentPhoto}');background-size:cover;background-position:center;color:transparent` : ''}">${currentPhoto ? '' : esc(initials(currentName))}</div>
+        <div style="flex:1;min-width:200px">
+          <div class="field" style="margin-bottom:8px">
+            <label class="label">Foto de perfil</label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+                <i class="bx bx-cloud-upload" style="margin-right:6px"></i>Subir foto
+                <input type="file" id="profilePhotoInput" accept="image/*" style="display:none">
+              </label>
+              <button class="btn btn-neutral btn-sm" id="btnRemovePhoto" ${currentPhoto ? '' : 'disabled style="opacity:0.6"'}>Quitar foto</button>
+            </div>
+            <div class="tiny muted" style="margin-top:6px">Se guarda en base64 local, como las imágenes de producto</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Nombre para mostrar</label>
+        <input class="input" id="profileNameInput" value="${esc(currentName)}" placeholder="Administradora Bar">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+        <button class="btn btn-primary" id="btnSaveProfile">Guardar cambios</button>
+      </div>
+    </div>
+  `;
+
+  const photoInput = $('#profilePhotoInput', el);
+  const avatarPreview = $('#profileAvatarPreview', el);
+  const nameInput = $('#profileNameInput', el);
+  const btnRemove = $('#btnRemovePhoto', el);
+  let newPhotoBase64 = currentPhoto;
+
+  const updateAvatarPreview = (photo) => {
+    if (photo) {
+      avatarPreview.style.backgroundImage = `url('${photo}')`;
+      avatarPreview.style.backgroundSize = 'cover';
+      avatarPreview.style.backgroundPosition = 'center';
+      avatarPreview.style.color = 'transparent';
+      avatarPreview.textContent = '';
+      if (btnRemove) { btnRemove.disabled = false; btnRemove.style.opacity = '1'; }
+    } else {
+      avatarPreview.style.backgroundImage = '';
+      avatarPreview.textContent = esc(initials(nameInput.value.trim() || currentName));
+      avatarPreview.style.color = '';
+      if (btnRemove) { btnRemove.disabled = true; btnRemove.style.opacity = '0.6'; }
+    }
   };
 
-  $('#ohSave').onclick = () => {
-    cfg.orderOpen = $('#ohOpen').value || cfg.orderOpen;
-    cfg.orderClose = $('#ohClose').value || cfg.orderClose;
-    cfg.breakStart = $('#brStart').value || cfg.breakStart;
-    cfg.breakEnd = $('#brEnd').value || cfg.breakEnd;
-    cfg.capacity = parseInt($('#cpCap').value) || cfg.capacity;
-    Store.config = cfg;
-    logAudit('Actualizó horario', 'Horario de pedidos');
-    toast('Configuración guardada.', 'success');
-    renderBarAdmin('config');
+  nameInput.addEventListener('input', () => {
+    if (!newPhotoBase64) {
+      avatarPreview.textContent = esc(initials(nameInput.value.trim() || 'AB'));
+    }
+  });
+
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes', 'warning'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      newPhotoBase64 = ev.target.result;
+      updateAvatarPreview(newPhotoBase64);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  if (btnRemove) {
+    btnRemove.onclick = () => {
+      newPhotoBase64 = '';
+      photoInput.value = '';
+      updateAvatarPreview('');
+    };
+  }
+
+  $('#btnSaveProfile', el).onclick = async () => {
+    const newName = nameInput.value.trim();
+    if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    const [first_name, ...rest] = newName.split(' ');
+    const last_name = rest.join(' ');
+    const res = await ApiClient.patch(API_ENDPOINTS.auth.me, { first_name, last_name });
+    if (!res.ok) { toast(res.data?.detail || 'No se pudo actualizar perfil', 'error'); return; }
+    const session = Store.load('int_session', null);
+    if (session) {
+      session.name = newName;
+      if (newPhotoBase64 !== undefined) session.photo = newPhotoBase64;
+      Store.save('int_session', session);
+    }
+    Store.save('int_admin_name_' + user.id, newName);
+    Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
+    toast('Perfil actualizado en PostgreSQL', 'success');
+    renderBarAdmin('profile');
   };
 }
+
+// Helper for config-status toggle - definido globalmente, persiste en PostgreSQL
+function confirmToggleState(toOpen, btn) {
+  const msg = toOpen ? '¿Seguro que quieres abrir la cafetería?' : '¿Seguro que quieres cerrar la cafetería?';
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Procesando...';
+  confirmDialog(msg, msg, 'Confirmar', false).then(async (ok) => {
+    if (!ok) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+    const res = await ApiClient.patch(API_ENDPOINTS.config.update, { is_open: toOpen });
+    if (!res.ok) {
+      toast(res.data?.detail || 'No se pudo cambiar el estado', 'error');
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      return;
+    }
+    logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
+    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + ' (PostgreSQL).', toOpen ? 'success' : 'warning');
+    btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-primary', 'btn-secondary');
+    setTimeout(() => { renderBarAdmin('config-hours'); }, 600);
+  });
+}
+window.confirmToggleState = confirmToggleState;
+
+/* ============================================================
+   Resize handler - Recalcula layout responsive con debounce
+   ============================================================ */
+let adminResizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(adminResizeTimeout);
+  adminResizeTimeout = setTimeout(() => {
+    const isMobile = window.innerWidth <= 768;
+    const isAdmin = document.body.classList.contains('is-admin') || window.location.hash.includes('adminbar');
+    if (!isAdmin) return;
+    // Recalcula visibilidad de sidebar/bottom nav (CSS media queries ya manejan display, pero asegura padding y topbar)
+    const content = document.querySelector('.admin-content');
+    if (content) {
+      content.style.paddingBottom = isMobile ? '80px' : '';
+    }
+    const topbar = document.querySelector('.admin-topbar');
+    if (topbar) {
+      const pill = document.getElementById('cafePill');
+      if (pill) {
+        pill.style.flexShrink = '0';
+        pill.style.whiteSpace = 'nowrap';
+      }
+      // Fuerza reflow para evitar badge cortado al rotar
+      topbar.style.display = 'none';
+      // eslint-disable-next-line no-unused-expressions
+      topbar.offsetHeight;
+      topbar.style.display = '';
+    }
+    // Limpia estados de drawer huérfanos al cambiar breakpoint sin recargar
+    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+    document.querySelectorAll('.admin-layout.sidebar-push').forEach((el) => el.classList.remove('sidebar-push'));
+    if (!isMobile) {
+      document.querySelectorAll('.admin-sidebar.open').forEach((el) => el.classList.remove('open'));
+      const moreModal = document.getElementById('adminMoreModal');
+      if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
+    }
+  }, 180);
+});
