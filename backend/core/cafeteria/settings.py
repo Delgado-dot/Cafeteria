@@ -6,22 +6,26 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Cargar variables de entorno desde .env
-load_dotenv()
-
 # ============================
 # Rutas base
 # ============================
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Cargar explicitamente el archivo del backend, independientemente del cwd.
+load_dotenv(BASE_DIR / ".env")
 
 # ============================
 # Seguridad — Secreto rápido
 # ============================
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-cambiar-este-secreto-en-produccion")
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY", "django-insecure-cambiar-este-secreto-en-produccion"
+)
 
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0").split(",")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0").split(
+    ","
+)
 
 # ============================
 # Aplicaciones instaladas
@@ -46,8 +50,10 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "apps.accounts",
+    "apps.accounts.apps.AccountsConfig",
     "apps.products",
+    "apps.suppliers.apps.SuppliersConfig",
+    "apps.stock.apps.StockConfig",
     "apps.orders",
     "apps.delivery",
     "apps.payments",
@@ -110,8 +116,8 @@ ASGI_APPLICATION = "core.cafeteria.asgi.application"
 # ============================
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.getenv("DB_NAME", "cafeteria_db"),
         "USER": os.getenv("DB_USER", ""),
         "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", ""),
@@ -160,14 +166,18 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "core" / "cafeteria" / "static",
-    BASE_DIR / "static",
 ]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Whitenoise para servir estáticos en producción
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # ============================
 # Configuración de campo por defecto
@@ -182,9 +192,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",

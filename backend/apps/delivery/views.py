@@ -2,7 +2,7 @@
 Vistas de la aplicación de delivery.
 """
 
-from rest_framework import generics, permissions
+from rest_framework import generics
 
 from apps.accounts.permissions import IsAdminBar
 
@@ -11,16 +11,21 @@ from .serializers import DeliveryConfigSerializer, DeliveryRequestSerializer
 
 
 class DeliveryConfigRetrieveUpdateView(generics.RetrieveUpdateAPIView):
-    """Obtener y actualizar la configuración del delivery."""
+    """Obtener y actualizar la configuración del delivery. GET para todos autenticados, PATCH solo adminbar."""
 
     queryset = DeliveryConfig.objects.all()
     serializer_class = DeliveryConfigSerializer
-    permission_classes = [IsAdminBar]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            from rest_framework import permissions
+
+            return [permissions.IsAuthenticated()]
+        return [IsAdminBar()]
 
     def get_object(self):
         # Solo existe una configuración, se retorna la primera
-        obj, _ = DeliveryConfig.objects.get_or_create(pk=1)
-        return obj
+        return DeliveryConfig.get_solo()
 
 
 class DeliveryRequestListView(generics.ListAPIView):

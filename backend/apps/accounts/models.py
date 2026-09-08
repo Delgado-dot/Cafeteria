@@ -2,7 +2,7 @@
 Modelos de la aplicación de cuentas de usuario.
 """
 
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 
@@ -23,6 +23,7 @@ class User(AbstractUser):
         max_length=20,
         choices=Role.choices,
         default=Role.USER,
+        db_index=True,
     )
     cargo = models.CharField("cargo", max_length=100, blank=True)
     aula = models.CharField("aula / ubicación", max_length=50, blank=True)
@@ -33,8 +34,30 @@ class User(AbstractUser):
         blank=True,
     )
     is_active = models.BooleanField("activo", default=True)
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name="groups",
+        blank=True,
+        help_text=(
+            "The groups this user belongs to. A user will get all permissions "
+            "granted to each of their groups."
+        ),
+        related_name="user_set",
+        related_query_name="user",
+        db_table="accounts_user_groups",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name="user permissions",
+        blank=True,
+        help_text="Specific permissions for this user.",
+        related_name="user_set",
+        related_query_name="user",
+        db_table="accounts_user_user_permissions",
+    )
 
     class Meta:
+        db_table = "usuarios"
         verbose_name = "usuario"
         verbose_name_plural = "usuarios"
         ordering = ["-date_joined"]
@@ -55,6 +78,7 @@ class UserProfile(models.Model):
     last_access = models.DateTimeField("último acceso", null=True, blank=True)
 
     class Meta:
+        db_table = "perfiles_usuario"
         verbose_name = "perfil de usuario"
         verbose_name_plural = "perfiles de usuario"
 
@@ -92,3 +116,4 @@ class RolePermission(models.Model):
 
     def __str__(self):
         return f"{self.role}:{self.code}={'✓' if self.enabled else '✗'}"
+

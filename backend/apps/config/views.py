@@ -14,7 +14,7 @@ class CafeConfigRetrieveView(generics.RetrieveAPIView):
     """Obtener la configuración de la cafetería (público autenticado)."""
 
     serializer_class = CafeConfigSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_object(self):
         return CafeConfig.get_solo()

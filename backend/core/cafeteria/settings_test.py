@@ -2,8 +2,6 @@
 Configuración de testing de Django.
 """
 
-import os
-
 # Base en settings de desarrollo pero con base de datos en memoria
 from core.cafeteria.settings import *  # noqa: F401,F403
 

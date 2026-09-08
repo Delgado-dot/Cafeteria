@@ -16,12 +16,16 @@ from .serializers import (
 
 
 class CategoryListView(generics.ListCreateAPIView):
-    """Listar y crear categorías."""
+    """Listar y crear categorías. GET para todos, POST solo adminbar."""
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
     search_fields = ["name"]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAdminBar()]
+        return [permissions.AllowAny()]
 
 
 class ProductListView(generics.ListCreateAPIView):
@@ -42,7 +46,7 @@ class ProductListView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAdminBar()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -58,4 +62,4 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method in ("PUT", "PATCH", "DELETE"):
             return [IsAdminBar()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]

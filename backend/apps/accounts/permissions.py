@@ -101,3 +101,4 @@ def user_has_perm(user, code):
         return RolePermission.objects.get(role=user.role, code=code).enabled
     except RolePermission.DoesNotExist:
         return False
+
