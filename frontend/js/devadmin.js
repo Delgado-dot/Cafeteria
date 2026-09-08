@@ -3,12 +3,12 @@
    ============================================================ */
 
 const DEV_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: '🏠' },
-  users: { label: 'Usuarios', icon: '👥' },
-  roles: { label: 'Roles y permisos', icon: '🔐' },
-  cafe: { label: 'Información de cafetería', icon: '🏪' },
-  config: { label: 'Configuración general', icon: '⚙️' },
-  audit: { label: 'Auditoría', icon: '📜' },
+  dashboard: { label: 'Dashboard', icon: 'bx-grid-alt' },
+  users: { label: 'Usuarios', icon: 'bx-group' },
+  roles: { label: 'Roles y permisos', icon: 'bx-shield-alt' },
+  cafe: { label: 'Información de cafetería', icon: 'bx-store' },
+  config: { label: 'Configuración general', icon: 'bx-cog' },
+  audit: { label: 'Auditoría', icon: 'bx-history' },
 };
 
 async function renderDevAdmin(page) {
@@ -20,10 +20,10 @@ async function renderDevAdmin(page) {
   app.innerHTML = `
     <div class="admin-layout">
       <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.3rem">⚙️</span> Sistema INTESUD</div>
+        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx ${DEV_SECTIONS.dashboard.icon}"></i></span> Sistema INTESUD</div>
         <nav class="sb-nav">
           ${Object.entries(DEV_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="ico">${v.icon}</span>${v.label}</a>`).join('')}
+            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="ico"><i class="bx ${v.icon}"></i></span>${v.label}</a>`).join('')}
         </nav>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
@@ -32,16 +32,16 @@ async function renderDevAdmin(page) {
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="devHamburger" title="Menú">☰</button>
-          <span style="font-size:1.3rem">${DEV_SECTIONS[sec].icon}</span>
+          <button class="hamburger" id="devHamburger" title="Menú"><i class="bx bx-menu"></i></button>
+          <span style="font-size:1.3rem"><i class="bx ${DEV_SECTIONS[sec].icon}"></i></span>
           <span class="page-name">${DEV_SECTIONS[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <div class="profile-chip" id="devUserMenu">
               <div class="avatar sm">${esc(initials(currentUser().name))}</div><span class="pname">${esc(currentUser().name)}</span> ▾
               <div class="dropdown-menu" id="devUserDropdown" style="display:none">
-                <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
+                <a class="dropdown-item" href="#" data-link="profile"><span class="ico"><i class="bx bx-user"></i></span>Mi perfil</a>
                 <div class="dropdown-sep"></div>
-                <a class="dropdown-item danger" href="#" id="btnDevLogout"><span class="ico">⏻</span>Cerrar sesión</a>
+                <a class="dropdown-item danger" href="#" id="btnDevLogout"><span class="ico"><i class="bx bx-log-out"></i></span>Cerrar sesión</a>
               </div>
             </div>
           </div>
@@ -85,7 +85,7 @@ async function renderDevAdmin(page) {
     await renderers[sec](content);
   } catch (error) {
     console.error('Error rendering dev admin:', error);
-    content.innerHTML = emptyState('⚠️', 'Error', 'No se pudo cargar la sección.');
+    content.innerHTML = emptyState('<i class="bx bx-error"></i>', 'Error', 'No se pudo cargar la sección.');
   }
 }
 
@@ -137,8 +137,8 @@ async function devDashboard(el) {
           <div class="kv"><dt>Receso</dt><dd class="bold small">${cfg.break_start} - ${cfg.break_end}</dd></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-          ${[['users', '👥', 'Usuarios'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría']].map(([k, ic, l]) =>
-            `<a href="#" class="btn btn-outline" data-goto="${k}">${ic} ${l}</a>`).join('')}
+          ${[['users', 'bx-group', 'Usuarios'], ['roles', 'bx-shield-alt', 'Roles y permisos'], ['cafe', 'bx-store', 'Cafetería'], ['config', 'bx-cog', 'Configuración'], ['audit', 'bx-history', 'Auditoría']].map(([k, ic, l]) =>
+            `<a href="#" class="btn btn-outline" data-goto="${k}"><i class="bx ${ic}"></i> ${l}</a>`).join('')}
         </div>
       </div>
       <div class="card">
@@ -153,7 +153,7 @@ async function devDashboard(el) {
                 <div class="tl-time">${esc(a.target || '')} · ${esc(a.created_at)}</div>
               </div>
             </div>`).join('')}</div>`
-          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">📭</div><h3>Sin actividad</h3></div>`}
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico"><i class="bx bx-envelope"></i></div><h3>Sin actividad</h3></div>`}
         </div>
       </div>
     </div>`;

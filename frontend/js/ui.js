@@ -21,7 +21,7 @@ function toast(msg, type = 'info') {
   })();
   const el = document.createElement('div');
   el.className = 'toast ' + type;
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  const icons = { success: '<i class="bx bx-check-circle"></i>', error: '<i class="bx bx-x-circle"></i>', warning: '<i class="bx bx-error"></i>', info: '<i class="bx bx-info-circle"></i>' };
   el.innerHTML = `<span class="t-ico">${icons[type] || 'ℹ'}</span><span>${esc(msg)}</span>`;
   wrap.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2800);

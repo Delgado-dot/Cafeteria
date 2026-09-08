@@ -20,7 +20,38 @@
   --bg: #f4f7f6;
   --surface: #ffffff;
   --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
+
+  /* ============================================================
+     SISTEMA GLASS UNIFICADO — derivado del turquesa real #40807E
+     (rgba base 64,128,126). Única fuente de verdad de valores.
+     Lo consumen los TRES paneles (Cliente / Admin Bar / Admin Dev)
+     mediante las clases mapeadas en cada contexto, SIN duplicar valores.
+     ============================================================ */
+  --glass-surface: rgba(64, 128, 126, 0.40);
+  --glass-surface-2: rgba(64, 128, 126, 0.36);
+  --glass-surface-3: rgba(64, 128, 126, 0.34);
+  --glass-surface-strong: rgba(64, 128, 126, 0.50);
+  --glass-surface-stronger: rgba(64, 128, 126, 0.60);
+  --glass-inner: rgba(255, 255, 255, 0.16);
+  --glass-inner-less: rgba(255, 255, 255, 0.12);
+  --glass-ink: rgba(255, 255, 255, 0.42);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-border-2: rgba(255, 255, 255, 0.24);
+  --glass-border-strong: rgba(255, 255, 255, 0.42);
+  --glass-border-input: rgba(255, 255, 255, 0.30);
+  --glass-blur: blur(20px) saturate(150%);
+  --glass-blur-b: blur(18px) saturate(150%);
+  --glass-blur-inner: blur(14px) saturate(140%);
+  --glass-shadow: 0 8px 32px rgba(17, 28, 27, 0.14), 0 2px 10px rgba(64, 128, 126, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glass-shadow-hover: 0 12px 34px rgba(17, 28, 27, 0.18), 0 4px 14px rgba(64, 128, 126, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  --glass-shadow-inner: 0 6px 20px rgba(17, 28, 27, 0.10);
+  --glass-radius: 16px;
+  --glass-text: #ffffff;
+  --glass-text-soft: rgba(255, 255, 255, 0.85);
+  --glass-text-dim: rgba(255, 255, 255, 0.78);
+  --glass-text-faint: rgba(255, 255, 255, 0.72);
 }
+
 
 /* ---------- Base cliente — color que combina, ya no blanco plano ---------- */
 body.has-bottom-nav .app {
@@ -338,8 +369,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   .menu-page::before { background: rgba(255,255,255,0.16); }
 }
 
-/* Cristal cliente — glassmorphism verde translúcido con #40807E como tinte
-   (restaura la superficie glass original con blur + texto blanco) */
+/* Cristal cliente — glassmorphism turquesa derivado del sistema unificado
+   (variables --glass-* de :root; tinte = turquesa real #40807E rgba 64,128,126)
+   Superficie principal: --glass-surface + blur + borde + sombra */
 body.has-bottom-nav .card,
 body.has-bottom-nav .product-card,
 body.has-bottom-nav .order-card,
@@ -351,29 +383,29 @@ body.has-bottom-nav .summary-card,
 body.has-bottom-nav .capacity-card,
 body.has-bottom-nav .select-card,
 body.has-bottom-nav .file-drop {
-  background: rgba(64, 128, 126, 0.40);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(17, 28, 27, 0.14), 0 2px 10px rgba(64, 128, 126, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
 }
 body.has-bottom-nav .product-media,
 body.has-bottom-nav .cat-pill-card .cp-ico,
 body.has-bottom-nav .menu-side-list .cat-pill .cp-ico {
-  background: rgba(255, 255, 255, 0.42);
-  border-color: rgba(255, 255, 255, 0.45);
+  background: var(--glass-ink);
+  border-color: var(--glass-border-strong);
 }
 body.has-bottom-nav .product-card .product-name,
 body.has-bottom-nav .menu-side .menu-side-title,
 body.has-bottom-nav .cat-pill-card .cp-name {
-  color: #ffffff;
+  color: var(--glass-text);
   text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
 }
 body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-hint,
 body.has-bottom-nav .cat-pill-card .cp-count {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--glass-text-soft);
   text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
 }
 
@@ -460,9 +492,9 @@ body.has-bottom-nav .page .alert { border-radius: 14px; }
 body.has-bottom-nav .page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
 
 body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-bottom-nav .grid-4 .card {
-  border-radius: 18px; border-color: rgba(255, 255, 255, 0.26);
-  background: rgba(64, 128, 126, 0.36); backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-radius: 18px; border-color: var(--glass-border-2);
+  background: var(--glass-surface-2); backdrop-filter: var(--glass-blur-b);
+  -webkit-backdrop-filter: var(--glass-blur-b);
   box-shadow: 0 8px 28px rgba(17, 28, 27, 0.12), 0 2px 8px rgba(64, 128, 126, 0.18);
 }
 body.has-bottom-nav .card .card-title { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
@@ -662,4 +694,276 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
     border-color: var(--danger-strong);
     color: #fff;
   }
+
+/* ============================================================
+   GLASS ADMIN — Panel Admin Bar + Admin Developer
+   Mismo lenguaje de cristal turquesa #40807E que el Panel Usuario.
+   Jerarquía de superficies: tarjetas principales en cristal turquesa
+   con texto claro; tablas/contenedores internos más opacos para legibilidad.
+   Solo aplica a body.is-admin (no toca el Panel Usuario ni el login).
+   ============================================================ */
+
+/* ---------- Fondo difuminado turquesa detrás del escritorio ---------- */
+body.is-admin .admin-main {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+body.is-admin .admin-main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1100px 620px at 15% -5%, rgba(64, 128, 126, 0.34), transparent 62%),
+    radial-gradient(920px 560px at 105% 20%, rgba(47, 99, 97, 0.28), transparent 55%),
+    radial-gradient(720px 520px at 50% 118%, rgba(40, 81, 79, 0.22), transparent 62%),
+    url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat fixed;
+  filter: blur(8px) saturate(125%);
+  transform: scale(1.03);
+}
+
+/* Contenido admin por encima del vidrio */
+body.is-admin .admin-content { position: relative; }
+
+/* ---------- Barra superior: cristal turquesa (ya no blanco opaco) ---------- */
+body.is-admin .admin-topbar {
+  background: var(--glass-surface-stronger);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border-bottom: 1px solid var(--glass-border-2);
+  box-shadow: 0 4px 18px rgba(17, 28, 27, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+body.is-admin .admin-topbar .tb-title,
+body.is-admin .admin-topbar .page-name { color: var(--glass-text); text-shadow: 0 1px 2px rgba(16, 36, 34, 0.40); }
+body.is-admin .admin-topbar .tb-actions { color: #fff; }
+body.is-admin .hamburger { color: #ffffff; }
+body.is-admin .hamburger:hover { background: rgba(255, 255, 255, 0.18); color: #ffffff; }
+
+/* ---------- Sidebar: identidad turquesa sólida (se conserva) + pulido ---------- */
+body.is-admin .admin-sidebar {
+  background: linear-gradient(180deg, var(--teal) 0%, var(--teal-600) 100%);
+  box-shadow: 4px 0 18px rgba(16, 30, 29, 0.16);
+}
+
+/* ---------- Tarjetas principales: cristal turquesa ---------- */
+body.is-admin .stat-card,
+body.is-admin .card,
+body.is-admin .queue-order,
+body.is-admin .quick-action,
+body.is-admin .category-chip,
+body.is-admin .cat-chip,
+body.is-admin .adv-tabs {
+  background: var(--glass-surface-3);
+  backdrop-filter: var(--glass-blur-b);
+  -webkit-backdrop-filter: var(--glass-blur-b);
+  border: 1px solid var(--glass-border-2);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+}
+body.is-admin .stat-card:hover,
+body.is-admin .card.card-hover:hover,
+body.is-admin .queue-order:hover,
+body.is-admin .quick-action:hover,
+body.is-admin .category-chip:hover,
+body.is-admin .cat-chip:hover {
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* ---------- Tabs admin / chips de categoría sobre cristal ---------- */
+body.is-admin .adv-tabs {
+  background: var(--glass-surface-2);
+  border-radius: 999px;
+  padding: 6px;
+}
+body.is-admin .category-chip,
+body.is-admin .cat-chip {
+  background: var(--glass-inner-less);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: var(--glass-text);
+}
+body.is-admin .category-chip:hover,
+body.is-admin .cat-chip:hover { border-color: rgba(255, 255, 255, 0.55); color: var(--glass-text); background: rgba(255, 255, 255, 0.18); }
+body.is-admin .category-chip.active,
+body.is-admin .cat-chip.active { background: #ffffff; border-color: #ffffff; color: var(--primary-strong); box-shadow: 0 6px 16px rgba(17, 28, 27, 0.22); }
+
+/* ---------- Texto claro sobre cristal turquesa (títulos, valores, subtítulos) ---------- */
+body.is-admin .card .card-title,
+body.is-admin .card-header .card-title,
+body.is-admin .stat-card .stat-value,
+body.is-admin .stat-card .st-value,
+body.is-admin .stat-card .st-label,
+body.is-admin .stat-card .stat-label,
+body.is-admin .quick-action .qa-label,
+body.is-admin .queue-order .order-num,
+body.is-admin .queue-head { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+body.is-admin .card .card-sub,
+body.is-admin .stat-card .stat-sub,
+body.is-admin .stat-card .st-sub,
+body.is-admin .card .muted,
+body.is-admin .card .muted-3,
+body.is-admin .card-sub { color: var(--glass-text-soft); }
+body.is-admin .card-header,
+body.is-admin .card-footer,
+body.is-admin .alert-item,
+body.is-admin .security-row { border-color: rgba(255, 255, 255, 0.22); }
+body.is-admin .card .kv dt { color: var(--glass-text-faint); }
+body.is-admin .card .kv dd { color: var(--glass-text); }
+body.is-admin .card .label { color: rgba(255, 255, 255, 0.90); }
+
+/* Enlaces dentro de subtítulos / tarjetas: claros para contraste sobre vidrio */
+body.is-admin .st-sub a,
+body.is-admin .stat-sub a,
+body.is-admin .stat-card .stat-sub a { color: #d9f7f3; text-decoration: underline; }
+body.is-admin .st-sub a:hover,
+body.is-admin .stat-sub a:hover,
+body.is-admin .stat-card .stat-sub a:hover { color: #ffffff; }
+
+/* Icono decorativo de estadística: sutil pero visible sobre vidrio */
+body.is-admin .stat-card .stat-ico { opacity: 0.16; color: #ffffff; }
+body.is-admin .stat-card .stat-ico.primary,
+body.is-admin .stat-card .stat-ico.warning,
+body.is-admin .stat-card .stat-ico.success,
+body.is-admin .stat-card .stat-ico.danger { opacity: 0.28; }
+
+/* ---------- Valores estadísticos semánticos: aclarados para contraste sobre vidrio ---------- */
+body.is-admin .stat-value.primary,
+body.is-admin .st-value.primary { color: #bff3ee; }
+body.is-admin .stat-value.success,
+body.is-admin .st-value.success { color: #9fe6c4; }
+body.is-admin .stat-value.warning,
+body.is-admin .st-value.warning { color: #ffd98a; }
+body.is-admin .stat-value.danger,
+body.is-admin .st-value.danger { color: #ffb3ad; }
+
+/* ---------- Cola de pedidos: etiquetas semánticas legibles sobre vidrio ---------- */
+body.is-admin .queue-order .queue-items,
+body.is-admin .queue-items li { color: rgba(255, 255, 255, 0.88); }
+body.is-admin .queue-order .q-name { color: var(--glass-text); }
+body.is-admin .queue-order .qty { color: #c8f0ea; }
+body.is-admin .priority-tag.normal { background: var(--glass-inner-less); color: var(--glass-text); }
+body.is-admin .priority-tag.priority { background: rgba(255, 224, 138, 0.24); color: #ffedb8; }
+body.is-admin .priority-tag.urgent { background: rgba(255, 120, 112, 0.26); color: #ffd0cc; }
+body.is-admin .queue-order.pri-urgent { background: rgba(120, 50, 46, 0.40); }
+
+/* ---------- Iconos de acción rápida ---------- */
+body.is-admin .quick-action .qa-ico {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--glass-text);
+}
+
+/* ---------- Badges sobre cristal turquesa: fondos translúcidos + texto claro ---------- */
+body.is-admin .badge-primary { background: var(--glass-surface-strong); color: var(--glass-text); border: 1px solid var(--glass-border); }
+body.is-admin .badge-success { background: rgba(34, 160, 107, 0.42); color: var(--glass-text); border: 1px solid rgba(255, 255, 255, 0.28); }
+body.is-admin .badge-warning { background: rgba(224, 154, 22, 0.40); color: #fff6df; border: 1px solid rgba(255, 255, 255, 0.28); }
+body.is-admin .badge-danger { background: rgba(217, 75, 75, 0.44); color: var(--glass-text); border: 1px solid rgba(255, 255, 255, 0.28); }
+body.is-admin .badge-info { background: rgba(59, 124, 195, 0.44); color: var(--glass-text); border: 1px solid rgba(255, 255, 255, 0.28); }
+body.is-admin .badge-neutral { background: var(--glass-inner-less); color: var(--glass-text); border: 1px solid var(--glass-border); }
+body.is-admin .badge-outline { background: var(--glass-inner-less); border-color: rgba(255, 255, 255, 0.42); color: var(--glass-text); }
+
+/* ---------- Tablas / contenedores internos: vidrio claro + texto oscuro (legibilidad) ---------- */
+body.is-admin .table-wrap,
+body.is-admin .admin-table {
+  background: var(--glass-inner);
+  backdrop-filter: var(--glass-blur-inner);
+  -webkit-backdrop-filter: var(--glass-blur-inner);
+  border: 1px solid var(--glass-border-input);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow-inner);
+}
+body.is-admin thead th { background: rgba(255, 255, 255, 0.34); color: #234f4d; border-bottom: 1px solid rgba(23, 52, 50, 0.12); }
+body.is-admin tbody td { border-bottom: 1px solid rgba(23, 52, 50, 0.10); color: #16201f; }
+body.is-admin tbody tr:hover { background: rgba(64, 128, 126, 0.10); }
+
+/* ---------- Formularios / inputs sobre vidrio ---------- */
+body.is-admin .input,
+body.is-admin textarea.input,
+body.is-admin select.input {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(23, 52, 50, 0.18);
+  color: #16201f;
+}
+body.is-admin .input::placeholder { color: #5c6b69; }
+
+/* ---------- Banners de estado: vidrio claro semántico, texto oscuro legible ---------- */
+body.is-admin .status-banner.success { background: rgba(34, 160, 107, 0.18); color: #0d5c3b; border-color: rgba(34, 160, 107, 0.35); }
+body.is-admin .status-banner.warning { background: rgba(224, 154, 22, 0.18); color: #7a5200; border-color: rgba(224, 154, 22, 0.38); }
+body.is-admin .status-banner.danger { background: rgba(217, 75, 75, 0.18); color: #8e1f1f; border-color: rgba(217, 75, 75, 0.38); }
+body.is-admin .status-banner.info { background: rgba(59, 124, 195, 0.18); color: #1e4f84; border-color: rgba(59, 124, 195, 0.38); }
+body.is-admin .status-banner.neutral { background: rgba(255, 255, 255, 0.16); color: #3d4b49; border-color: rgba(255, 255, 255, 0.32); }
+
+/* ---------- Panel mobile "Más" y barra inferior admin ---------- */
+body.is-admin .admin-bottom-nav {
+  background: var(--glass-surface-stronger);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border-top: 1px solid var(--glass-border-2);
+}
+body.is-admin .admin-bottom-nav .abn-item { color: #dcecea; }
+body.is-admin .admin-bottom-nav .abn-item.active { color: var(--glass-text); background: var(--glass-inner); }
+body.is-admin .admin-bottom-nav .abn-item.active:not(.center) .abn-ico { color: var(--glass-text); }
+body.is-admin .admin-bottom-nav .abn-item.adjacent { background: var(--glass-inner-less) !important; }
+body.is-admin .admin-bottom-nav .abn-item.adjacent .abn-ico { color: var(--glass-text); }
+body.is-admin .admin-bottom-nav .abn-item.center .abn-label { color: #e4f0ef; }
+body.is-admin .admin-bottom-nav .abn-item.center.active .abn-label { color: var(--glass-text); }
+body.is-admin .admin-more-sheet {
+  background: var(--glass-surface-strong);
+  backdrop-filter: var(--glass-blur-b);
+  -webkit-backdrop-filter: var(--glass-blur-b);
+  border: 1px solid var(--glass-border-2);
+}
+body.is-admin .admin-more-item { color: var(--glass-text); }
+body.is-admin .admin-more-header { color: var(--glass-text); border-bottom: 1px solid var(--glass-border-2); }
+body.is-admin .admin-more-item:hover,
+body.is-admin .admin-more-item.active { background: var(--glass-inner); color: var(--glass-text); }
+
+/* ---------- Tablas móviles (filas tipo tarjeta) ---------- */
+@media (max-width: 560px) {
+  body.is-admin .table-wrap,
+  body.is-admin .admin-table { background: transparent; border: none; box-shadow: none; backdrop-filter: none; }
+  body.is-admin .admin-table tr {
+    background: var(--glass-surface-3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border-2);
+    border-radius: 14px;
+    box-shadow: var(--glass-shadow-inner);
+  }
+  body.is-admin .admin-table td,
+  body.is-admin .admin-table td[data-label="Usuario"],
+  body.is-admin .admin-table td[data-label="Fecha"],
+  body.is-admin .admin-table td[data-label="Fecha/hora"],
+  body.is-admin .admin-table td[data-label="Última actualización"] { color: var(--glass-text); }
+}
+
+/* ============================================================
+   GLASS ADMIN — Diferenciación sutil Admin Developer
+   body.is-admin:not(.is-adminbar) = panel del Admin Developer.
+   Misma paleta turquesa; solo se intensifica la saturación para
+   una jerarquía "más técnica" sin crear una paleta distinta.
+   ============================================================ */
+body.is-admin:not(.is-adminbar) .admin-sidebar {
+  background: linear-gradient(180deg, #2f6361 0%, #173432 100%);
+}
+body.is-admin:not(.is-adminbar) .admin-topbar {
+  background: rgba(35, 79, 77, 0.46);
+}
+body.is-admin:not(.is-adminbar) .sb-group { color: rgba(255, 255, 255, 0.72); }
+
+/* ---------- Timeline de auditoría (devadmin) sobre cristal ---------- */
+body.is-admin .timeline .tl-label { color: #ffffff; }
+body.is-admin .timeline .tl-time { color: rgba(255, 255, 255, 0.74); }
+body.is-admin .timeline .tl-step.done .tl-label { color: rgba(255, 255, 255, 0.86); }
+body.is-admin .timeline .tl-rail { background: rgba(255, 255, 255, 0.28); }
+body.is-admin .timeline .tl-step.current .tl-label { color: #ffffff; }
+
+/* ---------- Celdas de permisos (devadmin) sobre cristal ---------- */
+body.is-admin .perm-yes { color: #9fe6c4; }
+body.is-admin .perm-no { color: rgba(255, 255, 255, 0.70); }
+body.is-admin .perm-cell { color: inherit; }
+
+/* ---------- Estado vacío / esqueletos sobre cristal ---------- */
+body.is-admin .empty-state { color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.22); }
+
 
