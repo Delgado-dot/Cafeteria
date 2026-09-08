@@ -3,7 +3,10 @@ Proyecto Cafetería INTESUD — Configuración del servidor Django.
 """
 
 import os
+import secrets
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # ============================
@@ -17,11 +20,15 @@ load_dotenv(BASE_DIR / ".env")
 # ============================
 # Seguridad — Secreto rápido
 # ============================
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY", "django-insecure-cambiar-este-secreto-en-produccion"
-)
-
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY es obligatoria cuando DJANGO_DEBUG=False."
+        )
+    SECRET_KEY = secrets.token_urlsafe(50)
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,0.0.0.0").split(
     ","

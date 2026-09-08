@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, "Patricio-Simbaña"]
   pull_request:
     branches: [main]
 
@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
@@ -35,15 +35,37 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Django checks
-        run: python manage.py check
+      - name: Run Django checks (settings_test, sqlite memory)
+        run: DJANGO_SETTINGS_MODULE=core.cafeteria.settings_test python manage.py check
 
-      - name: Run tests
-        run: python -m pytest
+      - name: Check migrations are up to date
+        run: DJANGO_SETTINGS_MODULE=core.cafeteria.settings_test python manage.py makemigrations --check --dry-run
+
+      - name: Run tests (real paths)
+        run: python -m pytest ../tests/backend -v --ds=core.cafeteria.settings_test
 
       - name: Lint with flake8
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         continue-on-error: true
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run frontend smoke test
+        run: node ../tests/frontend/landing-smoke.test.js
+        working-directory: frontend
 
   frontend-deploy:
     name: Deploy Frontend to GitHub Pages

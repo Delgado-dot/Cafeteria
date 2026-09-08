@@ -130,27 +130,27 @@ const ApiClient = {
   
   // GET
   async get(url) {
-    return this._request('GET', url);
+    return ApiClient._request('GET', url);
   },
   
   // POST
   async post(url, data, includeAuth = true) {
-    return this._request('POST', url, data, includeAuth);
+    return ApiClient._request('POST', url, data, includeAuth);
   },
   
   // PATCH
   async patch(url, data) {
-    return this._request('PATCH', url, data);
+    return ApiClient._request('PATCH', url, data);
   },
   
   // PUT
   async put(url, data) {
-    return this._request('PUT', url, data);
+    return ApiClient._request('PUT', url, data);
   },
   
   // DELETE
   async delete(url) {
-    return this._request('DELETE', url);
+    return ApiClient._request('DELETE', url);
   },
 
   async _request(method, url, data, includeAuth = true, allowRefresh = true) {
@@ -158,17 +158,17 @@ const ApiClient = {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
       const options = {
         method,
-        headers: this.getHeaders(includeAuth, !isFormData),
+        headers: ApiClient.getHeaders(includeAuth, !isFormData),
       };
       if (data !== undefined) options.body = isFormData ? data : JSON.stringify(data);
       const response = await fetch(url, {
         ...options,
       });
-      if (response.status === 401 && includeAuth && allowRefresh && this.getRefreshToken()) {
-        const refreshed = await this._refreshAccessToken();
-        if (refreshed) return this._request(method, url, data, includeAuth, false);
+      if (response.status === 401 && includeAuth && allowRefresh && ApiClient.getRefreshToken()) {
+        const refreshed = await ApiClient._refreshAccessToken();
+        if (refreshed) return ApiClient._request(method, url, data, includeAuth, false);
       }
-      return this._handleResponse(response);
+      return ApiClient._handleResponse(response);
     } catch (error) {
       return { ok: false, error: error.message };
     }
@@ -179,16 +179,16 @@ const ApiClient = {
       const response = await fetch(API_ENDPOINTS.auth.refresh, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh: this.getRefreshToken() }),
+        body: JSON.stringify({ refresh: ApiClient.getRefreshToken() }),
       });
       if (!response.ok) {
-        this.clearTokens();
+        ApiClient.clearTokens();
         localStorage.removeItem('int_session');
         return false;
       }
       const data = await response.json();
-      this.setToken(data.access);
-      if (data.refresh) this.setRefreshToken(data.refresh);
+      ApiClient.setToken(data.access);
+      if (data.refresh) ApiClient.setRefreshToken(data.refresh);
       return true;
     } catch (error) {
       return false;
