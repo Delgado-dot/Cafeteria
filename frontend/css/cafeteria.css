@@ -22,33 +22,32 @@
   --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
 
   /* ============================================================
-     SISTEMA GLASS UNIFICADO — derivado del turquesa real #40807E
-     (rgba base 64,128,126). Única fuente de verdad de valores.
-     Lo consumen los TRES paneles (Cliente / Admin Bar / Admin Dev)
-     mediante las clases mapeadas en cada contexto, SIN duplicar valores.
+     SISTEMA GLASS UNIFICADO — VERDE OSCURO profundo
+     Base rgba(12, 32, 30) = tono verde-oscuro turquoise profundo.
+     Los TRES paneles comparten estas variables SIN duplicar valores.
      ============================================================ */
-  --glass-surface: rgba(64, 128, 126, 0.40);
-  --glass-surface-2: rgba(64, 128, 126, 0.36);
-  --glass-surface-3: rgba(64, 128, 126, 0.34);
-  --glass-surface-strong: rgba(64, 128, 126, 0.50);
-  --glass-surface-stronger: rgba(64, 128, 126, 0.60);
-  --glass-inner: rgba(255, 255, 255, 0.16);
-  --glass-inner-less: rgba(255, 255, 255, 0.12);
-  --glass-ink: rgba(255, 255, 255, 0.42);
-  --glass-border: rgba(255, 255, 255, 0.28);
-  --glass-border-2: rgba(255, 255, 255, 0.24);
-  --glass-border-strong: rgba(255, 255, 255, 0.42);
-  --glass-border-input: rgba(255, 255, 255, 0.30);
-  --glass-blur: blur(20px) saturate(150%);
-  --glass-blur-b: blur(18px) saturate(150%);
-  --glass-blur-inner: blur(14px) saturate(140%);
-  --glass-shadow: 0 8px 32px rgba(17, 28, 27, 0.14), 0 2px 10px rgba(64, 128, 126, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  --glass-shadow-hover: 0 12px 34px rgba(17, 28, 27, 0.18), 0 4px 14px rgba(64, 128, 126, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.20);
-  --glass-shadow-inner: 0 6px 20px rgba(17, 28, 27, 0.10);
+  --glass-surface: rgba(12, 32, 30, 0.82);
+  --glass-surface-2: rgba(12, 32, 30, 0.78);
+  --glass-surface-3: rgba(12, 32, 30, 0.74);
+  --glass-surface-strong: rgba(12, 32, 30, 0.88);
+  --glass-surface-stronger: rgba(12, 32, 30, 0.92);
+  --glass-inner: rgba(255, 255, 255, 0.10);
+  --glass-inner-less: rgba(255, 255, 255, 0.06);
+  --glass-ink: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-2: rgba(255, 255, 255, 0.10);
+  --glass-border-strong: rgba(255, 255, 255, 0.28);
+  --glass-border-input: rgba(255, 255, 255, 0.18);
+  --glass-blur: blur(20px) saturate(140%);
+  --glass-blur-b: blur(18px) saturate(140%);
+  --glass-blur-inner: blur(14px) saturate(130%);
+  --glass-shadow: 0 8px 32px rgba(6, 14, 13, 0.42), 0 2px 10px rgba(12, 32, 30, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-shadow-hover: 0 12px 34px rgba(6, 14, 13, 0.50), 0 4px 14px rgba(12, 32, 30, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-shadow-inner: 0 6px 20px rgba(6, 14, 13, 0.24);
   --glass-radius: 16px;
   --glass-text: #ffffff;
-  --glass-text-soft: rgba(255, 255, 255, 0.85);
-  --glass-text-dim: rgba(255, 255, 255, 0.78);
+  --glass-text-soft: rgba(255, 255, 255, 0.88);
+  --glass-text-dim: rgba(255, 255, 255, 0.80);
   --glass-text-faint: rgba(255, 255, 255, 0.72);
 }
 
@@ -495,7 +494,7 @@ body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-b
   border-radius: 18px; border-color: var(--glass-border-2);
   background: var(--glass-surface-2); backdrop-filter: var(--glass-blur-b);
   -webkit-backdrop-filter: var(--glass-blur-b);
-  box-shadow: 0 8px 28px rgba(17, 28, 27, 0.12), 0 2px 8px rgba(64, 128, 126, 0.18);
+  box-shadow: 0 8px 28px rgba(6, 14, 13, 0.32), 0 2px 8px rgba(12, 32, 30, 0.24);
 }
 body.has-bottom-nav .card .card-title { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
 body.has-bottom-nav .card .card-sub { color: rgba(255, 255, 255, 0.85); }
@@ -517,8 +516,8 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   .home-hero .hh-btn.ghost { display: none; }
 }
 
-  /* Cristal: product media se integra con el panel glass */
-  body.has-bottom-nav .prod-detail .product-media { background: rgba(64, 128, 126, 0.38); }
+  /* Cristal: product media se integra con el panel glass verde oscuro */
+  body.has-bottom-nav .prod-detail .product-media { background: rgba(8, 22, 20, 0.62); }
 
   /* Pedidos: separación constante */
   body.has-bottom-nav #currentOrders,
@@ -624,15 +623,15 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
     margin-left: 6px;
   }
 
-  /* Notificaciones: mismo cristal verde del resto del Panel Cliente. */
+  /* Notificaciones: cristal verde oscuro profundo del Panel Cliente. */
   body.has-bottom-nav .toast {
-    background: rgba(64, 128, 126, 0.50);
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.30);
+    background: rgba(12, 32, 30, 0.85);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-left-width: 4px;
     border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(17, 28, 27, 0.18), 0 2px 10px rgba(64, 128, 126, 0.20);
+    box-shadow: 0 8px 30px rgba(6, 14, 13, 0.38), 0 2px 10px rgba(12, 32, 30, 0.28);
     color: #FFFFFF;
   }
   body.has-bottom-nav .toast .t-ico,
@@ -703,7 +702,7 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
    Solo aplica a body.is-admin (no toca el Panel Usuario ni el login).
    ============================================================ */
 
-/* ---------- Fondo difuminado turquesa detrás del escritorio ---------- */
+/* ---------- Fondo difuminado verde oscuro detrás del escritorio ---------- */
 body.is-admin .admin-main {
   position: relative;
   isolation: isolate;
@@ -715,24 +714,24 @@ body.is-admin .admin-main::before {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(1100px 620px at 15% -5%, rgba(64, 128, 126, 0.34), transparent 62%),
-    radial-gradient(920px 560px at 105% 20%, rgba(47, 99, 97, 0.28), transparent 55%),
-    radial-gradient(720px 520px at 50% 118%, rgba(40, 81, 79, 0.22), transparent 62%),
+    radial-gradient(1100px 620px at 15% -5%, rgba(12, 32, 30, 0.65), transparent 62%),
+    radial-gradient(920px 560px at 105% 20%, rgba(18, 45, 42, 0.55), transparent 55%),
+    radial-gradient(720px 520px at 50% 118%, rgba(8, 24, 22, 0.50), transparent 62%),
     url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat fixed;
-  filter: blur(8px) saturate(125%);
+  filter: blur(8px) saturate(130%);
   transform: scale(1.03);
 }
 
 /* Contenido admin por encima del vidrio */
 body.is-admin .admin-content { position: relative; }
 
-/* ---------- Barra superior: cristal turquesa (ya no blanco opaco) ---------- */
+/* ---------- Barra superior: cristal verde oscuro profundo ---------- */
 body.is-admin .admin-topbar {
   background: var(--glass-surface-stronger);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-bottom: 1px solid var(--glass-border-2);
-  box-shadow: 0 4px 18px rgba(17, 28, 27, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 18px rgba(6, 14, 13, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 body.is-admin .admin-topbar .tb-title,
 body.is-admin .admin-topbar .page-name { color: var(--glass-text); text-shadow: 0 1px 2px rgba(16, 36, 34, 0.40); }
@@ -740,10 +739,10 @@ body.is-admin .admin-topbar .tb-actions { color: #fff; }
 body.is-admin .hamburger { color: #ffffff; }
 body.is-admin .hamburger:hover { background: rgba(255, 255, 255, 0.18); color: #ffffff; }
 
-/* ---------- Sidebar: identidad turquesa sólida (se conserva) + pulido ---------- */
+/* ---------- Sidebar: identidad verde oscuro profundo ---------- */
 body.is-admin .admin-sidebar {
-  background: linear-gradient(180deg, var(--teal) 0%, var(--teal-600) 100%);
-  box-shadow: 4px 0 18px rgba(16, 30, 29, 0.16);
+  background: linear-gradient(180deg, #15322f 0%, #0a1e1c 100%);
+  box-shadow: 4px 0 18px rgba(6, 14, 13, 0.30);
 }
 
 /* ---------- Tarjetas principales: cristal turquesa ---------- */
@@ -862,43 +861,44 @@ body.is-admin .badge-info { background: rgba(59, 124, 195, 0.44); color: var(--g
 body.is-admin .badge-neutral { background: var(--glass-inner-less); color: var(--glass-text); border: 1px solid var(--glass-border); }
 body.is-admin .badge-outline { background: var(--glass-inner-less); border-color: rgba(255, 255, 255, 0.42); color: var(--glass-text); }
 
-/* ---------- Tablas / contenedores internos: vidrio claro + texto oscuro (legibilidad) ---------- */
+/* ---------- Tablas / contenedores internos: vidrio verde oscuro + texto claro ---------- */
 body.is-admin .table-wrap,
 body.is-admin .admin-table {
-  background: var(--glass-inner);
+  background: rgba(8, 22, 20, 0.65);
   backdrop-filter: var(--glass-blur-inner);
   -webkit-backdrop-filter: var(--glass-blur-inner);
-  border: 1px solid var(--glass-border-input);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   box-shadow: var(--glass-shadow-inner);
 }
-body.is-admin thead th { background: rgba(255, 255, 255, 0.34); color: #234f4d; border-bottom: 1px solid rgba(23, 52, 50, 0.12); }
-body.is-admin tbody td { border-bottom: 1px solid rgba(23, 52, 50, 0.10); color: #16201f; }
-body.is-admin tbody tr:hover { background: rgba(64, 128, 126, 0.10); }
+body.is-admin thead th { background: rgba(255, 255, 255, 0.10); color: #e4f0ef; border-bottom: 1px solid rgba(255, 255, 255, 0.10); }
+body.is-admin tbody td { border-bottom: 1px solid rgba(255, 255, 255, 0.06); color: #ffffff; }
+body.is-admin tbody tr:hover { background: rgba(64, 128, 126, 0.14); }
 
-/* ---------- Formularios / inputs sobre vidrio ---------- */
+/* ---------- Formularios / inputs sobre cristal verde oscuro ---------- */
 body.is-admin .input,
 body.is-admin textarea.input,
 body.is-admin select.input {
-  background: rgba(255, 255, 255, 0.82);
-  border-color: rgba(23, 52, 50, 0.18);
-  color: #16201f;
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
-body.is-admin .input::placeholder { color: #5c6b69; }
+body.is-admin .input::placeholder { color: rgba(255, 255, 255, 0.45); }
 
-/* ---------- Banners de estado: vidrio claro semántico, texto oscuro legible ---------- */
-body.is-admin .status-banner.success { background: rgba(34, 160, 107, 0.18); color: #0d5c3b; border-color: rgba(34, 160, 107, 0.35); }
-body.is-admin .status-banner.warning { background: rgba(224, 154, 22, 0.18); color: #7a5200; border-color: rgba(224, 154, 22, 0.38); }
-body.is-admin .status-banner.danger { background: rgba(217, 75, 75, 0.18); color: #8e1f1f; border-color: rgba(217, 75, 75, 0.38); }
-body.is-admin .status-banner.info { background: rgba(59, 124, 195, 0.18); color: #1e4f84; border-color: rgba(59, 124, 195, 0.38); }
-body.is-admin .status-banner.neutral { background: rgba(255, 255, 255, 0.16); color: #3d4b49; border-color: rgba(255, 255, 255, 0.32); }
+/* ---------- Banners de estado: vidrio verde oscuro semántico, texto claro ---------- */
+body.is-admin .status-banner.success { background: rgba(34, 160, 107, 0.20); color: #b6ffe0; border-color: rgba(34, 160, 107, 0.38); }
+body.is-admin .status-banner.warning { background: rgba(224, 154, 22, 0.20); color: #ffe8a8; border-color: rgba(224, 154, 22, 0.38); }
+body.is-admin .status-banner.danger { background: rgba(217, 75, 75, 0.20); color: #ffc8c8; border-color: rgba(217, 75, 75, 0.38); }
+body.is-admin .status-banner.info { background: rgba(59, 124, 195, 0.20); color: #b8d8f7; border-color: rgba(59, 124, 195, 0.38); }
+body.is-admin .status-banner.neutral { background: rgba(255, 255, 255, 0.08); color: #e4f0ef; border-color: rgba(255, 255, 255, 0.16); }
 
-/* ---------- Panel mobile "Más" y barra inferior admin ---------- */
+/* ---------- Panel mobile "Más" y barra inferior admin verde oscuro ---------- */
 body.is-admin .admin-bottom-nav {
   background: var(--glass-surface-stronger);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-top: 1px solid var(--glass-border-2);
+  box-shadow: 0 -4px 18px rgba(6, 14, 13, 0.30);
 }
 body.is-admin .admin-bottom-nav .abn-item { color: #dcecea; }
 body.is-admin .admin-bottom-nav .abn-item.active { color: var(--glass-text); background: var(--glass-inner); }
@@ -912,13 +912,14 @@ body.is-admin .admin-more-sheet {
   backdrop-filter: var(--glass-blur-b);
   -webkit-backdrop-filter: var(--glass-blur-b);
   border: 1px solid var(--glass-border-2);
+  box-shadow: 0 -8px 32px rgba(6, 14, 13, 0.38);
 }
 body.is-admin .admin-more-item { color: var(--glass-text); }
 body.is-admin .admin-more-header { color: var(--glass-text); border-bottom: 1px solid var(--glass-border-2); }
 body.is-admin .admin-more-item:hover,
 body.is-admin .admin-more-item.active { background: var(--glass-inner); color: var(--glass-text); }
 
-/* ---------- Tablas móviles (filas tipo tarjeta) ---------- */
+/* ---------- Tablas móviles (filas tipo tarjeta) verde oscuro ---------- */
 @media (max-width: 560px) {
   body.is-admin .table-wrap,
   body.is-admin .admin-table { background: transparent; border: none; box-shadow: none; backdrop-filter: none; }
@@ -938,18 +939,17 @@ body.is-admin .admin-more-item.active { background: var(--glass-inner); color: v
 }
 
 /* ============================================================
-   GLASS ADMIN — Diferenciación sutil Admin Developer
+   GLASS ADMIN — Diferenciación sutil Admin Developer verde oscuro
    body.is-admin:not(.is-adminbar) = panel del Admin Developer.
-   Misma paleta turquesa; solo se intensifica la saturación para
-   una jerarquía "más técnica" sin crear una paleta distinta.
+   Misma paleta verde-oscuro; más intensa para jerarquía técnica.
    ============================================================ */
 body.is-admin:not(.is-adminbar) .admin-sidebar {
-  background: linear-gradient(180deg, #2f6361 0%, #173432 100%);
+  background: linear-gradient(180deg, #0e2826 0%, #060f0e 100%);
 }
 body.is-admin:not(.is-adminbar) .admin-topbar {
-  background: rgba(35, 79, 77, 0.46);
+  background: rgba(8, 24, 22, 0.88);
 }
-body.is-admin:not(.is-adminbar) .sb-group { color: rgba(255, 255, 255, 0.72); }
+body.is-admin:not(.is-adminbar) .sb-group { color: rgba(255, 255, 255, 0.62); }
 
 /* ---------- Timeline de auditoría (devadmin) sobre cristal ---------- */
 body.is-admin .timeline .tl-label { color: #ffffff; }
@@ -963,7 +963,9 @@ body.is-admin .perm-yes { color: #9fe6c4; }
 body.is-admin .perm-no { color: rgba(255, 255, 255, 0.70); }
 body.is-admin .perm-cell { color: inherit; }
 
-/* ---------- Estado vacío / esqueletos sobre cristal ---------- */
-body.is-admin .empty-state { color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.22); }
+/* ---------- Estado vacío / esqueletos sobre cristal verde oscuro ---------- */
+body.is-admin .empty-state { color: rgba(255, 255, 255, 0.78); border-color: rgba(255, 255, 255, 0.12); }
+body.is-admin .empty-state h3 { color: #ffffff; }
+body.is-admin .empty-state p { color: rgba(255, 255, 255, 0.65); }
 
 

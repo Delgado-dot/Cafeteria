@@ -426,7 +426,7 @@ async function devAudit(el) {
     const wrap = $('#audList');
     let list = audit;
     if (filter) list = list.filter((a) => (a.user_name + ' ' + a.action + ' ' + a.target).toLowerCase().includes(filter.toLowerCase()));
-    if (!list.length) { wrap.innerHTML = emptyState('📜', 'Sin registros', 'No hay actividad que coincida con los filtros.'); return; }
+    if (!list.length) { wrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Sin registros', 'No hay actividad que coincida con los filtros.'); return; }
     wrap.innerHTML = `<div class="card"><div class="table-wrap"><table>
       <thead><tr><th>Usuario</th><th>Acción</th><th>Elemento afectado</th><th>Hora</th></tr></thead>
       <tbody>${list.slice(0, 50).map((a) => `

@@ -452,9 +452,9 @@ async function barConfigTabs(el, initialTab) {
             <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
           </div>
         </div>
-        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
-          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
-          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
+        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--glass-inner);border-color:var(--glass-border)">
+          <div style="font-weight:700;color:#b6ffe0;margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
+          <div class="tiny" style="color:var(--glass-text-soft)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
         </div>
       </div>
     </div>
@@ -617,7 +617,7 @@ async function barReports(el) {
               <svg width="110" height="110" viewBox="0 0 42 42" style="flex-shrink:0">
                 ${(() => {
                   const vals = [byMethod.deuna, byMethod.transferencia, byMethod.efectivo];
-                  const colors = ['#40807E', '#3b7cc3', '#22a06b'];
+                  const colors = ['var(--primary)', '#3b7cc3', '#22a06b'];
                   let acc = 0;
                   return vals.map((v, i) => {
                     const pctVal = v / totalMetodo;
@@ -631,7 +631,7 @@ async function barReports(el) {
                 <circle r="10" cx="21" cy="21" fill="var(--surface)" />
               </svg>
               <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#40807E"></span>DEUNA</span><span class="bold">${money(byMethod.deuna)} · ${pct(byMethod.deuna)}%</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:var(--primary)"></span>DEUNA</span><span class="bold">${money(byMethod.deuna)} · ${pct(byMethod.deuna)}%</span></div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#3b7cc3"></span>Transferencia</span><span class="bold">${money(byMethod.transferencia)} · ${pct(byMethod.transferencia)}%</span></div>
                 <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#22a06b"></span>Efectivo</span><span class="bold">${money(byMethod.efectivo)} · ${pct(byMethod.efectivo)}%</span></div>
               </div>
@@ -1228,7 +1228,7 @@ function productFormModal(p) {
           <div class="pf-header-title">${isEdit ? 'Editar producto' : 'Nuevo producto'}</div>
           <div class="tiny" style="color:rgba(255,255,255,.8)">${isEdit ? 'Actualiza la información del producto' : 'Registra un nuevo producto'}</div>
         </div>
-        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar">×</button>
+        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar"><i class="bx bx-x"></i></button>
       </div>
     </div>
     <div class="pf-cols">
@@ -1773,8 +1773,8 @@ async function barPayments(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
-    <div class="card" style="margin-bottom:16px;background:var(--primary);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none">
-      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.14;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
+    <div class="card" style="margin-bottom:16px;background:var(--glass-surface-strong);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none;backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border)">
+      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.12;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
       <div style="position:relative;z-index:1">
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;font-weight:600">Total recaudado</div>
         <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px">${money(totalToday)}</div>
@@ -2207,12 +2207,12 @@ function renderSalesLineChart(el, days) {
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="sales-chart-svg" role="img" aria-label="Gráfico de ventas de los últimos 7 días">
       <defs>
         <linearGradient id="salesAreaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#40807E" stop-opacity="0.18"/>
-          <stop offset="100%" stop-color="#40807E" stop-opacity="0.02"/>
+          <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="var(--primary)" stop-opacity="0.02"/>
         </linearGradient>
         <linearGradient id="salesLineGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#40807E"/>
-          <stop offset="100%" stop-color="#2f605e"/>
+          <stop offset="0%" stop-color="var(--primary)"/>
+          <stop offset="100%" stop-color="var(--primary-hover)"/>
         </linearGradient>
       </defs>
       <!-- Grid lines -->
@@ -2231,7 +2231,7 @@ function renderSalesLineChart(el, days) {
       <g class="sales-points">
         ${days.map((d, i) => `
           <g class="sales-point-group" data-index="${i}" style="cursor:pointer">
-            <circle class="sales-point" cx="${x(i)}" cy="${y(d.total)}" r="5" fill="var(--surface)" stroke="#40807E" stroke-width="2.5"/>
+            <circle class="sales-point" cx="${x(i)}" cy="${y(d.total)}" r="5" fill="var(--surface)" stroke="var(--primary)" stroke-width="2.5"/>
             <title>${d.label}: ${money(d.total)}</title>
             <text class="sales-tooltip" x="${x(i)}" y="${y(d.total) - 18}" text-anchor="middle" font-size="11" fill="var(--text)" opacity="0" pointer-events="none" style="white-space:nowrap">${money(d.total)}</text>
           </g>
