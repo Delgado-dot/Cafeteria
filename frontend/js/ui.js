@@ -21,8 +21,8 @@ function toast(msg, type = 'info') {
   })();
   const el = document.createElement('div');
   el.className = 'toast ' + type;
-  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-  el.innerHTML = `<span class="t-ico">${icons[type] || 'ℹ'}</span><span>${esc(msg)}</span>`;
+  const icons = { success: '<i class="bx bx-check-circle"></i>', error: '<i class="bx bx-x-circle"></i>', warning: '<i class="bx bx-error"></i>', info: '<i class="bx bx-info-circle"></i>' };
+  el.innerHTML = `<span class="t-ico">${icons[type] || '<i class="bx bx-info-circle"></i>'}</span><span>${esc(msg)}</span>`;
   wrap.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2800);
 }
@@ -33,7 +33,7 @@ function modal(html, { wide = false, title = '', sub = '' } = {}) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal${wide ? ' wide' : ''}">
-      ${title ? `<div class="modal-header"><div><div class="modal-title">${title}</div>${sub ? `<div class="modal-sub">${sub}</div>` : ''}</div><button class="modal-close" data-mclose title="Cerrar">×</button></div>` : ''}
+      ${title ? `<div class="modal-header"><div><div class="modal-title">${title}</div>${sub ? `<div class="modal-sub">${sub}</div>` : ''}</div><button class="modal-close" data-mclose title="Cerrar"><i class="bx bx-x"></i></button></div>` : ''}
       <div class="modal-body">${html}</div>
     </div>`;
   const close = () => {
@@ -55,7 +55,7 @@ window.closeModal = () => { const o = $('.modal-overlay'); if (o) o.remove(); };
 function confirmDialog(title, message, okLabel = 'Confirmar', danger = false) {
   return new Promise((resolve) => {
     const overlay = modal(`
-      <div class="alert neutral" style="margin-bottom:18px"><span class="a-ico">ℹ️</span><div>${esc(message)}</div></div>
+      <div class="alert neutral" style="margin-bottom:18px"><span class="a-ico"><i class="bx bx-info-circle"></i></span><div>${esc(message)}</div></div>
       <div style="display:flex;justify-content:flex-end;gap:10px">
         <button class="btn btn-neutral" data-cancel>Cancelar</button>
         <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-ok>${esc(okLabel)}</button>
@@ -72,7 +72,7 @@ function drawer(html, { title = '', bodyOnly = false, footer = '' } = {}) {
   overlay.className = 'drawer-overlay';
   overlay.innerHTML = `
     <div class="drawer">
-      ${bodyOnly ? '' : `<div class="drawer-header"><h3 style="font-size:var(--fs-lg)">${title || ''}</h3><button class="modal-close" data-dclose title="Cerrar">×</button></div>`}
+      ${bodyOnly ? '' : `<div class="drawer-header"><h3 style="font-size:var(--fs-lg)">${title || ''}</h3><button class="modal-close" data-dclose title="Cerrar"><i class="bx bx-x"></i></button></div>`}
       <div class="drawer-body">${html}</div>
       ${footer ? `<div class="drawer-footer">${footer}</div>` : ''}
     </div>`;
@@ -137,20 +137,21 @@ function paymentMethodLabel(m) {
 }
 window.paymentMethodLabel = paymentMethodLabel;
 
-/* Categoría icono por categoría */
+/* Categoría icono por categoría — Boxicons unificado (fuente única para cliente y panel) */
 function catIcon(cat) {
-  if (cat === 'Hamburguesas') return '🍔';
-  if (cat === 'Hot Dogs') return '🌭';
-  if (cat === 'Sándwiches') return '🥪';
-  if (cat === 'Papas y Salchipapas') return '🍟';
-  if (cat === 'Bebidas') return '🥤';
-  if (cat === 'Snacks') return '🍿';
-  return '🍽️';
+  const c = (cat || '').toLowerCase();
+  if (c.includes('hamburguesa') || c.includes('hot dog') || c.includes('sándwich') || c.includes('sandwich')) return '<i class="bx bx-hamburger"></i>';
+  if (c.includes('bebida') || c.includes('jugo') || c.includes('té') || c.includes('te ')) return '<i class="bx bx-drink"></i>';
+  if (c.includes('snack') || c.includes('galleta')) return '<i class="bx bx-cookie"></i>';
+  if (c.includes('papa') || c.includes('salchipapa')) return '<i class="bx bx-bowl-hot"></i>';
+  if (c.includes('postre') || c.includes('helado')) return '<i class="bx bx-ice-cream"></i>';
+  if (c.includes('café') || c.includes('cafe')) return '<i class="bx bx-coffee"></i>';
+  return '<i class="bx bx-restaurant"></i>';
 }
 window.catIcon = catIcon;
 
 function productIcon(p) {
-  return p.emoji || catIcon(p.category);
+  return catIcon(p && p.category);
 }
 window.productIcon = productIcon;
 

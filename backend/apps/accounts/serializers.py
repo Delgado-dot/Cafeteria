@@ -128,3 +128,17 @@ class RolePermissionSerializer(serializers.ModelSerializer):
         fields = ["id", "role", "code", "enabled", "updated_at"]
         read_only_fields = ["id", "updated_at"]
 
+    def validate_role(self, value):
+        from .constants import VALID_ROLES
+
+        if value not in VALID_ROLES:
+            raise serializers.ValidationError(f"Rol no válido. Permitidos: {', '.join(sorted(VALID_ROLES))}")
+        return value
+
+    def validate_code(self, value):
+        from .constants import PERMISSIONS_CATALOG
+
+        if value not in PERMISSIONS_CATALOG:
+            raise serializers.ValidationError(f"Código de permiso no existe: {value}")
+        return value
+

@@ -7,6 +7,42 @@ const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipa
 
 const ROLE_LABELS = { user: 'Usuario institucional', adminbar: 'Administradora bar', admindev: 'Administrador desarrollador' };
 
+const PERMISSIONS_CATALOG = {
+  "products.view": "Ver catálogo",
+  "orders.create": "Crear pedidos",
+  "orders.view_own": "Ver pedidos propios",
+  "orders.cancel_own": "Cancelar pedidos propios",
+  "payments.create": "Crear pagos",
+  "payments.view_own": "Ver pagos propios",
+  "profile.view": "Ver perfil",
+  "profile.edit": "Editar perfil",
+  "products.create": "Crear productos",
+  "products.edit": "Editar productos",
+  "products.delete": "Eliminar productos",
+  "orders.view_all": "Ver todos los pedidos",
+  "orders.change_status": "Cambiar estado pedidos",
+  "stock.view": "Ver stock",
+  "stock.edit": "Editar stock",
+  "payments.view_all": "Ver todos los pagos",
+  "payments.review": "Revisar pagos",
+  "delivery.view": "Ver delivery",
+  "delivery.edit": "Editar delivery",
+  "suppliers.view": "Ver proveedores",
+  "suppliers.create": "Crear proveedores",
+  "suppliers.edit": "Editar proveedores",
+  "suppliers.delete": "Eliminar proveedores",
+  "reports.view": "Ver reportes",
+  "config.view": "Ver configuración",
+  "config.edit": "Editar configuración",
+  "users.view": "Ver usuarios",
+  "users.create": "Crear usuarios",
+  "users.edit": "Editar usuarios",
+  "users.disable": "Desactivar usuarios",
+  "roles.view": "Ver roles",
+  "roles.edit": "Editar roles",
+  "audit.view": "Ver auditoría",
+};
+
 function normalizeApiProduct(product) {
   const categoryObject = product.category && typeof product.category === 'object' ? product.category : null;
   return {

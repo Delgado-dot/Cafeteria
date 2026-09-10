@@ -3,12 +3,12 @@
    ============================================================ */
 
 const DEV_SECTIONS = {
-  dashboard: { label: 'Dashboard', icon: '🏠' },
-  users: { label: 'Usuarios', icon: '👥' },
-  roles: { label: 'Roles y permisos', icon: '🔐' },
-  cafe: { label: 'Información de cafetería', icon: '🏪' },
-  config: { label: 'Configuración general', icon: '⚙️' },
-  audit: { label: 'Auditoría', icon: '📜' },
+  dashboard: { label: 'Dashboard', icon: 'bx-grid-alt' },
+  users: { label: 'Usuarios', icon: 'bx-group' },
+  roles: { label: 'Roles y permisos', icon: 'bx-shield' },
+  cafe: { label: 'Información de cafetería', icon: 'bx-store' },
+  config: { label: 'Configuración general', icon: 'bx-cog' },
+  audit: { label: 'Auditoría', icon: 'bx-file' },
 };
 
 async function renderDevAdmin(page) {
@@ -19,11 +19,11 @@ async function renderDevAdmin(page) {
 
   app.innerHTML = `
     <div class="admin-layout">
-      <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.3rem">⚙️</span> Sistema INTESUD</div>
+      <aside class="admin-sidebar" id="adminSidebar" aria-label="Menú principal">
+        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-cog"></i></span> Sistema INTESUD<button class="sb-close" id="sbClose" aria-label="Cerrar menú"><i class="bx bx-x"></i></button></div>
         <nav class="sb-nav">
           ${Object.entries(DEV_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="ico">${v.icon}</span>${v.label}</a>`).join('')}
+            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span></a>`).join('')}
         </nav>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
@@ -32,16 +32,16 @@ async function renderDevAdmin(page) {
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="hamburger" id="devHamburger" title="Menú">☰</button>
-          <span style="font-size:1.3rem">${DEV_SECTIONS[sec].icon}</span>
+          <button class="admin-menu-toggle" id="devHamburger" aria-label="Abrir menú" aria-expanded="false" aria-controls="adminSidebar"><i class="bx bx-menu"></i></button>
+          <span style="font-size:1.3rem"><i class="bx ${DEV_SECTIONS[sec].icon}"></i></span>
           <span class="page-name">${DEV_SECTIONS[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
             <div class="profile-chip" id="devUserMenu">
-              <div class="avatar sm">${esc(initials(currentUser().name))}</div><span class="pname">${esc(currentUser().name)}</span> ▾
+              <div class="avatar sm">${esc(initials(currentUser().name))}</div><span class="pname">${esc(currentUser().name)}</span> <i class="bx bx-chevron-down" style="font-size:0.8rem"></i>
               <div class="dropdown-menu" id="devUserDropdown" style="display:none">
-                <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
+                <a class="dropdown-item" href="#" data-link="profile"><span class="dm-ico"><i class="bx bx-user"></i></span>Mi perfil</a>
                 <div class="dropdown-sep"></div>
-                <a class="dropdown-item danger" href="#" id="btnDevLogout"><span class="ico">⏻</span>Cerrar sesión</a>
+                <a class="dropdown-item danger" href="#" id="btnDevLogout"><span class="dm-ico"><i class="bx bx-log-out"></i></span>Cerrar sesión</a>
               </div>
             </div>
           </div>
@@ -57,17 +57,40 @@ async function renderDevAdmin(page) {
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
   $('#btnDevLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
 
-  const sidebar = $('.admin-sidebar', app);
-  const closeSidebar = () => { sidebar?.classList.remove('open'); $('.sb-scrim')?.remove(); };
-  $('#devHamburger')?.addEventListener('click', () => {
-    sidebar?.classList.add('open');
-    if (!$('.sb-scrim')) {
-      const scrim = document.createElement('div');
-      scrim.className = 'sb-scrim';
-      scrim.addEventListener('click', closeSidebar);
-      document.body.appendChild(scrim);
-    }
-  });
+  const sidebar = $('#adminSidebar', app);
+  const devHamburger = $('#devHamburger', app);
+  const sbClose = $('#sbClose', app);
+  let sbScrim = null;
+  let escHandler = null;
+  const ensureScrim = () => {
+    if (sbScrim || !sidebar) return;
+    sbScrim = document.createElement('div');
+    sbScrim.className = 'sb-scrim';
+    sbScrim.setAttribute('aria-hidden', 'true');
+    sbScrim.style.display = 'none';
+    document.body.appendChild(sbScrim);
+    sbScrim.addEventListener('click', closeSidebar);
+  };
+  function openSidebar() {
+    if (!sidebar) return;
+    ensureScrim();
+    sidebar.classList.add('open');
+    if (sbScrim) sbScrim.style.display = 'block';
+    if (devHamburger) devHamburger.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    if (!escHandler) { escHandler = (e) => { if (e.key === 'Escape') closeSidebar(); }; document.addEventListener('keydown', escHandler); }
+  }
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (sbScrim) sbScrim.style.display = 'none';
+    if (devHamburger) devHamburger.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
+  }
+  window._devCloseSidebar = closeSidebar;
+  if (devHamburger) devHamburger.addEventListener('click', (e) => { e.preventDefault(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
+  if (sbClose) sbClose.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); });
   $$('[data-dev]', app).forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); setRoute('admindev/' + a.dataset.dev); }));
 
   const content = $('#devContent');
@@ -85,7 +108,7 @@ async function renderDevAdmin(page) {
     await renderers[sec](content);
   } catch (error) {
     console.error('Error rendering dev admin:', error);
-    content.innerHTML = emptyState('⚠️', 'Error', 'No se pudo cargar la sección.');
+    content.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudo cargar la sección.');
   }
 }
 
@@ -137,8 +160,8 @@ async function devDashboard(el) {
           <div class="kv"><dt>Receso</dt><dd class="bold small">${cfg.break_start} - ${cfg.break_end}</dd></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
-          ${[['users', '👥', 'Usuarios'], ['roles', '🔐', 'Roles y permisos'], ['cafe', '🏪', 'Cafetería'], ['config', '⚙️', 'Configuración'], ['audit', '📜', 'Auditoría']].map(([k, ic, l]) =>
-            `<a href="#" class="btn btn-outline" data-goto="${k}">${ic} ${l}</a>`).join('')}
+          ${[['users', 'bx-group', 'Usuarios'], ['roles', 'bx-shield', 'Roles y permisos'], ['cafe', 'bx-store', 'Cafetería'], ['config', 'bx-cog', 'Configuración'], ['audit', 'bx-file', 'Auditoría']].map(([k, ic, l]) =>
+            `<a href="#" class="btn btn-outline" data-goto="${k}"><i class="bx ${ic}"></i> ${l}</a>`).join('')}
         </div>
       </div>
       <div class="card">
@@ -153,7 +176,7 @@ async function devDashboard(el) {
                 <div class="tl-time">${esc(a.target || '')} · ${esc(a.created_at)}</div>
               </div>
             </div>`).join('')}</div>`
-          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">📭</div><h3>Sin actividad</h3></div>`}
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico"><i class="bx bx-inbox"></i></div><h3>Sin actividad</h3></div>`}
         </div>
       </div>
     </div>`;
@@ -287,30 +310,56 @@ function userFormModal(u) {
    ROLES Y PERMISOS (matriz)
    ============================================================ */
 async function devRoles(el) {
-  const usersRes = await ApiClient.get(API_ENDPOINTS.auth.users);
+  el.innerHTML = `<div class="page-title"><h1>Roles y permisos</h1></div><div class="skeleton" style="height:200px"></div>`;
+  const [usersRes, permsRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.auth.users),
+    ApiClient.get(API_ENDPOINTS.auth.permissions),
+  ]);
+  if (!permsRes.ok) {
+    el.innerHTML = `<div class="page-title"><h1>Roles y permisos</h1></div><div class="alert danger"><i class="bx bx-error-circle"></i> No se pudieron cargar permisos: ${esc(permsRes.data?.detail || 'Error')}</div>`;
+    return;
+  }
   const users = usersRes.ok && usersRes.data ? (usersRes.data.results || usersRes.data) : [];
-  
+  const perms = permsRes.ok && permsRes.data ? (Array.isArray(permsRes.data) ? permsRes.data : (permsRes.data.results || [])) : [];
   const roleCounts = { user: 0, adminbar: 0, admindev: 0 };
   users.forEach(u => { if (roleCounts[u.role] !== undefined) roleCounts[u.role]++; });
-
+  // mapa role -> code -> enabled
+  const permMap = { user: {}, adminbar: {}, admindev: {} };
+  perms.forEach(p => { if (permMap[p.role] !== undefined) permMap[p.role][p.code] = p.enabled; });
+  const allCodes = Object.keys(PERMISSIONS_CATALOG).sort();
   el.innerHTML = `
-    <div class="page-title"><h1>Roles y permisos</h1></div>
-    <p class="page-sub">Distribución de permisos por rol. La matriz es informativa (simulada).</p>
-    <div class="table-wrap"><table class="perm-table">
-      <thead><tr><th>Función</th><th>Usuario institucional</th><th>Administradora bar</th><th>Admin desarrollador</th></tr></thead>
-      <tbody>${PERMISSION_MATRIX.map((r) => `
+    <div class="page-title"><h1>Roles y permisos</h1><button class="btn btn-primary" id="savePerms"><i class="bx bx-save"></i> Guardar cambios</button></div>
+    <p class="page-sub">Matriz real desde PostgreSQL. Los cambios afectan el acceso inmediatamente.</p>
+    <div class="table-wrap" style="max-height:60vh; overflow:auto"><table class="perm-table">
+      <thead><tr><th>Permiso</th><th>Usuario</th><th>Admin Bar</th><th>Admin Dev</th></tr></thead>
+      <tbody>${allCodes.map(code => `
         <tr>
-          <td>${r.fn}</td>
-          ${[['user', r.user], ['adminbar', r.adminbar], ['admindev', r.admindev]].map(([k, v]) => {
-            if (v === '—') return `<td><span class="perm-cell perm-no">—</span></td>`;
-            return `<td><span class="perm-cell perm-yes">✓</span><span class="tiny muted" style="margin-left:5px">${v}</span></td>`;
-          }).join('')}
+          <td><div class="bold small">${esc(code)}</div><div class="tiny muted">${esc(PERMISSIONS_CATALOG[code])}</div></td>
+          ${['user','adminbar','admindev'].map(role => `
+            <td style="text-align:center"><label style="cursor:pointer"><input type="checkbox" data-perm="${role}:${code}" ${permMap[role][code] ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)"></label></td>
+          `).join('')}
         </tr>`).join('')}</tbody></table></div>
     <div class="card" style="margin-top:20px">
       <h3 style="margin-bottom:8px">Usuarios por rol</h3>
       ${['user', 'adminbar', 'admindev'].map((r) => `
         <div style="margin-bottom:10px"><span class="badge badge-primary">${ROLE_LABELS[r]}</span> <span class="tiny muted">— ${roleCounts[r]} usuario(s)</span></div>
       `).join('')}</div>`;
+  $('#savePerms', el).onclick = async () => {
+    const btn = $('#savePerms', el);
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    const byRole = { user: {}, adminbar: {}, admindev: {} };
+    $$('[data-perm]', el).forEach(ch => {
+      const [role, code] = ch.dataset.perm.split(':');
+      byRole[role][code] = ch.checked;
+    });
+    let ok = true;
+    for (const role of ['user','adminbar','admindev']) {
+      const res = await ApiClient.post(API_ENDPOINTS.auth.permissions, { role, permissions: byRole[role] });
+      if (!res.ok) { toast(res.data?.detail || 'Error guardando ' + role, 'error'); ok = false; break; }
+    }
+    if (ok) { toast('Permisos guardados en PostgreSQL', 'success'); devRoles(el); }
+    btn.disabled = false; btn.innerHTML = '<i class="bx bx-save"></i> Guardar cambios';
+  };
 }
 
 /* ============================================================
@@ -426,7 +475,7 @@ async function devAudit(el) {
     const wrap = $('#audList');
     let list = audit;
     if (filter) list = list.filter((a) => (a.user_name + ' ' + a.action + ' ' + a.target).toLowerCase().includes(filter.toLowerCase()));
-    if (!list.length) { wrap.innerHTML = emptyState('📜', 'Sin registros', 'No hay actividad que coincida con los filtros.'); return; }
+    if (!list.length) { wrap.innerHTML = emptyState('<i class="bx bx-file"></i>', 'Sin registros', 'No hay actividad que coincida con los filtros.'); return; }
     wrap.innerHTML = `<div class="card"><div class="table-wrap"><table>
       <thead><tr><th>Usuario</th><th>Acción</th><th>Elemento afectado</th><th>Hora</th></tr></thead>
       <tbody>${list.slice(0, 50).map((a) => `

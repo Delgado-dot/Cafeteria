@@ -3,7 +3,9 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, permissions
 
-from apps.accounts.permissions import IsAdminBar
+from rest_framework import permissions as drf_permissions
+
+from apps.accounts.permissions import HasRolePermission
 
 from .models import StockMovement
 from .serializers import StockMovementSerializer
@@ -14,7 +16,8 @@ class StockMovementListView(generics.ListAPIView):
 
     queryset = StockMovement.objects.select_related("product", "user")
     serializer_class = StockMovementSerializer
-    permission_classes = [IsAdminBar]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "stock.view"
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["product", "movement_type"]
     search_fields = ["product__name", "reason", "reference"]

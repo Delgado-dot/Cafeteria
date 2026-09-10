@@ -310,14 +310,14 @@ function renderLanding() {
   $('[data-lp-prev]')?.addEventListener('click', () => goTo(current - 1));
   $('[data-lp-next]')?.addEventListener('click', () => goTo(current + 1));
 
-  // Teclado ← →
+  // Teclado <i class="bx bx-arrow-back"></i> <i class="bx bx-right-arrow-alt"></i>
   document.addEventListener('keydown', (e) => {
     if (!document.body.classList.contains('is-landing')) return;
     if (e.key === 'ArrowRight') goTo(current + 1);
     if (e.key === 'ArrowLeft') goTo(current - 1);
   });
 
-  // Botón "Explora" / enlaces de navegación → cada atributo apunta a una slide
+  // Botón "Explora" / enlaces de navegación <i class="bx bx-right-arrow-alt"></i> cada atributo apunta a una slide
   const idToIndex = {};
   slides.forEach((s, i) => { if (s.id) idToIndex[s.id] = i; });
   const scrollTo = (id) => {

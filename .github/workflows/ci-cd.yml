@@ -63,9 +63,11 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Run frontend smoke test
-        run: node ../tests/frontend/landing-smoke.test.js
-        working-directory: frontend
+      - name: Run frontend tests (npm test)
+        run: npm test --prefix frontend
+
+      - name: Lint frontend
+        run: npm run lint --prefix frontend
 
   frontend-deploy:
     name: Deploy Frontend to GitHub Pages

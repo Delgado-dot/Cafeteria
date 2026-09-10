@@ -88,39 +88,44 @@ window.AUTH_ICO = AUTH_ICO;
 function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
-    <div class="login-section">
-      <div class="login-card">
-        <div class="login-head login-brand-head">
-          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
-          <h2>Iniciar sesión</h2>
-          <p>Ingresa con tu cuenta institucional</p>
-        </div>
+  <div class="login-screen login-screen--auth">
+    <div class="login-layout">
+      <div class="login-mascot" aria-hidden="true">
+        <img src="assets/images/panda-login.png" alt="">
+      </div>
+      <div class="login-section">
+        <div class="login-card">
+          <div class="login-head login-brand-head">
+            <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
+            <h2>Iniciar sesión</h2>
+            <p>Ingresa con tu cuenta institucional</p>
+          </div>
 
-        <form id="loginForm" novalidate>
-          <div class="field">
-            <label class="label" for="li_email">Usuario o correo</label>
-            <div class="input-wrap">
-              <span class="leading-ico">${AUTH_ICO.user}</span>
-              <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label class="label" for="li_email">Usuario o correo</label>
+              <div class="input-wrap">
+                <span class="leading-ico">${AUTH_ICO.user}</span>
+                <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
+                <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+              </div>
+              <div class="input-err-msg" id="li_emailErr"></div>
             </div>
-            <div class="input-err-msg" id="li_emailErr"></div>
-          </div>
-          <div class="field">
-            <label class="label" for="li_pass">Contraseña</label>
-            <div class="input-group">
-              <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+            <div class="field">
+              <label class="label" for="li_pass">Contraseña</label>
+              <div class="input-group">
+                <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
+                <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+              </div>
+              <div class="input-err-msg" id="li_passErr"></div>
             </div>
-            <div class="input-err-msg" id="li_passErr"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 18px">
-            <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
-            <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
-        </form>
+            <div class="login-options">
+              <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
+              <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>`;

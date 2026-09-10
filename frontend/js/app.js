@@ -19,16 +19,12 @@ function clientIcon(name, extra = '') {
 window.clientIcon = clientIcon;
 
 function clientCatIcon(category) {
-  const icons = {
-    Hamburguesas: 'food', 'Hot Dogs': 'food', Sándwiches: 'food', 'Papas y Salchipapas': 'food',
-    Bebidas: 'food', Snacks: 'food',
-  };
-  return clientIcon(icons[category] || 'food');
+  return catIcon(category);
 }
 window.clientCatIcon = clientCatIcon;
 
 function clientProductIcon(product) {
-  return clientCatIcon(product.category);
+  return catIcon(product && product.category);
 }
 window.clientProductIcon = clientProductIcon;
 
@@ -79,6 +75,8 @@ window.homeRouteFor = homeRouteFor;
 function handleRoute() {
   const user = Auth.current();
   let r = (window.location.hash || '#home').replace('#', '');
+  // Tolerar deep-links y hashes canonizados con barra inicial (#/ruta → ruta).
+  r = r.replace(/^\/+/, '');
   params.product = null;
 
   document.body.classList.remove('is-landing');
@@ -108,8 +106,13 @@ function handleRoute() {
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {
-    setRoute(homeRouteFor(user.role));
-    return;
+    const home = homeRouteFor(user.role);
+    // Solo redirigir si el destino es legítimo para el rol; un rol desconocido
+    // no puede quedar en un bucle setRoute→handleRoute (crash de stack).
+    if (routeTargetRole(home) === user.role && home !== r) {
+      setRoute(home);
+      return;
+    }
   }
 
   if (r.startsWith('adminbar')) {
@@ -159,7 +162,7 @@ function renderUserShell(page) {
           <div class="user-chip" id="userMenu">
             <div class="avatar">${esc(initials(user.name))}</div>
             <span class="chip-info bold" style="font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
-            <span class="chip-info" style="color:var(--text-3);font-size:.7rem">▾</span>
+            <span class="chip-info" style="color:var(--text-3);font-size:.7rem"><i class="bx bx-chevron-down"></i></span>
             <div class="dropdown-menu" id="userDropdown" style="display:none">
               <div class="dropdown-head">
                 <div class="bold small">${esc(user.name)}</div>
@@ -193,7 +196,7 @@ function renderUserShell(page) {
   $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
-  // header search → go to menu with query
+  // header search <i class="bx bx-right-arrow-alt"></i> go to menu with query
   const hs = $('#headerSearch');
   if (hs) hs.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && hs.value.trim()) {
@@ -314,7 +317,7 @@ function userHome(el) {
 
       <div class="reco-head">
         <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
-        <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
+        <a class="reco-btn" href="#" data-nav="menu">Ver menú completo <i class="bx bx-right-arrow-alt"></i></a>
       </div>
       <div class="reco-grid" id="featuredGrid"></div>`;
 
@@ -488,7 +491,7 @@ function userProductPage(el) {
     const canOrder = await canPlaceOrder();
 
     app.innerHTML = `
-      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Volver al menú</button>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Volver al menú</button>
       <div class="card card-flush" style="overflow:hidden">
         <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
           <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
@@ -504,12 +507,12 @@ function userProductPage(el) {
             <p class="muted" style="margin:10px 0 18px;max-width:520px">${esc(p.desc)}</p>
             <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px">
               <span style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(p.price)}</span>
-              <span class="small muted">⏱ Tiempo estimado: <b>${p.prepMin} min</b></span>
+              <span class="small muted"><i class="bx bx-time"></i> Tiempo estimado: <b>${p.prepMin} min</b></span>
             </div>
 
             <div class="field"><label class="label">Cantidad (máx ${p.stock || 0})</label>
               <div class="qty-stepper">
-                <button id="qdDec">−</button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
+                <button id="qdDec"><i class="bx bx-minus"></i></button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
               </div>
             </div>
 

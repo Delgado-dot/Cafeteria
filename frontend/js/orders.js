@@ -130,7 +130,7 @@ function orderTrackingCard(o) {
     <div class="order-glance">
       <div>
         <div class="order-glance-label">${orderStateMessage(o)}</div>
-        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' · ')}</div>
+        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} <i class="bx bx-x"></i>${i.qty}`).join(' · ')}</div>
       </div>
       <div class="order-eta">
         <span class="tiny muted">TIEMPO ESTIMADO</span>
@@ -205,7 +205,7 @@ function showOrderDetail(o) {
     <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
     <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
     ${terminal}${progress}
-    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
+    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
     <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
   `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
@@ -288,14 +288,26 @@ function renderProfile(el) {
         <button class="btn" data-save>Guardar</button>
       </div>`);
     $('[data-close]', ov).onclick = () => ov.remove();
-    $('[data-save]', ov).onclick = () => {
-      user.name = $('#epName', ov).value || user.name;
-      user.cargo = $('#epCargo', ov).value;
-      user.aula = $('#epAula', ov).value;
+    $('[data-save]', ov).onclick = async () => {
+      const fullName = ($('#epName', ov).value || '').trim() || u.name;
+      const [first_name, ...restTokens] = fullName.split(' ');
+      const body = {
+        first_name,
+        last_name: restTokens.join(' '),
+        cargo: $('#epCargo', ov).value || '',
+        aula: $('#epAula', ov).value || '',
+      };
+      const response = await ApiClient.patch(API_ENDPOINTS.auth.me, body);
+      if (!response.ok) {
+        const msg = response.data?.detail || response.data?.first_name?.[0] || response.data?.last_name?.[0] || 'No se pudo actualizar el perfil.';
+        toast(msg, 'error');
+        return;
+      }
+      user.name = fullName;
+      user.cargo = body.cargo;
+      user.aula = body.aula;
       const sess = Auth.current();
-      sess.name = user.name;
-      Auth.set(sess);
-      Store.users = Store.users;
+      if (sess) { sess.name = fullName; sess.cargo = body.cargo; sess.aula = body.aula; Auth.set(sess); }
       toast('Perfil actualizado.', 'success');
       ov.remove();
       renderProfile();

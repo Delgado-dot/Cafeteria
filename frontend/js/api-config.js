@@ -20,6 +20,8 @@ const API_ENDPOINTS = {
     password: `${API_BASE_URL}/api/auth/password/`,
     users: `${API_BASE_URL}/api/auth/users/`,
     userDetail: (id) => `${API_BASE_URL}/api/auth/users/${id}/`,
+    permissions: `${API_BASE_URL}/api/auth/permissions/`,
+    permissionsBulk: `${API_BASE_URL}/api/auth/permissions/bulk/`,
   },
   
   // Productos

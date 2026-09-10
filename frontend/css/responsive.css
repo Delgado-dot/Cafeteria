@@ -42,30 +42,74 @@
    ============================================================ */
 @media (min-width: 769px) {
   .admin-sidebar {
-    position: sticky; top: 0; height: 100vh; z-index: 130;
+    position: fixed !important; top: 0; left: 0; bottom: 0; height: 100vh; height: 100dvh; z-index: 130;
     width: var(--sidebar-w) !important;
-    transform: none !important;
+    transform: none !important; visibility: visible !important;
+    overflow-y: auto; overflow-x: hidden;
   }
   .admin-sidebar.collapsed {
     width: 72px !important;
   }
+  .admin-sidebar.collapsed + .admin-main { margin-left: 72px !important; width: calc(100% - 72px) !important; }
+  .admin-main { margin-left: var(--sidebar-w) !important; width: calc(100% - var(--sidebar-w)) !important; }
+  .admin-menu-toggle, .sb-close, .sb-scrim { display: none !important; }
   .admin-bottom-nav,
   #adminMoreModal { display: none !important; }
 }
 
 /* ============================================================
-   Admin sidebar - MÓVIL (≤768px): solo barra inferior
+   Admin sidebar - MÓVIL (≤768px): drawer superpuesto + hamburger
    ============================================================ */
 @media (max-width: 768px) {
-  .admin-sidebar,
-  .sidebar-toggle,
-  .sb-scrim { display: none !important; }
+  /* No scroll horizontal en móvil */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .admin-layout { overflow-x: hidden; }
+  /* Topbar: hamburguesa visible, título y perfil sin cortes */
+  .admin-menu-toggle { display: flex !important; }
+  .admin-topbar { padding: 0 10px; gap: 8px; }
+  .admin-topbar .page-name { font-size: 1rem; flex: 1; min-width: 0; }
+  .admin-topbar .profile-chip .pname { display: none; }
+  .admin-topbar .profile-chip { padding: 4px; }
+  .admin-topbar .profile-chip .avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+  /* Sidebar como drawer oculto fuera de pantalla */
+  .admin-sidebar {
+    position: fixed !important; top: 0; left: 0; bottom: 0; height: 100dvh;
+    width: 280px; max-width: 84vw;
+    z-index: 160;
+    transform: translateX(-101%);
+    visibility: hidden;
+    transition: transform var(--t-med), visibility var(--t-med);
+    overflow-y: auto;
+    background: #163c3a;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 4px 0 20px rgba(6,14,13,0.28);
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .sb-close { display: flex !important; margin-left: auto; }
+  .sb-brand { padding-right: 12px; gap: 8px; }
+  .sb-scrim { display: block; }
+  /* Contenido ocupa 100% cuando menú cerrado */
   .admin-main {
     margin-left: 0 !important;
     transform: none !important;
+    width: 100%; max-width: 100%;
   }
+  /* Bottom nav sigue visible en móvil (shortcut) pero no duplica funcionalidad drawer */
   .admin-bottom-nav { display: block; }
-  .admin-content { padding-bottom: 80px; }
+  .admin-content { padding-bottom: 80px; overflow-x: hidden; }
+  /* Filtros admin desplazables horizontalmente sin romperse */
+  body.is-admin .adv-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  body.is-admin .adv-tabs .category-chip { flex-shrink: 0; min-height: 44px; }
+  /* Tablas con overflow-x auto */
+  body.is-admin .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  /* Touch targets mínimo 44x44 */
+  body.is-admin .sb-link, body.is-admin .category-chip, body.is-admin .btn, .admin-menu-toggle, .sb-close { min-height: 44px; }
+  body.is-admin .sb-link { min-height: 44px; }
+  .sidebar-toggle { display: none !important; }
 }
 
 /* ============================================================
@@ -121,22 +165,23 @@
   body.is-admin .table-wrap { border: none; background: transparent; box-shadow: none; padding: 0; }
   body.is-admin .admin-table tr {
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-    padding: 12px 14px; margin-bottom: 12px; box-shadow: var(--shadow-xs);
+    background: var(--glass-surface); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border); border-radius: var(--glass-radius);
+    padding: 12px 14px; margin-bottom: 12px; box-shadow: var(--glass-shadow);
     position: relative; width: 100%; max-width: 100%;
   }
   body.is-admin .admin-table td { display: contents; }
   body.is-admin .admin-table td[data-label="Pedido"] { order: 1; flex: 1 1 auto; font-weight: var(--fw-bold); font-size: var(--fs-md); }
   body.is-admin .admin-table td[data-label="Total"],
   body.is-admin .admin-table td[data-label="Monto"] { order: 1; flex: 0 0 auto; font-weight: var(--fw-bold); font-size: var(--fs-md); text-align: right; margin-left: auto; }
-  body.is-admin .admin-table td[data-label="Usuario"] { order: 2; flex: 1 1 100%; font-size: var(--fs-sm); color: var(--text-2); }
+  body.is-admin .admin-table td[data-label="Usuario"] { order: 2; flex: 1 1 100%; font-size: var(--fs-sm); color: var(--glass-text-dim); }
   body.is-admin .admin-table td[data-label="Método"],
   body.is-admin .admin-table td[data-label="Método pago"],
   body.is-admin .admin-table td[data-label="Estado"],
   body.is-admin .admin-table td[data-label="Estado pago"],
   body.is-admin .admin-table td[data-label="Tipo"] { order: 3; flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
   body.is-admin .admin-table td[data-label="Fecha"],
-  body.is-admin .admin-table td[data-label="Fecha/hora"] { order: 4; flex: 1 1 100%; font-size: 11px; color: var(--text-3); }
+  body.is-admin .admin-table td[data-label="Fecha/hora"] { order: 4; flex: 1 1 100%; font-size: 11px; color: var(--glass-text-faint); }
   body.is-admin .admin-table td[data-label="Acciones"] { position: absolute; top: 10px; right: 10px; order: 5; }
   body.is-admin .admin-table td[data-label="Acciones"] .btn { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; }
   body.is-admin .admin-table td[data-label="Acciones"] .btn span.ico { font-size: 16px; }
@@ -150,7 +195,7 @@
   body.is-admin .admin-table td[data-label="Cantidad"],
   body.is-admin .admin-table td[data-label="Stock resultante"],
   body.is-admin .admin-table td[data-label="Última actualización"] { order: 3; flex: 0 0 auto; font-weight: var(--fw-bold); }
-  body.is-admin .admin-table td[data-label="Última actualización"] { font-size: 11px; color: var(--text-3); font-weight: var(--fw-normal); }
+  body.is-admin .admin-table td[data-label="Última actualización"] { font-size: 11px; color: var(--glass-text-faint); font-weight: var(--fw-normal); }
   body.is-admin .admin-table td[data-label="Stock mínimo"] { display: none; }
   body.is-admin .admin-table .badge { font-size: 11px; padding: 3px 8px; }
 
@@ -170,4 +215,41 @@
 @media (max-height: 680px) {
   .login-brand h1 { font-size: var(--fs-2xl); }
   .login-brand p { font-size: var(--fs-md); }
+}
+
+/* ============================================================
+   Evitar scroll horizontal global (320px+)
+   ============================================================ */
+html, body { max-width: 100%; overflow-x: hidden; }
+.admin-layout, .admin-main, .admin-content { max-width: 100%; box-sizing: border-box; }
+
+/* ============================================================
+   Celular muy pequeño 320px - 374px
+   ============================================================ */
+@media (max-width: 374px) {
+  .admin-topbar .page-name { font-size: 0.92rem; }
+  .admin-content { padding: 12px; }
+  body.is-admin .grid-3, body.is-admin .grid-4, body.is-admin .grid-2 { gap: 10px; }
+}
+
+/* ============================================================
+   Tablet 769-1080 y Desktop
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1080px) {
+  .admin-content { padding: var(--sp-4); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1081px) {
+  .admin-content { padding: var(--sp-5); }
+}
+
+/* ============================================================
+   Orientación horizontal (landscape) en móvil
+   ============================================================ */
+@media (max-width: 768px) and (orientation: landscape) {
+  .admin-sidebar { width: 300px; max-width: 72vw; }
+  .admin-topbar { height: 56px; min-height: 56px; }
+  .admin-content { padding: 12px; }
+  .admin-bottom-nav { height: 56px; }
+  .admin-content { padding-bottom: 64px; }
 }

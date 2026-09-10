@@ -20,6 +20,51 @@
   --bg: #f4f7f6;
   --surface: #ffffff;
   --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
+  /* Glass — tokens canónicos (misma escala que main.css, gana por cascada al ser último) */
+  --glass-surface: rgba(12, 32, 30, 0.82);
+  --glass-surface-2: rgba(12, 32, 30, 0.78);
+  --glass-surface-3: rgba(12, 32, 30, 0.74);
+  --glass-surface-strong: rgba(12, 32, 30, 0.88);
+  --glass-surface-stronger: rgba(12, 32, 30, 0.92);
+  --glass-inner: rgba(255, 255, 255, 0.10);
+  --glass-inner-less: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-2: rgba(255, 255, 255, 0.10);
+  --glass-border-strong: rgba(255, 255, 255, 0.28);
+  --glass-blur: blur(20px) saturate(140%);
+  --glass-blur-b: blur(18px) saturate(140%);
+  --glass-blur-inner: blur(14px) saturate(130%);
+  --glass-shadow: 0 8px 32px rgba(6, 14, 13, 0.42), 0 2px 10px rgba(12, 32, 30, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-radius: 16px;
+  --glass-text: #ffffff;
+  --glass-text-soft: rgba(255, 255, 255, 0.84);
+  --glass-text-dim: rgba(255, 255, 255, 0.72);
+  --glass-text-faint: rgba(255, 255, 255, 0.58);
+  /* Glass institucional unificado — sobrescribe tokens previos para unificar TODOS los paneles */
+  --glass-bg: rgba(32, 82, 79, 0.58);
+  --glass-bg-dark: rgba(18, 55, 53, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+  --glass-blur: blur(20px) saturate(130%);
+  --text-on-glass: #ffffff;
+  --text-secondary-on-glass: rgba(255, 255, 255, 0.78);
+  --institutional-green: #40807e;
+  /* Aliases para compatibilidad con código existente */
+  --glass-surface: var(--glass-bg);
+  --glass-surface-2: var(--glass-bg);
+  --glass-surface-3: var(--glass-bg-dark);
+  --glass-surface-strong: var(--glass-bg-dark);
+  --glass-surface-stronger: var(--glass-bg);
+  --glass-blur-b: var(--glass-blur);
+  --glass-blur-inner: var(--glass-blur);
+  --glass-text: var(--text-on-glass);
+  --glass-text-soft: var(--text-secondary-on-glass);
+  --glass-radius: 16px;
+  /* Admin chrome unificado — UNA sola variable para sidebar + topbar */
+  --admin-chrome-bg: var(--glass-bg);
+  --admin-chrome-blur: var(--glass-blur);
+  --admin-chrome-border: var(--glass-border);
+  --admin-chrome-shadow: var(--glass-shadow);
 }
 
 /* ---------- Base cliente — color que combina, ya no blanco plano ---------- */
@@ -45,26 +90,28 @@ body.has-bottom-nav .app h2,
 body.has-bottom-nav .app h3,
 body.has-bottom-nav .app h4 { font-family: "Playfair Display", serif; }
 
-/* ---------- HEADER — oscuro refinado ---------- */
+/* ---------- HEADER — glassmorphism unificado (referencia visual Cliente) ---------- */
 .user-header {
-  background: #0f1e1d; border-bottom: 1px solid rgba(255,255,255,0.07);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border); border-radius: 0;
+  box-shadow: var(--glass-shadow);
   height: auto; min-height: var(--header-h); padding: 10px var(--sp-5); gap: 16px;
+  position: sticky; top: 0; z-index: 120;
 }
-.user-header .brand .brand-name { color: #fff; letter-spacing: -0.015em; }
-.user-header .brand .brand-sub { color: #9bb3b1; font-weight: 500; }
+.user-header .brand .brand-name { color: var(--text-on-glass); letter-spacing: -0.015em; }
+.user-header .brand .brand-sub { color: var(--text-secondary-on-glass); font-weight: 500; }
 .user-header .brand-mark { background: transparent; border: 0; box-shadow: none; padding: 0; }
 .user-header .header-icon-btn,
-.user-header .header-icon-btn:hover { background: transparent; border: 0; box-shadow: none; color: #d8e6e5; }
-.header-search .input { background: rgba(255,255,255,0.09); color: #fff; border-color: rgba(255,255,255,0.14); }
-.header-search .input::placeholder { color: #9bb3b1; }
-.header-search .ico { color: #9bb3b1; }
-.header-icon-btn { color: #d8e6e5; }
-.header-icon-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
-.header-icon-btn .bubble { background: var(--teal); border-color: #0f1e1d; font-weight: 800; }
-.user-chip .chip-info.bold { color: #fff; }
-.user-chip .chip-info { color: #9bb3b1; }
-.user-chip:hover { background: rgba(255,255,255,0.08); }
+.user-header .header-icon-btn:hover { background: transparent; border: 0; box-shadow: none; color: var(--text-on-glass); }
+.header-search .input { background: rgba(255,255,255,0.14); color: var(--text-on-glass); border-color: var(--glass-border); }
+.header-search .input::placeholder { color: var(--text-secondary-on-glass); }
+.header-search .ico { color: var(--text-secondary-on-glass); }
+.header-icon-btn { color: var(--text-on-glass); }
+.header-icon-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.header-icon-btn .bubble { background: var(--institutional-green); border-color: transparent; font-weight: 800; color: #fff; }
+.user-chip .chip-info.bold { color: var(--text-on-glass); }
+.user-chip .chip-info { color: var(--text-secondary-on-glass); }
+.user-chip:hover { background: rgba(255,255,255,0.10); }
 /* Avatar del cliente (los avatares de admin no deben verse afectados) */
 body.has-bottom-nav .avatar { background: var(--grad-teal); }
 /* Barra inferior — estética como 2da imagen pero mejorada, bien ubicada en móvil y desktop */
@@ -338,8 +385,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   .menu-page::before { background: rgba(255,255,255,0.16); }
 }
 
-/* Cristal cliente — glassmorphism verde translúcido con #40807E como tinte
-   (restaura la superficie glass original con blur + texto blanco) */
+/* Cristal cliente — STACK obligatorio: background + backdrop-filter + border + shadow + radius */
 body.has-bottom-nav .card,
 body.has-bottom-nav .product-card,
 body.has-bottom-nav .order-card,
@@ -351,12 +397,12 @@ body.has-bottom-nav .summary-card,
 body.has-bottom-nav .capacity-card,
 body.has-bottom-nav .select-card,
 body.has-bottom-nav .file-drop {
-  background: rgba(64, 128, 126, 0.40);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(17, 28, 27, 0.14), 0 2px 10px rgba(64, 128, 126, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
 }
 body.has-bottom-nav .product-media,
 body.has-bottom-nav .cat-pill-card .cp-ico,
@@ -376,6 +422,12 @@ body.has-bottom-nav .cat-pill-card .cp-count {
   color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
 }
+body.has-bottom-nav .product-card .product-price { color: #d4fff0; text-shadow: 0 1px 2px rgba(0,0,0,0.24); }
+body.has-bottom-nav .product-card .product-price small { color: rgba(255,255,255,0.82); }
+body.has-bottom-nav .product-card .bx,
+body.has-bottom-nav .product-card .product-media .bx,
+body.has-bottom-nav .capacity-card .bx,
+body.has-bottom-nav .order-card .bx { color: rgba(255,255,255,0.94); }
 
 /* ============================================================
    MENÚ — NUEVO LAYOUT: sidebar de categorías siempre visible
@@ -416,9 +468,10 @@ body.has-bottom-nav .cat-pill-card .cp-count {
   display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 800; padding: 0 7px; border: 1px solid var(--teal-100);
 }
 .menu-side-list .cat-pill:hover { border-color: var(--teal-100); background: var(--teal-50); transform: translateX(2px); box-shadow: 0 6px 14px rgba(17,28,27,0.08); }
-.menu-side-list .cat-pill.active { background: var(--teal); border-color: var(--teal); color: #fff; box-shadow: 0 8px 18px rgba(64,128,126,0.28); }
-.menu-side-list .cat-pill.active .cp-ico { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); color: #fff; }
-.menu-side-list .cat-pill.active .cp-badge { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.28); color: #fff; }
+/* Cat-pill activo: acento blanco sólido intencional — unificado con admin (ver reporte) */
+.menu-side-list .cat-pill.active { background: #ffffff; border-color: #ffffff; color: var(--teal-700); box-shadow: 0 8px 18px rgba(6,14,13,0.28); }
+.menu-side-list .cat-pill.active .cp-ico { background: var(--teal-50); border-color: var(--teal-100); color: var(--teal-700); }
+.menu-side-list .cat-pill.active .cp-badge { background: var(--teal); border-color: var(--teal); color: #fff; }
 .menu-main { min-width: 0; }
 .menu-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; }
 .menu-toolbar .mt-search { position: relative; flex: 1 1 320px; max-width: 100%; }
@@ -460,10 +513,10 @@ body.has-bottom-nav .page .alert { border-radius: 14px; }
 body.has-bottom-nav .page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
 
 body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-bottom-nav .grid-4 .card {
-  border-radius: 18px; border-color: rgba(255, 255, 255, 0.26);
-  background: rgba(64, 128, 126, 0.36); backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 8px 28px rgba(17, 28, 27, 0.12), 0 2px 8px rgba(64, 128, 126, 0.18);
+  border-radius: var(--glass-radius); border-color: var(--glass-border);
+  background: var(--glass-surface-2); backdrop-filter: var(--glass-blur-b);
+  -webkit-backdrop-filter: var(--glass-blur-b);
+  box-shadow: var(--glass-shadow);
 }
 body.has-bottom-nav .card .card-title { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
 body.has-bottom-nav .card .card-sub { color: rgba(255, 255, 255, 0.85); }
@@ -662,4 +715,62 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
     border-color: var(--danger-strong);
     color: #fff;
   }
+/* ============================================================
+   Glass verde institucional — TODOS los paneles usuario/cliente
+   Sobrescribe cualquier fondo blanco residual con --glass-bg
+   ============================================================ */
+body.has-bottom-nav .card,
+body.has-bottom-nav .product-card,
+body.has-bottom-nav .order-card,
+body.has-bottom-nav .cat-pill-card,
+body.has-bottom-nav .menu-side,
+body.has-bottom-nav .menu-side-list .cat-pill,
+body.has-bottom-nav .orders-overview,
+body.has-bottom-nav .summary-card,
+body.has-bottom-nav .capacity-card,
+body.has-bottom-nav .select-card,
+body.has-bottom-nav .file-drop,
+body.has-bottom-nav .detail-eta,
+body.has-bottom-nav .grid-2 .card,
+body.has-bottom-nav .grid-3 .card,
+body.has-bottom-nav .grid-4 .card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: 16px !important;
+}
+/* Texto sobre glass usuario */
+body.has-bottom-nav .card .card-title,
+body.has-bottom-nav .product-card .product-name,
+body.has-bottom-nav .order-card .order-num,
+body.has-bottom-nav .menu-side .menu-side-title { color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.22); }
+body.has-bottom-nav .card .card-sub,
+body.has-bottom-nav .product-card .product-desc,
+body.has-bottom-nav .muted,
+body.has-bottom-nav .page-sub { color: var(--text-secondary-on-glass) !important; }
+/* Campos, tablas, modales ya cubiertos por main.css; refuerza drawer cliente */
+body.has-bottom-nav .modal,
+body.has-bottom-nav .drawer { background: var(--glass-bg) !important; backdrop-filter: var(--glass-blur) !important; border: 1px solid var(--glass-border) !important; box-shadow: var(--glass-shadow) !important; }
+/* Elimina barras blancas vacías */
+body.has-bottom-nav .app .page { background: transparent; }
+body.has-bottom-nav .table-wrap { background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important; }
+/* Responsive global sin scroll horizontal y filtros horizontales */
+html, body, .app, .page, .admin-layout, .admin-main, .admin-content { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+.adv-tabs, .cat-pills, .menu-side-list { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.adv-tabs .category-chip, .cat-pill, .cat-pill-card { flex-shrink: 0; min-height: 44px; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.btn, .input, .sb-link, .category-chip, .admin-menu-toggle, .sb-close { min-height: 44px; }
+img, .product-media, .cat-pill-card .cp-ico { max-width: 100%; object-fit: contain; }
+/* Modales fluidos */
+.modal, .drawer { width: calc(100% - 32px) !important; max-height: 90vh; overflow-y: auto; }
+/* Headers glass reales — Cliente, Admin Bar, Admin Dev (unificado) */
+.user-header, .admin-topbar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
 

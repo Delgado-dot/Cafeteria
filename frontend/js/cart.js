@@ -162,7 +162,7 @@ async function renderCart(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Seguir comprando</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Seguir comprando</button>
     <div class="page-title"><h1>Mi carrito</h1><span class="badge badge-primary" id="cartTotalTop">${money(Cart.total())}</span></div>
     ${banner}
     <div style="margin-bottom:18px" id="cartCapacity"></div>
@@ -198,7 +198,7 @@ async function renderCart(el) {
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
         <div class="ci-line">
           <div class="qty-stepper">
-            <button data-dec>−</button>
+            <button data-dec><i class="bx bx-minus"></i></button>
             <span class="qty-val" data-qty>${item.qty}</span>
             <button data-inc>+</button>
           </div>
@@ -213,7 +213,7 @@ async function renderCart(el) {
   });
 
   $('#summaryRows').innerHTML = Cart.items.map((i) =>
-    `<div class="summary-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
+    `<div class="summary-row"><span>${esc(i.name)} <i class="bx bx-x"></i> ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
 
   $('#btnCheckout').onclick = () => setRoute('checkout');
 }
@@ -269,7 +269,7 @@ async function renderCheckout(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')">← Volver al carrito</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')"><i class="bx bx-arrow-back"></i> Volver al carrito</button>
     <div class="page-title"><h1>Confirmar pedido</h1><span class="muted">${money(Cart.total())}</span></div>
     <p class="page-sub">Verifica el resumen antes de confirmar.</p>
 
@@ -462,7 +462,7 @@ async function renderCheckout(el) {
   /* resumen items */
   $('#checkoutItems').innerHTML = Cart.items.map((i) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
+      <span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
     </div>`).join('');
 
   $('#btnConfirm').onclick = confirmOrder;
