@@ -184,3 +184,244 @@ def upload_comprobante(request, pedido_id):
         return Response({'comprobante_url': result['secure_url']}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'detail': f'Error subiendo comprobante: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ===== Missing endpoints for frontend compatibility =====
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def verify_token(request):
+    """Verificar validez del token JWT"""
+    return Response({'valid': True, 'user': {
+        'id': request.user.id,
+        'email': request.user.email,
+        'name': request.user.get_full_name() or request.user.username,
+        'role': request.user.role,
+    }})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def me_view(request):
+    """Alias for /auth/me/ - frontend compatibility"""
+    user = request.user
+    return Response({
+        'id': user.id,
+        'email': user.email,
+        'name': user.get_full_name() or user.username,
+        'role': user.role,
+        'cargo': getattr(user, 'cargo', ''),
+        'aula': getattr(user, 'aula', ''),
+        'active': user.is_active,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_list(request):
+    """Listar usuarios (admin)"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    users = User.objects.all().values('id', 'email', 'first_name', 'last_name', 'role', 'cargo', 'aula', 'is_active', 'date_joined')
+    return Response(list(users))
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def permissions_bulk(request):
+    """Permisos por rol (admindev)"""
+    if request.user.role != 'admindev':
+        return Response({'detail': 'Solo admindev'}, status=status.HTTP_403_FORBIDDEN)
+    
+    from apps.accounts.models import RolePermission
+    from apps.accounts.constants import PERMISSIONS_CATALOG
+    
+    if request.method == 'GET':
+        perms = RolePermission.objects.all().values('role', 'code', 'enabled')
+        return Response(list(perms))
+    
+    # POST - bulk update
+    data = request.data
+    for item in data:
+        RolePermission.objects.update_or_create(
+            role=item['role'],
+            code=item['code'],
+            defaults={'enabled': item['enabled'], 'updated_by': request.user}
+        )
+    return Response({'detail': 'Permisos actualizados'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def product_categories(request):
+    """Categorías de productos"""
+    from apps.products.models import Producto
+    cats = Producto.objects.values_list('categoria', flat=True).distinct()
+    return Response(list(cats))
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_orders(request):
+    """Pedidos del usuario actual"""
+    from apps.orders.models import Order
+    from apps.orders.serializers import OrderSerializer
+    pedidos = Order.objects.filter(user=request.user).order_by('-created_at')
+    serializer = OrderSerializer(pedidos, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_orders(request):
+    """Todos los pedidos (admin)"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.orders.models import Order
+    from apps.orders.serializers import OrderSerializer
+    pedidos = Order.objects.all().order_by('-created_at')
+    serializer = OrderSerializer(pedidos, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def payment_methods(request):
+    """Métodos de pago disponibles"""
+    from apps.config.models import ConfiguracionCafeteria
+    cfg = ConfiguracionCafeteria.objects.first()
+    methods = []
+    if cfg:
+        if getattr(cfg, 'pago_efectivo_habilitado', True): methods.append({'code': 'efectivo', 'name': 'Efectivo'})
+        if getattr(cfg, 'pago_transferencia_habilitado', True): methods.append({'code': 'transferencia', 'name': 'Transferencia'})
+        if getattr(cfg, 'pago_deuna_habilitado', True): methods.append({'code': 'deuna', 'name': 'DEUNA'})
+    return Response(methods)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def payment_methods_admin(request):
+    """Métodos de pago (admin)"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    return payment_methods(request)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_payments(request):
+    """Pagos del usuario"""
+    from apps.payments.models import Payment
+    from apps.payments.serializers import PaymentSerializer
+    pagos = Payment.objects.filter(order__user=request.user).order_by('-fecha')
+    return Response(PaymentSerializer(pagos, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_payments(request):
+    """Todos los pagos (admin)"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.payments.models import Payment
+    from apps.payments.serializers import PaymentSerializer
+    pagos = Payment.objects.all().order_by('-fecha')
+    return Response(PaymentSerializer(pagos, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def review_payment(request, payment_id):
+    """Revisar/actualizar estado de pago (adminbar)"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.payments.models import Payment
+    from apps.payments.serializers import PaymentSerializer
+    pago = Payment.objects.filter(id=payment_id).first()
+    if not pago:
+        return Response({'detail': 'Pago no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = PaymentSerializer(pago, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def delivery_requests(request):
+    """Solicitudes de delivery"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.delivery.models import DeliveryRequest
+    from apps.delivery.serializers import DeliveryRequestSerializer
+    solicitudes = DeliveryRequest.objects.all().order_by('-fecha')
+    return Response(DeliveryRequestSerializer(solicitudes, many=True).data)
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def delivery_config(request):
+    """Configuración de delivery"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.delivery.models import DeliveryConfig
+    from apps.delivery.serializers import DeliveryConfigSerializer
+    config = DeliveryConfig.objects.first()
+    if request.method == 'GET':
+        if not config:
+            return Response({'enabled': False})
+        return Response(DeliveryConfigSerializer(config).data)
+    serializer = DeliveryConfigSerializer(config, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_config(request):
+    """Configuración actual de la cafetería"""
+    from apps.config.models import ConfiguracionCafeteria
+    from apps.config.serializers import ConfiguracionCafeteriaSerializer
+    config = ConfiguracionCafeteria.objects.first()
+    if not config:
+        return Response({'detail': 'No hay configuración'}, status=status.HTTP_404_NOT_FOUND)
+    return Response(ConfiguracionCafeteriaSerializer(config).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def audit_logs(request):
+    """Logs de auditoría"""
+    if request.user.role != 'admindev':
+        return Response({'detail': 'Solo admindev'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.audit.models import AuditLog
+    logs = AuditLog.objects.all().order_by('-fecha')[:100]
+    from apps.audit.serializers import AuditLogSerializer
+    return Response(AuditLogSerializer(logs, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def supplier_list(request):
+    """Lista de proveedores"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.suppliers.models import Proveedor
+    from apps.suppliers.serializers import ProveedorSerializer
+    return Response(ProveedorSerializer(Proveedor.objects.all(), many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stock_movements(request):
+    """Movimientos de stock"""
+    if request.user.role not in ['admindev', 'adminbar']:
+        return Response({'detail': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+    from apps.stock.models import MovimientoStock
+    from apps.stock.serializers import MovimientoStockSerializer
+    return Response(MovimientoStockSerializer(MovimientoStock.objects.all().order_by('-fecha'), many=True).data)
