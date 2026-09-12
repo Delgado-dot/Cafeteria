@@ -226,16 +226,17 @@ async function devUsers(el) {
     };
   });
 
-  $$('[data-edit]', el).forEach((b) => b.onclick = () => userFormModal(users.find((x) => x.id === parseInt(b.dataset.edit))));
-  $('#addUser').onclick = () => userFormModal(null);
+  $$('[data-edit]', el).forEach((b) => b.onclick = () => userFormModal(users.find((x) => x.id === parseInt(b.dataset.edit)), users));
+  $('#addUser').onclick = () => userFormModal(null, users);
 }
 
-function userFormModal(u) {
+function userFormModal(u, allUsers = []) {
   const isEdit = !!u;
   const roles = [['user', ROLE_LABELS.user], ['adminbar', ROLE_LABELS.adminbar], ['admindev', ROLE_LABELS.admindev]];
   const ov = modal(`
     <h3>${isEdit ? 'Editar usuario' : 'Nuevo usuario'}</h3>
     <div class="field"><label class="label">Nombre</label><input class="input" id="ufName" value="${isEdit ? esc(u.first_name + ' ' + u.last_name) : ''}"><div class="input-err-msg" id="ufNameErr"></div></div>
+    ${isEdit ? `<div class="field"><label class="label">Usuario</label><input class="input" id="ufUsername" value="${isEdit ? esc(u.username) : ''}"><div class="input-err-msg" id="ufUsernameErr"></div></div>` : ''}
     <div class="field"><label class="label">Correo institucional</label><input class="input" id="ufEmail" value="${isEdit ? esc(u.email) : ''}"><div class="input-err-msg" id="ufEmailErr"></div></div>
     <div class="field"><label class="label">Cargo / Rol de usuario</label><input class="input" id="ufCargo" value="${isEdit ? esc(u.cargo || '') : ''}"></div>
     <div class="field"><label class="label">Aula (si aplica)</label><input class="input" id="ufAula" value="${isEdit ? esc(u.aula || '') : ''}"></div>
@@ -249,11 +250,17 @@ function userFormModal(u) {
   $('[data-cancel]', ov).onclick = () => ov.remove();
   $('[data-save]', ov).onclick = async () => {
     const name = $('#ufName', ov).value.trim();
+    const username = isEdit ? $('#ufUsername', ov).value.trim() : null;
     const email = $('#ufEmail', ov).value.trim();
     let ok = true;
     if (!name) { $('#ufNameErr', ov).textContent = 'El nombre es obligatorio.'; ok = false; }
+    if (isEdit && !username) { $('#ufUsernameErr', ov).textContent = 'El nombre de usuario es obligatorio.'; ok = false; }
     if (!/^\S+@\S+\.\S+$/.test(email)) { $('#ufEmailErr', ov).textContent = 'Correo inválido.'; ok = false; }
     if (!isEdit && $('#ufPass', ov).value.length < 8) { $('#ufPassErr', ov).textContent = 'Mínimo 8 caracteres.'; ok = false; }
+    if (ok && isEdit && username) {
+      const conflict = (allUsers || []).some((x) => String(x.id) !== String(u.id) && x.username && x.username.toLowerCase() === username.toLowerCase());
+      if (conflict) { $('#ufUsernameErr', ov).textContent = 'Ya existe otro usuario con ese nombre de usuario.'; ok = false; }
+    }
     if (!ok) return;
 
     const [firstName, ...lastNameParts] = name.split(' ');
@@ -264,16 +271,17 @@ function userFormModal(u) {
     const aula = $('#ufAula', ov).value;
 
     if (isEdit) {
-      const response = await ApiClient.patch(API_ENDPOINTS.auth.userDetail(u.id), {
-        first_name, last_name, email, role, cargo, aula
-      });
+      const payload = { first_name, last_name, email, role, cargo, aula };
+      if (username) payload.username = username;
+      const response = await ApiClient.patch(API_ENDPOINTS.auth.userDetail(u.id), payload);
       if (!response.ok) {
-        toast('Error: ' + (response.data?.detail || 'Error al actualizar'), 'error');
+        if (response.data?.username?.[0]) $('#ufUsernameErr', ov).textContent = response.data.username[0];
+        toast('Error: ' + (response.data?.username?.[0] || response.data?.detail || 'Error al actualizar'), 'error');
         return;
       }
       // refresh session if edited own
       const sess = Auth.current();
-      if (sess && sess.id === u.id) { sess.name = name; sess.role = role; Auth.set(sess); }
+      if (sess && sess.id === u.id) { sess.name = name; sess.username = username || sess.username; sess.email = email; sess.role = role; Auth.set(sess); }
       logAudit('Editó usuario', name);
       toast('Usuario actualizado.', 'success');
     } else {

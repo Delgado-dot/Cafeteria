@@ -118,6 +118,9 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
             new_role = data.get("role")
             if new_role and new_role != target.role:
                 raise PermissionDenied("No puedes cambiar tu propio rol.")
+        # Solo el administrador desarrollador puede editar el username
+        if "username" in data and request_user.role != "admindev":
+            raise PermissionDenied("Solo el administrador desarrollador puede editar el nombre de usuario.")
         # adminbar no puede gestionar usuarios admindev
         if request_user.role == "adminbar" and target.role == "admindev":
             raise PermissionDenied("No tienes permiso para gestionar usuarios desarrolladores.")
@@ -165,7 +168,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         if response.status_code == 200:
             details = {
                 field: request.data[field]
-                for field in ("first_name", "last_name", "email", "role", "cargo", "aula", "avatar")
+                for field in ("username", "first_name", "last_name", "email", "role", "cargo", "aula", "avatar")
                 if field in request.data
             }
             if "is_active" in request.data:
