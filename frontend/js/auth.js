@@ -1,89 +1,74 @@
 /* ============================================================
-   auth.js — Inicio de sesión, recuperación de contraseña, sesión (JWT)
+   auth.js — Inicio de sesión, recuperación de contraseña, sesión (API real)
    ============================================================ */
 
-const API_BASE = 'http://localhost:8000/api';
-
 const Auth = {
-  current() { return Store.load('int_session', null); },
-  set(u) { Store.save('int_session', u); },
-  clear() { localStorage.removeItem('int_session'); localStorage.removeItem('int_refresh_token'); },
-
-  async login(email, password, remember) {
+  // Obtener usuario actual desde localStorage
+  current() {
+    return Store.load('int_session', null);
+  },
+  
+  // Guardar usuario actual
+  set(u) {
+    Store.save('int_session', u);
+  },
+  
+  // Limpiar sesión
+  clear() {
+    localStorage.removeItem('int_session');
+    ApiClient.clearTokens();
+  },
+  
+  // Login contra el backend real
+  async login(usernameOrEmail, password, remember) {
     try {
-      const res = await fetch(`${API_BASE}/auth/login/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const field = data.detail ? 'email' : Object.keys(data)[0];
-        const msg = data.detail || data[field] || 'Error de autenticación';
-        return { ok: false, field, msg };
+      // Intentar login con el backend
+      const response = await ApiClient.post(API_ENDPOINTS.auth.login, {
+        username: usernameOrEmail,
+        password: password,
+      }, false); // No incluir autorización en login
+      
+      if (!response.ok) {
+        // Manejar errores del servidor
+        const errorMsg = response.data?.detail || response.data?.password?.[0] || response.data?.username?.[0] || response.error || 'Error al iniciar sesión';
+        return { ok: false, field: 'email', msg: errorMsg };
       }
-      const user = data.user;
-      if (!user.active) return { ok: false, field: 'email', msg: 'Este usuario está desactivado.' };
-      this.set({ id: user.id, name: user.name, email: user.email, role: user.role, cargo: user.cargo, aula: user.aula });
-      localStorage.setItem('int_access_token', data.access);
-      localStorage.setItem('int_refresh_token', data.refresh);
-      if (remember) Store.save('int_remember', email);
-      logAudit('Inició sesión', user.name);
-      return { ok: true, user };
-    } catch (e) {
-      return { ok: false, field: 'email', msg: 'No se pudo conectar al servidor' };
+      
+      // Guardar tokens JWT
+      if (response.data.access) ApiClient.setToken(response.data.access);
+      if (response.data.refresh) ApiClient.setRefreshToken(response.data.refresh);
+      
+      // Obtener información del usuario autenticado
+      const meResponse = await ApiClient.get(API_ENDPOINTS.auth.me);
+      if (!meResponse.ok) {
+        return { ok: false, field: 'email', msg: 'Error al obtener información del usuario' };
+      }
+      
+      const user = meResponse.data;
+      const sessionData = {
+        id: user.id,
+        name: `${user.first_name} ${user.last_name}`.trim() || user.username,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        cargo: user.cargo,
+        aula: user.aula,
+        avatar: user.avatar,
+      };
+      
+      this.set(sessionData);
+      if (remember) Store.save('int_remember', usernameOrEmail);
+      
+      return { ok: true, user: sessionData };
+    } catch (error) {
+      return { ok: false, field: 'email', msg: error.message || 'Error de conexión' };
     }
   },
-
-  async logout() {
-    const refresh = localStorage.getItem('int_refresh_token');
-    if (refresh) {
-      try {
-        await fetch(`${API_BASE}/auth/logout/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('int_access_token')}` },
-          body: JSON.stringify({ refresh })
-        });
-      } catch (e) {}
-    }
+  
+  // Logout
+  logout() {
     this.clear();
-    logAudit('Cerró sesión', '');
   },
-
-  async refreshToken() {
-    const refresh = localStorage.getItem('int_refresh_token');
-    if (!refresh) return false;
-    try {
-      const res = await fetch(`${API_BASE}/auth/refresh/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('int_access_token', data.access);
-        if (data.refresh) localStorage.setItem('int_refresh_token', data.refresh);
-        return true;
-      }
-    } catch (e) {}
-    return false;
-  },
-
-  async fetchWithAuth(url, options = {}) {
-    let token = localStorage.getItem('int_access_token');
-    const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
-    let res = await fetch(url, { ...options, headers });
-    if (res.status === 401) {
-      const refreshed = await this.refreshToken();
-      if (refreshed) {
-        token = localStorage.getItem('int_access_token');
-        res = await fetch(url, { ...options, headers: { ...options.headers, 'Authorization': `Bearer ${token}` } });
-      }
-    }
-    return res;
-  },
-
-  getToken() { return localStorage.getItem('int_access_token'); }
 };
 
 /* ---------- Iconos compartidos con Admin Bar ---------- */
@@ -103,51 +88,47 @@ window.AUTH_ICO = AUTH_ICO;
 function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
-    <div class="login-section">
-      <div class="login-card">
-        <div class="login-head login-brand-head">
-          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
-          <h2>Iniciar sesión</h2>
-          <p>Ingresa con tu cuenta institucional</p>
-        </div>
-
-        <form id="loginForm" novalidate>
-          <div class="field">
-            <label class="label" for="li_email">Usuario o correo</label>
-            <div class="input-wrap">
-              <span class="leading-ico">${AUTH_ICO.user}</span>
-              <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
-            </div>
-            <div class="input-err-msg" id="li_emailErr"></div>
-          </div>
-          <div class="field">
-            <label class="label" for="li_pass">Contraseña</label>
-            <div class="input-group">
-              <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
-            </div>
-            <div class="input-err-msg" id="li_passErr"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 18px">
-            <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
-            <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
-        </form>
-
-        <div class="divider"></div>
-        <details class="demo-creds" style="font-size:var(--fs-sm)">
-          <summary style="cursor:pointer;color:var(--text-2);font-weight:var(--fw-semibold)">Ver credenciales de demostración</summary>
-          <div class="demo-list" style="margin-top:10px;display:grid;gap:8px;color:var(--text-2)">
-            <div><b>Usuario institucional</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">usuario@intesud.edu.ec</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">estudiante123</code></div>
-            <div><b>Administradora bar</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">adminbar@intesud.edu.ec</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">adminbar123</code></div>
-            <div><b>Admin desarrollador</b><br><code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">developer@system.local</code> / <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px">developer123</code></div>
-          </div>
-        </details>
+  <div class="login-screen login-screen--auth">
+    <div class="login-layout">
+      <div class="login-mascot" aria-hidden="true">
+        <img src="assets/images/panda-login.png" alt="">
       </div>
-    </div>`;
+      <div class="login-section">
+        <div class="login-card">
+          <div class="login-head login-brand-head">
+            <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
+            <h2>Iniciar sesión</h2>
+            <p>Ingresa con tu cuenta institucional</p>
+          </div>
+
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label class="label" for="li_email">Usuario o correo</label>
+              <div class="input-wrap">
+                <span class="leading-ico">${AUTH_ICO.user}</span>
+                <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
+                <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+              </div>
+              <div class="input-err-msg" id="li_emailErr"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="li_pass">Contraseña</label>
+              <div class="input-group">
+                <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
+                <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+              </div>
+              <div class="input-err-msg" id="li_passErr"></div>
+            </div>
+            <div class="login-options">
+              <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
+              <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>`;
 
   const remembered = Store.load('int_remember', null);
   if (remembered) { $('#li_email').value = remembered; $('#li_remember').checked = true; }
@@ -177,35 +158,31 @@ function renderLogin() {
 
     const btn = $('#li_submit');
     btn.disabled = true; btn.textContent = 'Ingresando...';
-    const resetBtn = () => { btn.disabled = false; btn.textContent = 'Iniciar sesión'; };
+    
     try {
       const res = await Auth.login(email, pass, $('#li_remember').checked);
       if (res.ok) {
         toast('¡Bienvenido, ' + res.user.name + '!', 'success');
+        // Redirección por rol: cada perfil aterriza en su propia interfaz.
         const dest = res.user.role === 'adminbar' ? 'adminbar/dashboard'
           : res.user.role === 'admindev' ? 'admindev/dashboard' : 'home';
-        if (location.hash.replace('#', '') === dest) {
-          handleRoute();
-          return;
-        }
-        setRoute(dest);
+        setTimeout(() => route(dest), 400);
       } else {
         setErr(res.field, res.msg);
         toast(res.msg, 'error');
-        resetBtn();
+        btn.disabled = false; btn.textContent = 'Iniciar sesión';
       }
-    } catch (err) {
-      console.error('Error al iniciar sesión:', err);
-      toast('No se pudo iniciar sesión. Intenta de nuevo.', 'error');
-      resetBtn();
+    } catch (error) {
+      setErr('email', 'Error de conexión con el servidor');
+      toast('Error de conexión. Verifica que el servidor esté disponible.', 'error');
+      btn.disabled = false; btn.textContent = 'Iniciar sesión';
     }
   });
 }
 
 /* ============================================================
-   RECUPERACIÓN DE CONTRASEÑA (simulada, 6 pasos)
+   RECUPERACIÓN DE CONTRASEÑA
    ============================================================ */
-const RECOVERY_CODE = '2024';
 
 function renderForgot() {
   const app = $('#app');
@@ -214,108 +191,18 @@ function renderForgot() {
     <div class="login-brand">
       <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
-      <p>Código de verificación de demostración: <b style="letter-spacing:2px">${RECOVERY_CODE}</b></p>
+      <p>Funcionalidad en desarrollo</p>
     </div>
     <div class="login-section">
       <div class="login-card">
         <div class="login-head">
-          <div id="recoverStepInd"></div>
-          <h2 style="margin-top:16px" id="recoverTitle"></h2>
-          <p id="recoverSub"></p>
+          <h2>Contacta al administrador</h2>
+          <p>Para recuperar tu contraseña, comunícate con el administrador de la cafetería.</p>
         </div>
-        <div id="recoverBody"></div>
+        <button class="btn btn-primary btn-block" id="backBtn">Volver al login</button>
       </div>
     </div>
   </div>`;
-  recoverStep(1);
-}
-
-function recoverStepInd(step) {
-  const steps = ['Correo', 'Código', 'Nueva contraseña', '¡Listo!'];
-  return steps.map((s, i) => {
-    const n = i + 1;
-    const cls = n < step ? 'done' : n === step ? 'current' : '';
-    return `<span class="badge ${cls === 'done' ? 'badge-success' : cls === 'current' ? 'badge-primary' : 'badge-outline'}" style="margin-right:6px">${n}. ${s}</span>`;
-  }).join('');
-}
-
-function recoverStep(step, ctx = { email: '' }) {
-  const body = $('#recoverBody');
-  const title = $('#recoverTitle');
-  const sub = $('#recoverSub');
-  const ind = $('#recoverStepInd');
-  if (!body) return;
-  ind.innerHTML = recoverStepInd(step);
-
-  const errBox = (id) => `<div class="input-err-msg" id="${id}"></div>`;
-
-  if (step === 1) {
-    title.textContent = 'Ingresa tu correo';
-    sub.textContent = 'Te enviaremos un código de verificación (simulado).';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Usuario o correo</label>
-        <input class="input" type="text" id="rvEmail" placeholder="usuario@intesud.edu.ec">
-        ${errBox('rvEmailErr')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvNext">Enviar código</button>`;
-    $('#rvNext').onclick = () => {
-      const email = $('#rvEmail').value.trim();
-      const err = $('#rvEmailErr');
-      if (!email) { err.textContent = 'Ingresa tu correo.'; return; }
-      err.textContent = '';
-      if (!Store.users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-        err.textContent = 'Usuario no encontrado en el sistema.';
-        return;
-      }
-      recoverStep(2, { email });
-    };
-  } else if (step === 2) {
-    title.textContent = 'Código de verificación';
-    sub.textContent = 'Ingresa el código de 4 dígitos enviado a tu correo.';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Código de verificación</label>
-        <input class="input" type="text" id="rvCode" inputmode="numeric" maxlength="4" placeholder="••••">
-        ${errBox('rvCodeErr')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvVerify">Validar código</button>`;
-    $('#rvVerify').onclick = () => {
-      const code = $('#rvCode').value.trim();
-      const err = $('#rvCodeErr');
-      if (!code) { err.textContent = 'El código no puede estar vacío.'; return; }
-      if (code !== RECOVERY_CODE) { err.textContent = 'Código incorrecto. Verifica e intenta de nuevo.'; return; }
-      recoverStep(3, ctx);
-    };
-  } else if (step === 3) {
-    title.textContent = 'Nueva contraseña';
-    sub.textContent = 'Crea tu nueva contraseña (mínimo 6 caracteres).';
-    body.innerHTML = `
-      <div class="field">
-        <label class="label">Nueva contraseña</label>
-        <input class="input" type="password" id="rvP1" placeholder="••••••">
-        ${errBox('rvP1Err')}
-      </div>
-      <div class="field">
-        <label class="label">Confirmar contraseña</label>
-        <input class="input" type="password" id="rvP2" placeholder="••••••">
-        ${errBox('rvP2Err')}
-      </div>
-      <button class="btn btn-primary btn-block" id="rvSave">Guardar nueva contraseña</button>`;
-    $('#rvSave').onclick = () => {
-      const p1 = $('#rvP1').value; const p2 = $('#rvP2').value;
-      const e1 = $('#rvP1Err'); const e2 = $('#rvP2Err');
-      e1.textContent = ''; e2.textContent = '';
-      if (p1.length < 6) { e1.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-      if (p1 !== p2) { e2.textContent = 'Las contraseñas no coinciden.'; return; }
-      recoverStep(4, ctx);
-    };
-  } else if (step === 4) {
-    title.textContent = '¡Contraseña actualizada!';
-    sub.textContent = 'Tu contraseña ha sido restablecida correctamente.';
-    body.innerHTML = `
-      <div class="empty-state" style="padding:20px 0">${AUTH_ICO.done}</div>
-      <button class="btn btn-primary btn-block" id="rvDone">Ir a iniciar sesión</button>`;
-    $('#rvDone').onclick = () => route('login');
-  }
+  
+  $('#backBtn').onclick = () => route('login');
 }

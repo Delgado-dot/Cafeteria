@@ -22,11 +22,12 @@ window.lpIcon = lpIcon;
 /* Icono por categoría/producto (para la vista previa del menú). */
 function lpProductIcon(cat) {
   const map = {
-    'Alimentos Preparados': 'restaurant',
-    'Bebidas Frías': 'drink',
-    'Bebidas Calientes': 'coffee',
-    'Snacks': 'food',
-    'Dulces': 'cookie',
+    Hamburguesas: 'burger',
+    'Hot Dogs': 'hotdog',
+    Sándwiches: 'sandwich',
+    'Papas y Salchipapas': 'fries',
+    Bebidas: 'drink',
+    Snacks: 'snack',
   };
   return lpIcon(map[cat] || 'plate');
 }
@@ -34,10 +35,8 @@ window.lpProductIcon = lpProductIcon;
 
 /* ---------- Datos del menú preview (demo, tomados de Store) ---------- */
 function lpMenuProducts() {
-  const list = Store.products || [];
-  const ids = ['p01', 'p04', 'p11', 'p16'];
-  const items = ids.map((id) => list.find((p) => p.id === id)).filter(Boolean);
-  return items.slice(0, 4);
+  // Productos se cargarán desde API en renderLanding
+  return [];
 }
 
 function lpSection(id, cls, inner) {
@@ -46,8 +45,24 @@ function lpSection(id, cls, inner) {
 
 function renderLanding() {
   const app = $('#app');
-  const cfg = Store.config;
-  const menuItems = lpMenuProducts();
+  
+  (async () => {
+    const [configRes, productsRes] = await Promise.all([
+      ApiClient.get(API_ENDPOINTS.config.get),
+      ApiClient.get(API_ENDPOINTS.products.list),
+    ]);
+    
+    let cfg = Store.config;
+    let products = [];
+    
+    if (configRes.ok) cfg = configRes.data;
+    
+    if (productsRes.ok) {
+      products = apiList(productsRes.data).map(normalizeApiProduct);
+    }
+    
+    // Usar 4 productos al azar como menú preview
+    const menuItems = products.slice(0, 4);
 
   const menuCards = menuItems.map((p) => {
     const soldOut = !p.available || p.stock === 0;
@@ -295,14 +310,14 @@ function renderLanding() {
   $('[data-lp-prev]')?.addEventListener('click', () => goTo(current - 1));
   $('[data-lp-next]')?.addEventListener('click', () => goTo(current + 1));
 
-  // Teclado ← →
+  // Teclado <i class="bx bx-arrow-back"></i> <i class="bx bx-right-arrow-alt"></i>
   document.addEventListener('keydown', (e) => {
     if (!document.body.classList.contains('is-landing')) return;
     if (e.key === 'ArrowRight') goTo(current + 1);
     if (e.key === 'ArrowLeft') goTo(current - 1);
   });
 
-  // Botón "Explora" / enlaces de navegación → cada atributo apunta a una slide
+  // Botón "Explora" / enlaces de navegación <i class="bx bx-right-arrow-alt"></i> cada atributo apunta a una slide
   const idToIndex = {};
   slides.forEach((s, i) => { if (s.id) idToIndex[s.id] = i; });
   const scrollTo = (id) => {
@@ -318,5 +333,6 @@ function renderLanding() {
 
   $$('[data-lp-login]').forEach((b) => b.addEventListener('click', () => setRoute('login')));
 
+  })();
 }
 window.renderLanding = renderLanding;

@@ -65,21 +65,29 @@ function refreshCartBadge() {
 }
 window.refreshCartBadge = refreshCartBadge;
 
-/* ---------- Capacidad (calculada desde pedidos reales) ---------- */
-function capacityInfo() {
-  const cfg = Store.config;
-  const total = cfg.capacity || 10;
-  const activeOrders = Store.orders.filter((o) => ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
-  const used = activeOrders.length;
-  const pct = total ? Math.round((used / total) * 100) : 0;
-  let state = 'DISPONIBLE', stateCls = 'success', warnMsg = '';
-  if (pct >= 100) { state = 'CAPACIDAD LLENA'; stateCls = 'danger'; }
-  else if (pct >= 70) { state = 'ALTA DEMANDA'; stateCls = 'warning'; warnMsg = 'Alta demanda. Tu pedido podría tardar más de lo habitual.'; }
-  return { pct, used, total, state, stateCls, warnMsg };
+/* ---------- Capacidad (desde API) ---------- */
+async function fetchCapacityInfo() {
+  try {
+    const response = await ApiClient.get(API_ENDPOINTS.config.get);
+    if (response.ok && response.data) {
+      const cfg = response.data;
+      const total = cfg.total_capacity;
+      const used = Math.min(cfg.current_capacity, total);
+      const pct = total ? Math.round((used / total) * 100) : 0;
+      let state = 'DISPONIBLE', stateCls = 'success', warnMsg = '';
+      if (pct >= 100) { state = 'CAPACIDAD LLENA'; stateCls = 'danger'; }
+      else if (pct >= 70) { state = 'ALTA DEMANDA'; stateCls = 'warning'; warnMsg = 'Alta demanda. Tu pedido podría tardar más de lo habitual.'; }
+      return { pct, used, total, state, stateCls, warnMsg, cfg };
+    }
+  } catch (error) {
+    console.error('Error fetching capacity info:', error);
+  }
+  // Fallback
+  return { pct: 0, used: 0, total: 10, state: 'DISPONIBLE', stateCls: 'success', warnMsg: '', cfg: {} };
 }
 
-function renderCapacityCard(container) {
-  const info = capacityInfo();
+async function renderCapacityCard(container) {
+  const info = await fetchCapacityInfo();
   let cls = 'bar-fill';
   if (info.stateCls === 'danger') cls += ' danger';
   else if (info.stateCls === 'warning') cls += ' warn';
@@ -96,37 +104,56 @@ function renderCapacityCard(container) {
 }
 window.renderCapacityCard = renderCapacityCard;
 
-function capacityAllows() {
-  const info = capacityInfo();
+async function capacityAllows() {
+  const info = await fetchCapacityInfo();
   return info.pct < 100;
 }
 window.capacityAllows = capacityAllows;
 
-/* ---------- Estado de cafetería / hora ---------- */
-function cafeStatus() {
-  const cfg = Store.config;
-  return { open: cfg.cafeOpen, orderOpen: cfg.orderOpen, orderClose: cfg.orderClose, breakStart: cfg.breakStart, breakEnd: cfg.breakEnd };
+/* ---------- Estado de cafetería / hora (desde API) ---------- */
+async function fetchCafeStatus() {
+  try {
+    const response = await ApiClient.get(API_ENDPOINTS.config.get);
+    if (response.ok && response.data) {
+      return {
+        open: response.data.is_open,
+        orderOpen: response.data.order_open_time,
+        orderClose: response.data.order_close_time,
+        breakStart: response.data.break_start,
+        breakEnd: response.data.break_end,
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching cafe status:', error);
+  }
+  return { open: true, orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15' };
 }
-window.cafeStatus = cafeStatus;
 
-function canPlaceOrder() {
-  const s = cafeStatus();
+async function canPlaceOrder() {
+  const s = await fetchCafeStatus();
   return s.open;
 }
 window.canPlaceOrder = canPlaceOrder;
 
+function cafeStatus() {
+  // Función síncrona para compatibilidad, devuelve valores por defecto
+  // Usar fetchCafeStatus() para valores reales
+  return { open: true, orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15' };
+}
+window.cafeStatus = cafeStatus;
+
 /* ============================================================
    PÁGINA: Carrito
    ============================================================ */
-function renderCart(el) {
+async function renderCart(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
-  const canOrder = canPlaceOrder();
-  const cap = capacityInfo();
+  const canOrder = await canPlaceOrder();
+  const cap = await fetchCapacityInfo();
 
   let banner = '';
   if (!canOrder) {
-    const s = cafeStatus();
+    const s = await fetchCafeStatus();
     banner = `<div class="alert danger"><span class="a-ico">${clientIcon('danger')}</span><div><div class="a-title">Cafetería cerrada.</div>Puedes revisar tu carrito, pero no se aceptan pedidos en este momento<br>(Receso: ${s.breakStart} - ${s.breakEnd} o fuera del horario ${s.orderOpen}-${s.orderClose}).</div></div>`;
   } else if (cap.stateCls === 'warning') {
     banner = `<div class="alert warning"><span class="a-ico">${clientIcon('warning')}</span><div><div class="a-title">Alta demanda.</div>Tu pedido podría tardar más de lo habitual.</div></div>`;
@@ -135,7 +162,7 @@ function renderCart(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Seguir comprando</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Seguir comprando</button>
     <div class="page-title"><h1>Mi carrito</h1><span class="badge badge-primary" id="cartTotalTop">${money(Cart.total())}</span></div>
     ${banner}
     <div style="margin-bottom:18px" id="cartCapacity"></div>
@@ -153,7 +180,7 @@ function renderCart(el) {
       </aside>
     </div>`;
 
-  renderCapacityCard($('#cartCapacity'));
+  await renderCapacityCard($('#cartCapacity'));
 
   const itemsWrap = $('#cartItems');
   if (!Cart.items.length) {
@@ -171,7 +198,7 @@ function renderCart(el) {
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
         <div class="ci-line">
           <div class="qty-stepper">
-            <button data-dec>−</button>
+            <button data-dec><i class="bx bx-minus"></i></button>
             <span class="qty-val" data-qty>${item.qty}</span>
             <button data-inc>+</button>
           </div>
@@ -186,7 +213,7 @@ function renderCart(el) {
   });
 
   $('#summaryRows').innerHTML = Cart.items.map((i) =>
-    `<div class="summary-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
+    `<div class="summary-row"><span>${esc(i.name)} <i class="bx bx-x"></i> ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
 
   $('#btnCheckout').onclick = () => setRoute('checkout');
 }
@@ -194,23 +221,55 @@ function renderCart(el) {
 /* ============================================================
    CHECKOUT
    ============================================================ */
-function renderCheckout(el) {
+async function renderCheckout(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
   if (!Cart.items.length) { toast('Tu carrito está vacío.', 'warning'); setRoute('menu'); return; }
-  const cap = capacityInfo();
+  
+  const cap = await fetchCapacityInfo();
   if (cap.stateCls === 'danger') { toast('La capacidad de preparación está completa. Intenta más tarde.', 'error'); setRoute('cart'); return; }
-
-  const cfg = Store.config;
-  const deliveryOn = cfg.deliveryEnabled && canPlaceOrder();
-  const payOptions = [
+  
+  const [configRes, deliveryConfigRes] = await Promise.all([
+    ApiClient.get(API_ENDPOINTS.config.get),
+    ApiClient.get(API_ENDPOINTS.delivery.config),
+  ]);
+  const cfg = configRes.ok ? configRes.data : {};
+  const deliveryCfg = deliveryConfigRes.ok ? deliveryConfigRes.data : {};
+  const canOrder = await canPlaceOrder();
+  const deliveryOn = !!deliveryCfg.enabled && canOrder;
+  
+  // Obtener métodos de pago desde API
+  let payOptions = [
     { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: clientIcon('mobile') },
     { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: clientIcon('transfer') },
     { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: clientIcon('cash') },
   ];
+  
+  const payMethodsRes = await ApiClient.get(API_ENDPOINTS.payments.methods);
+  if (payMethodsRes.ok && payMethodsRes.data) {
+    const list = payMethodsRes.data.results || payMethodsRes.data;
+    if (Array.isArray(list) && list.length) {
+      payOptions = list.map(pm => ({
+        id: pm.code,
+        dbId: pm.id,
+        name: pm.name,
+        desc: pm.description || '',
+        icon: clientIcon({ deuna: 'mobile', transferencia: 'transfer', efectivo: 'cash' }[pm.code] || 'credit-card'),
+        requires_voucher: pm.requires_voucher,
+        instructions: pm.instructions || '',
+        bank_name: pm.bank_name || '',
+        account_holder: pm.account_holder || '',
+        account_type: pm.account_type || '',
+        account_number: pm.account_number || '',
+        holder_id: pm.holder_id || '',
+        phone: pm.phone || '',
+        qr_info: pm.qr_info || '',
+      }));
+    }
+  }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')">← Volver al carrito</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')"><i class="bx bx-arrow-back"></i> Volver al carrito</button>
     <div class="page-title"><h1>Confirmar pedido</h1><span class="muted">${money(Cart.total())}</span></div>
     <p class="page-sub">Verifica el resumen antes de confirmar.</p>
 
@@ -276,9 +335,8 @@ function renderCheckout(el) {
   });
 
   function renderAulaSelector() {
-    const cfg2 = Store.config;
     const detail = $('#deliveryDetail');
-    const pisos = cfg2.deliveryDays && cfg2.deliveryDays.length ? [1, 2, 3] : [1, 2, 3];
+    const pisos = cfg.delivery_days && cfg.delivery_days.length ? [1, 2, 3] : [1, 2, 3];
     let state = { piso: '1', aula: '' };
     detail.innerHTML = `
       <div class="alert info"><span class="a-ico">${clientIcon('delivery')}</span><div><div class="a-title">Delivery interno.</div>Selecciona el piso y el aula dentro del edificio. Cobertura: Piso 1 - 3.</div></div>
@@ -331,7 +389,7 @@ function renderCheckout(el) {
   /* pagos */
   const payWrap = $('#payOptions');
   payWrap.innerHTML = payOptions.map((p) => `
-    <div class="select-card" data-p="${p.id}">
+    <div class="select-card" data-p="${p.id}" data-db-id="${p.dbId || ''}" data-requires-voucher="${p.requires_voucher || false}">
       <div class="sc-ico">${p.icon}</div>
       <div><div class="sc-name">${p.name}</div><div class="sc-desc">${p.desc}</div></div>
     </div>`).join('');
@@ -340,63 +398,71 @@ function renderCheckout(el) {
       payWrap.querySelectorAll('[data-p]').forEach((x) => x.classList.remove('active'));
       el.classList.add('active');
       window._payMethod = el.dataset.p;
+      window._payMethodDbId = el.dataset.dbId || payOptions.find(x=>x.id===el.dataset.p)?.dbId || '';
+      window._payMethodRequiresVoucher = el.dataset.requiresVoucher === 'true';
       renderPayDetail(el.dataset.p);
     };
   });
-  window._payMethod = 'deuna';
-  renderPayDetail('deuna');
+  window._payMethod = payOptions[0]?.id || 'deuna';
+  window._payMethodDbId = payOptions[0]?.dbId || '';
+  window._payMethodRequiresVoucher = payOptions[0]?.requires_voucher || false;
+  renderPayDetail(window._payMethod);
 
   function renderPayDetail(method) {
     const detail = $('#payDetail');
+    const payOpt = payOptions.find(p => p.id === method);
+    if (!payOpt) { detail.innerHTML = ''; return; }
     if (method === 'deuna') {
+      const hasData = payOpt.account_holder || payOpt.phone || payOpt.qr_info || payOpt.instructions;
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con DEUNA.</div>Escanea el código QR para pagar <b>${money(Cart.total())}</b>. Se validará en línea y se mostrará en el estado del pedido.</div></div>
-        <div class="qr-box"><div class="qr-pattern"></div></div>
-        <div style="text-align:center" class="muted small" style="margin-top:10px">Código QR simulado — Total: <b>${money(Cart.total())}</b></div>`;
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con ${esc(payOpt.name)}.</div>${payOpt.instructions ? esc(payOpt.instructions) + '<br>' : ''}Escanea el código QR para pagar <b>${money(Cart.total())}</b>.</div></div>
+        ${payOpt.account_holder ? `<div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)"><div class="muted small">Titular</div><div class="bold">${esc(payOpt.account_holder)}</div>${payOpt.phone ? `<div class="muted small">Celular: ${esc(payOpt.phone)}</div>` : ''}</div>` : ''}
+        ${payOpt.qr_info ? `<div class="card" style="margin-top:12px;background:var(--surface-2)"><div class="muted small">QR / Código</div><div class="bold" style="word-break:break-all">${esc(payOpt.qr_info)}</div></div>` : '<div class="qr-box"><div class="qr-pattern"></div></div>'}
+        ${payOpt.phone && !payOpt.account_holder ? `<div class="muted small" style="text-align:center;margin-top:10px">Identificador: <b>${esc(payOpt.phone)}</b> — Total: <b>${money(Cart.total())}</b></div>` : `<div style="text-align:center" class="muted small" style="margin-top:10px">Total: <b>${money(Cart.total())}</b></div>`}
+        ${!hasData ? `<div class="tiny muted" style="text-align:center;margin-top:8px">Configurado por administradora del bar</div>` : ''}`;
     } else if (method === 'transferencia') {
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('transfer')}</span><div><div class="a-title">Transferencia.</div>Realiza una transferencia por <b>${money(Cart.total())}</b> y adjunta el comprobante (simulado).</div></div>
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('transfer')}</span><div><div class="a-title">Transferencia.</div>Realiza una transferencia por <b>${money(Cart.total())}</b> y adjunta el comprobante.${payOpt.instructions ? '<br><span class="tiny">' + esc(payOpt.instructions) + '</span>' : ''}</div></div>
         <div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)">
-          <div class="muted small">Banco Sudamericano · Cta. ahorros</div>
-          <div class="bold" style="font-size:1.15rem">220 456 7890 1</div>
-          <div class="muted small">Titular: Bar INTESUD</div>
-          <div class="muted small">Cédula/RUC: 0999999999001</div>
+          ${payOpt.bank_name ? `<div class="muted small">${esc(payOpt.bank_name)}${payOpt.account_type ? ' · ' + esc(payOpt.account_type) : ''}</div>` : '<div class="muted small">Banco</div>'}
+          ${payOpt.account_number ? `<div class="bold" style="font-size:1.15rem">${esc(payOpt.account_number)}</div>` : '<div class="tiny muted">Número no configurado</div>'}
+          ${payOpt.account_holder ? `<div class="muted small">Titular: ${esc(payOpt.account_holder)}</div>` : ''}
+          ${payOpt.holder_id ? `<div class="muted small">Identificación: ${esc(payOpt.holder_id)}</div>` : ''}
         </div>
         <div style="margin-top:12px">
-          <label class="label">Comprobante (simulado)</label>
+          <label class="label">Comprobante</label>
           <div class="file-drop" id="fu"><div class="fd-ico">${clientIcon('clip')}</div><div>Haz clic para cargar tu comprobante</div><div class="tiny">PNG, JPG o PDF — máx 2MB</div></div>
+          <input id="voucherInput" type="file" accept="image/png,image/jpeg,application/pdf" hidden>
           <div class="tiny muted" id="fuName" style="margin-top:6px"></div>
         </div>`;
       const fu = $('#fu');
-      const fuName = $('#fuName');
-      let voucherFile = null;
-      
-      fu.onclick = () => { fu.querySelector('input[type=file]')?.click(); };
-      
-      fu.innerHTML += '<input type="file" accept="image/*,application/pdf" style="display:none" id="fuInput">';
-      const fuInput = $('#fuInput');
-      
-      fuInput.onchange = (e) => {
-        const file = e.target.files?.[0];
+      const voucherInput = $('#voucherInput');
+      fu.onclick = () => voucherInput.click();
+      voucherInput.onchange = () => {
+        const file = voucherInput.files?.[0];
         if (!file) return;
-        
-        window._voucherFile = file;
-        fuName.textContent = file.name;
+        if (file.size > 2 * 1024 * 1024) {
+          voucherInput.value = '';
+          delete window._voucher;
+          toast('El comprobante supera el máximo de 2 MB.', 'warning');
+          return;
+        }
         fu.classList.add('success');
-        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante listo: ${file.name}</div>`;
-        window._voucher = true;
+        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante cargado</div>`;
+        $('#fuName').textContent = file.name;
+        window._voucher = file;
       };
     } else if (method === 'efectivo') {
       detail.innerHTML = `
-        <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">${clientIcon('cash')}</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b></div></div>
-        <div class="capacity-card"><div style="text-align:center"><span class="badge badge-warning">Pendiente de pago</span></div><div class="muted small" style="text-align:center;margin-top:8px">Abona tu pedido al retirarlo en la cafetería. Total: <b>${money(Cart.total())}</b></div></div>`;
+        <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">${clientIcon('cash')}</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b>${payOpt.instructions ? '<br><span class="tiny">' + esc(payOpt.instructions) + '</span>' : ''}</div></div>
+        <div class="capacity-card"><div style="text-align:center"><span class="badge badge-warning">Pendiente de pago</span></div><div class="muted small" style="text-align:center;margin-top:8px">Abona tu pedido al retirarlo en la cafetería. Total: <b>${money(Cart.total())}</b>${payOpt.instructions ? '<br>' + esc(payOpt.instructions) : ''}</div></div>`;
     }
   }
 
   /* resumen items */
   $('#checkoutItems').innerHTML = Cart.items.map((i) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
+      <span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
     </div>`).join('');
 
   $('#btnConfirm').onclick = confirmOrder;
@@ -417,71 +483,59 @@ async function confirmOrder() {
   if (delivery === 'delivery') {
     if (!window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
   }
-  if (pay === 'transferencia' && !window._voucher) { toast('Carga el comprobante de transferencia.', 'warning'); $('#fu')?.classList.add('err'); return; }
+  if (window._payMethodRequiresVoucher && !window._voucher) { toast('Carga el comprobante requerido.', 'warning'); $('#fu')?.classList.add('err'); return; }
 
-  const user = currentUser();
-  const num = nextOrderNumber();
-  const prep = estimatedTime();
-  const now = new Date();
-  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const btn = $('[id="btnConfirm"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Confirmando...'; }
 
-  let paymentStatus = 'pending';
-  if (pay === 'efectivo') paymentStatus = 'pending';
+  try {
+    // Construir datos del pedido para la API - payment_method dinámico desde métodos activos
+    const pmId = window._payMethodDbId ? parseInt(window._payMethodDbId) : 1;
+    const orderData = {
+      items: Cart.items.map((i) => ({
+        product_id: typeof i.productId === 'string' ? parseInt(i.productId.replace('p', '')) : i.productId,
+        quantity: i.qty,
+        addons: i.addons ? i.addons.map(a => ({ addon_id: a.id, quantity: 1 })) : [],
+        note: i.note || '',
+      })),
+      delivery_method: delivery === 'delivery' ? 'delivery' : 'pickup',
+      delivery_info: delivery === 'delivery' ? window._deliveryInfo : undefined,
+      payment_method: pmId,
+      priority: 'normal',
+      note: '',
+    };
 
-  const order = {
-    id: num,
-    userEmail: user.email, userName: user.name,
-    date: now.toISOString().slice(0, 10), time,
-    items: Cart.items.map((i) => ({ productId: i.productId, qty: i.qty, name: i.name, price: i.price })),
-    total: Cart.total(),
-    status: 'queue',
-    priority: 'normal',
-    delivery: delivery === 'delivery' ? 'delivery' : 'pickup',
-    deliveryInfo: delivery === 'delivery' ? window._deliveryInfo : null,
-    payment: pay,
-    paymentStatus: pay === 'efectivo' ? 'pending' : 'pending',
-    prepMin: prep, eta: 'En cola', note: '',
-  };
-
-  const orders = Store.orders;
-  orders.unshift(order);
-  Store.orders = orders;
-
-  // decrement stock
-  const products = Store.products;
-  order.items.forEach((i) => {
-    const p = products.find((x) => x.id === i.productId);
-    if (p) p.stock = Math.max(0, p.stock - i.qty);
-  });
-  Store.products = products;
-
-  // increment capacity (simulado)
-  const cfg = Store.config;
-  cfg.currentCapacity = Math.min(cfg.capacity, cfg.currentCapacity + 1);
-  Store.config = cfg;
-
-  logAudit('Realizó pedido', num);
-
-  // Subir comprobante si es transferencia
-  if (pay === 'transferencia' && window._voucherFile) {
-    try {
-      const fu = $('#fu');
-      fu.classList.add('loading');
-      fu.innerHTML = `<span class="spinner" style="width:24px;height:24px;border-width:2.5px"></span><div>Subiendo comprobante...</div>`;
-      
-      await uploadComprobante(window._voucherFile, num);
-      fu.classList.remove('loading');
-      fu.classList.add('success');
-      fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante subido</div>`;
-    } catch (err) {
-      console.error('Error subiendo comprobante:', err);
-      // No bloquear el pedido, solo avisar
-      toast('Pedido creado, pero error subiendo comprobante', 'warning');
+    let requestData = orderData;
+    if (window._voucher instanceof File) {
+      requestData = new FormData();
+      Object.entries(orderData).forEach(([key, value]) => {
+        if (value === undefined) return;
+        requestData.append(
+          key,
+          key === 'items' || key === 'delivery_info' ? JSON.stringify(value) : String(value),
+        );
+      });
+      requestData.append('voucher', window._voucher, window._voucher.name);
     }
-  }
 
-  Cart.clear();
-  renderConfirmation(order);
+    // Hacer POST a la API
+    const response = await ApiClient.post(API_ENDPOINTS.orders.create, requestData);
+
+    if (!response.ok) {
+      const errMsg = response.data?.detail || response.data?.items?.[0] || 'Error al crear el pedido';
+      toast('Error: ' + errMsg, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; }
+      return;
+    }
+
+    // Pedido creado exitosamente
+    const order = response.data;
+    Cart.clear();
+    renderConfirmation(order);
+  } catch (error) {
+    toast('Error de conexión: ' + error.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; }
+  }
 }
 
 function nextOrderNumber() {
@@ -513,4 +567,3 @@ function renderConfirmation(order) {
       </div>
     </div>`;
 }
-
