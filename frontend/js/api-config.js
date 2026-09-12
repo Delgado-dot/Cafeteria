@@ -167,6 +167,35 @@ const ApiClient = {
   async get(url) {
     return ApiClient._request('GET', url);
   },
+
+  // Para historiales y agregados: nunca devolver un total parcial si falla
+  // una página. El menú conserva su carga paginada independiente.
+  async getAll(url) {
+    const items = [];
+    const visited = new Set();
+    const origin = new URL(url, API_BASE_URL).origin;
+    let next = new URL(url, API_BASE_URL).href;
+    try {
+      while (next) {
+        const pageUrl = new URL(next);
+        if (pageUrl.origin !== origin || visited.has(next)) {
+          return { ok: false, error: 'La paginación recibida no es válida.' };
+        }
+        visited.add(next);
+        const response = await ApiClient.get(next);
+        if (!response.ok) return response;
+        const data = response.data;
+        if (!Array.isArray(data) && !Array.isArray(data?.results)) {
+          return { ok: false, error: 'No se pudo cargar la lista completa.' };
+        }
+        items.push(...apiList(data));
+        next = !Array.isArray(data) && data.next ? new URL(data.next, next).href : null;
+      }
+      return { ok: true, data: items };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  },
   
   // POST
   async post(url, data, includeAuth = true) {

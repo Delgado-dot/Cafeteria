@@ -36,8 +36,12 @@ window.route = route;
 
 function setRoute(r) {
   if (!r) r = 'home';
+  if (window.location.hash === '#' + r) {
+    handleRoute();
+    return;
+  }
+  // hashchange realiza el render una sola vez.
   window.location.hash = r;
-  handleRoute();
 }
 window.setRoute = setRoute;
 
@@ -255,6 +259,7 @@ function userHome(el) {
     const cap = await fetchCapacityInfo();
     const featured = products.filter((p) => p.available && p.stock > 0).slice(0, 4);
     const open = await canPlaceOrder();
+    if (!app.isConnected) return;
 
     let statusBanner = '';
     if (!open) {
@@ -375,6 +380,7 @@ function userMenuPage(el) {
   // Cargar productos (todas las páginas) y categorías reales desde la API
   (async () => {
     const [products, cats] = await Promise.all([fetchAllProducts(), fetchCategories()]);
+    if (!app.isConnected) return;
     
     let activeCat = sessionStorage.getItem('int_cat') || 'Todas';
     let search = sessionStorage.getItem('int_search') || '';
@@ -472,15 +478,18 @@ async function fetchProductAddons(productId) {
 
 function userProductPage(el) {
   const app = el || $('#mainContent') || $('#app');
+  const productId = params.product;
 
   (async () => {
     const products = await fetchAllProducts();
-    const p = products.find((product) => String(product.id) === String(params.product));
+    if (!app.isConnected) return;
+    const p = products.find((product) => String(product.id) === String(productId));
     if (!p) { setRoute('menu'); return; }
     const soldOut = !p.available || p.stock === 0;
     const addons = p.addons || [];
     const maxQty = p.stock;
     const canOrder = await canPlaceOrder();
+    if (!app.isConnected) return;
 
     app.innerHTML = `
       <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Volver al menú</button>

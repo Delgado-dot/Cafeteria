@@ -3,14 +3,13 @@ const path = require('path');
 
 const root = path.join(__dirname, '..', '..', 'frontend');
 
-// jsdom es dev-dependency no persistente: si no está disponible este smoke
-// test se salta (no rompe `npm test`), si está presente ejecuta la verificación.
+// Una dependencia ausente debe fallar; no equivale a una prueba aprobada.
 let JSDOM;
 try {
   JSDOM = require(path.join(root, 'node_modules', 'jsdom')).JSDOM;
 } catch (e) {
-  console.log('SKIP: jsdom no disponible; landing-smoke.test.js omitido.');
-  process.exit(0);
+  console.error('ERROR: falta jsdom. Instala las dependencias del frontend antes de ejecutar las pruebas.');
+  process.exit(1);
 }
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const landingCss = fs.readFileSync(path.join(root, 'css', 'landing.css'), 'utf8');

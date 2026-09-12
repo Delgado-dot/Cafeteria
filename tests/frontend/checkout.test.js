@@ -10,8 +10,8 @@ let JSDOM;
 try {
   JSDOM = require(path.join(root, 'node_modules', 'jsdom')).JSDOM;
 } catch (e) {
-  console.log('SKIP: jsdom no disponible; checkout.test.js omitido.');
-  process.exit(0);
+  console.error('ERROR: falta jsdom. Instala las dependencias del frontend antes de ejecutar las pruebas.');
+  process.exit(1);
 }
 
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -77,7 +77,7 @@ const mockOrderCreated = {
   updated_at: '2026-09-11T12:00:00Z',
 };
 
-window.eval(js);
+window.eval(js + '\n;window.__Cart = Cart;');
 
 // --- Mocks de red (solo dentro del test) ---
 let failCapacity = false;
@@ -172,6 +172,9 @@ async function main() {
   ok(confPickup.includes('Retiro en cafetería') && !confPickup.includes('Delivery interno'), 'Pickup mostrado como "Retiro en cafetería"');
   ok(!confPickup.includes('undefined'), 'Pickup: sin "undefined"');
 
+  window.__Cart.items = structuredClone(seededCart);
+  window.__Cart.save();
+
   // 7 + 9. Error de capacidad -> NO crea pedido, NO limpia carrito
   failCapacity = true;
   setupConfirmState('deuna');
@@ -185,7 +188,8 @@ async function main() {
   failCapacity = false;
 
   // Re-sembrar carrito para escenarios siguientes
-  window.localStorage.setItem('int_cart', JSON.stringify(seededCart));
+  window.__Cart.items = structuredClone(seededCart);
+  window.__Cart.save();
 
   // 8 + 9. Error de creación -> NO limpia carrito, error visible
   failOrder = true;
@@ -197,7 +201,8 @@ async function main() {
   failOrder = false;
 
   // 11. Doble envío -> un solo POST
-  window.localStorage.setItem('int_cart', JSON.stringify(seededCart));
+  window.__Cart.items = structuredClone(seededCart);
+  window.__Cart.save();
   setupConfirmState('deuna');
   const beforeDouble = orderPostCount;
   const p1 = window.confirmOrder();

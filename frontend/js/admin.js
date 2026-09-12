@@ -148,6 +148,8 @@ function animateSalesMetrics(el) {
 async function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
+  const requestedHash = window.location.hash;
+  const requestedUserId = currentUser().id;
   const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
   const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
   const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
@@ -155,7 +157,7 @@ async function renderBarAdmin(page, params) {
 
   let queueCount = 0, prepCount = 0, readyCount = 0;
   try {
-    const r = await ApiClient.get(API_ENDPOINTS.orders.all);
+    const r = await ApiClient.getAll(API_ENDPOINTS.orders.all);
     if (r.ok) {
       const orders = apiList(r.data);
       queueCount = orders.filter((o) => o.status === 'queue').length;
@@ -163,6 +165,7 @@ async function renderBarAdmin(page, params) {
       readyCount = orders.filter((o) => o.status === 'ready').length;
     }
   } catch(e) { /* Dashboard se renderiza sin métricas si falla la carga */ }
+  if (window.location.hash !== requestedHash || currentUser()?.id !== requestedUserId) return;
 
   app.innerHTML = `
     <div class="admin-layout">
@@ -411,7 +414,7 @@ async function barConfigTabs(el, initialTab) {
   el.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div></div>`;
   const [configRes, productsRes] = await Promise.all([
     ApiClient.get(API_ENDPOINTS.config.get),
-    ApiClient.get(API_ENDPOINTS.products.list),
+    ApiClient.getAll(API_ENDPOINTS.products.list),
   ]);
   if (!configRes.ok) {
     el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudo cargar la configuración');
@@ -537,7 +540,7 @@ async function barSuppliers(el) {
     const wrap = $('#suppliersListPage', el);
     if (!wrap) return;
     wrap.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
-    const res = await ApiClient.get(API_ENDPOINTS.suppliers.list);
+    const res = await ApiClient.getAll(API_ENDPOINTS.suppliers.list);
     if (!res.ok) {
       wrap.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los proveedores');
       return;
@@ -583,7 +586,7 @@ async function barSuppliers(el) {
 
 async function barReports(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.payments.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.payments.all), ApiClient.getAll(API_ENDPOINTS.products.list) ]);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
   const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || []}));
   const orders = ordersNorm.filter(isValidSale);
@@ -768,9 +771,9 @@ function supplierFormModal(supplier, onSave) {
 async function barDashboard(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="grid grid-4" style="margin-top:12px"><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div></div>`;
   const [ordersRes, productsRes, paymentsRes, configRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.orders.all),
-    ApiClient.get(API_ENDPOINTS.products.list),
-    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.products.list),
+    ApiClient.getAll(API_ENDPOINTS.payments.all),
     ApiClient.get(API_ENDPOINTS.config.get),
   ]);
   const rawOrders = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
@@ -926,7 +929,7 @@ async function barOrders(el) {
   let orders = [];
   let shouldRender = true;
   try {
-    const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+    const ordersRes = await ApiClient.getAll(API_ENDPOINTS.orders.all);
     if (!ordersRes.ok) throw new Error(ordersRes.data?.detail || 'Error al cargar pedidos');
     // Soporte paginado DRF {count, results} y array plano
     orders = apiList(ordersRes.data);
@@ -1158,7 +1161,7 @@ async function barProducts(el) {
       <tbody id="prodRows"></tbody>
     </table></div>`;
 
-  const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+  const productsRes = await ApiClient.getAll(API_ENDPOINTS.products.list);
   if (!productsRes.ok) {
     el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los productos');
     return;
@@ -1573,7 +1576,7 @@ function stockBadge(p) {
 async function barStock(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [productsRes, historyRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.products.list), ApiClient.get(API_ENDPOINTS.stock.movements) ]);
+  const [productsRes, historyRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.products.list), ApiClient.getAll(API_ENDPOINTS.stock.movements) ]);
   if (!productsRes.ok) { el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>','Error','No se pudo cargar stock'); return; }
   const rawProducts = apiList(productsRes.data);
   const products = rawProducts.map(p=>({ ...normalizeApiProduct(p), stockHistory: p.stock }));
@@ -1762,7 +1765,7 @@ async function barStockHistory(el) {
       <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
       <tbody id="stockHistoryRows"><tr><td colspan="5"><div class="skeleton" style="height:40px"></div></td></tr></tbody></table></div>
   `;
-  const res = await ApiClient.get(API_ENDPOINTS.stock.movements);
+  const res = await ApiClient.getAll(API_ENDPOINTS.stock.movements);
   if (!res.ok) { $('#stockHistoryRows',el).innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">No se pudo cargar historial</td></tr>`; return; }
   const raw = res.data.results || res.data || [];
   const history = raw.map(h=>({ date:(h.created_at||'').slice(0,10), time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', name: h.product_name, delta: (h.movement_type==='purchase'||h.movement_type==='return'||(h.movement_type==='adjustment' && h.new_stock>h.previous_stock) ? h.quantity : -h.quantity), newVal: h.new_stock, productId: h.product }));
@@ -1814,8 +1817,8 @@ async function barStockHistory(el) {
 async function barPayments(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
   const [paymentsRes, ordersRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.payments.all),
-    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.payments.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
   ]);
   if (!paymentsRes.ok) {
     el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los pagos');
@@ -2070,7 +2073,7 @@ async function openPaymentMethodConfig(code) {
 
 async function showVoucherModal(orderId) {
   let order = null;
-  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  const payAll = await ApiClient.getAll(API_ENDPOINTS.payments.all);
   if (payAll.ok) {
     const p=apiList(payAll.data).find(x=> String(x.id)===String(orderId) || String(x.order_number)===String(orderId));
     if (p) order={ id:p.order_number||p.order, userName:p.user_name, date:(p.created_at||'').slice(0,10), time: p.created_at? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:p.status, total:parseFloat(p.amount||0), payment:p.payment_method_code };
@@ -2124,7 +2127,7 @@ async function showVoucherModal(orderId) {
 async function barPaymentDetail(el, id) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px"></div>`;
   let order = null;
-  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  const payAll = await ApiClient.getAll(API_ENDPOINTS.payments.all);
   if (payAll.ok) {
     const foundPay = apiList(payAll.data).find(p=> String(p.id)===String(id) || String(p.order_number)===String(id));
     if (foundPay) {
@@ -2164,7 +2167,7 @@ async function barPaymentDetail(el, id) {
 async function barSalesDashboard(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [ordersRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  const [ordersRes, productsRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.products.list) ]);
   if (!ordersRes.ok) { el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>','Error','No se pudo cargar ventas'); return; }
   const raw = ordersRes.data.results || ordersRes.data || [];
   const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
@@ -2424,7 +2427,7 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
    HISTORIAL DE VENTAS
    ============================================================ */
 async function barSalesHistory(el) {
-  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  const ordersRes = await ApiClient.getAll(API_ENDPOINTS.orders.all);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
   const orders = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
   const tbody = $('#salesHistoryRows');
@@ -2470,7 +2473,7 @@ async function barDelivery(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
   const [ordersRes, deliveryConfigRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
     ApiClient.get(API_ENDPOINTS.delivery.config),
   ]);
   if (!ordersRes.ok) {

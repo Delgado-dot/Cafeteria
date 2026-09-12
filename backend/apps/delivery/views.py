@@ -18,8 +18,15 @@ class DeliveryConfigRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = DeliveryConfigSerializer
 
     def get_permissions(self):
-        if self.request.method == "GET":
-            self.required_permission = "delivery.view"
+        if self.request.method in permissions.SAFE_METHODS:
+            # El checkout necesita consultar disponibilidad. Esto no concede
+            # acceso al listado administrativo de solicitudes de delivery.
+            user = self.request.user
+            self.required_permission = (
+                "orders.create"
+                if user.is_authenticated and user.role == "user"
+                else "delivery.view"
+            )
             return [permissions.IsAuthenticated(), HasRolePermission()]
         self.required_permission = "delivery.edit"
         return [permissions.IsAuthenticated(), HasRolePermission()]

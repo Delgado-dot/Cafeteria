@@ -22,8 +22,8 @@ let JSDOM;
 try {
   JSDOM = require(path.join(root, 'node_modules', 'jsdom')).JSDOM;
 } catch (e) {
-  console.log('SKIP: jsdom no disponible; menu-pagination.test.js omitido.');
-  process.exit(0);
+  console.error('ERROR: falta jsdom. Instala las dependencias del frontend antes de ejecutar las pruebas.');
+  process.exit(1);
 }
 
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');

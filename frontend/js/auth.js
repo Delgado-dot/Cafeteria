@@ -142,7 +142,8 @@ function renderLogin() {
   if (remembered) { $('#li_email').value = remembered; $('#li_remember').checked = true; }
 
   const setErr = (field, msg) => {
-    const inp = $('#li_' + field); const err = $('#li_' + field + 'Err');
+    const id = field === 'password' ? 'pass' : field;
+    const inp = $('#li_' + id); const err = $('#li_' + id + 'Err');
     if (inp) inp.classList.toggle('err', !!msg);
     err.textContent = msg || '';
   };

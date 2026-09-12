@@ -1,0 +1,122 @@
+PASS: Landing renderizado al cargar sin sesión
+PASS: Hero presente en Landing
+PASS: Fondo del hero desde config (hero_background_url)
+PASS: Capa oscura sobre el hero presente
+PASS: Fondo centrado, sin repetición y con cover
+PASS: Overlay uniforme al 16%
+PASS: Página sin scrollbar horizontal
+PASS: Fondo permanece igual al recorrer todos los slides
+PASS: Header/navbar eliminado de Landing
+PASS: Logo visible sin header tradicional
+PASS: Acceder visible en la esquina superior
+PASS: Arvo importada
+PASS: Playfair Display importada
+PASS: Footer presente en Landing
+PASS: Sección presentación presente
+PASS: Sección cómo funciona presente
+PASS: Sección horarios presente
+PASS: Sección menú preview presente
+PASS: Sección capacidad eliminada
+PASS: Sección delivery eliminada
+PASS: Contenido de capacidad eliminado
+PASS: Contenido de delivery eliminado
+PASS: Sección CTA final presente
+PASS: 4 productos en vista previa del menú
+PASS: Landing sin emojis ni pictogramas (Boxicons)
+PASS: Landing usa Boxicons (26)
+PASS: ACCEDER lleva al login
+PASS: Auth.login (usuario) ok via API mock, role=user desde /api/auth/me/
+PASS: Usuario entra a su panel (user-header)
+PASS: Usuario: shell de usuario renderizado
+PASS: is-landing removido tras iniciar sesión
+PASS: Tras logout vuelve al Landing
+PASS: Auth.login (adminbar) ok via API mock
+PASS: Admin bar entra a su panel (admin-layout)
+PASS: Rol adminbar activo
+PASS: Auth.login (admindev) ok via API mock
+PASS: Admin dev entra a su panel (admin-layout)
+PASS: Rol admindev activo
+PASS: Sin sesión se muestra el Landing público
+PASS: #login sigue mostrando login sin sesión
+PASS: Sin errores JavaScript (0)
+
+Resultado: TODOS LOS CHECKS PASARON
+PASS: Carrito válido sembrado (2 ítems)
+PASS: fetchCapacityInfo OK contra API real (config/current)
+PASS: Capacidad real calculada: 4/10 (40%)
+PASS: mapApiOrder: id -> order_number
+PASS: mapApiOrder: delivery_method/delivery_info
+PASS: mapApiOrder: estimated_time/payment_status/total
+PASS: mapApiOrder: status/user_name
+PASS: POST /api/orders/ ejecutado una vez (creación exitosa)
+PASS: Carrito limpiado SOLO tras éxito
+PASS: Confirmación renderizada
+PASS: Número/ID real del pedido mostrado
+PASS: Tiempo estimado real (6 min) sin "undefined"
+PASS: Delivery mostrado correctamente con piso/aula
+PASS: Método de pago real del usuario mostrado
+PASS: Total real devuelto por la API mostrado
+PASS: Productos y cantidades en la confirmación
+PASS: Productos y cantidades en la confirmación (2do ítem)
+PASS: Sin cadenas "undefined" en la confirmación
+PASS: Delivery NO aparece incorrectamente como "Retiro"
+PASS: Sin ReferenceError (capacityInfo) — TAREA 1 CORREGIDA
+PASS: Pickup mostrado como "Retiro en cafetería"
+PASS: Pickup: sin "undefined"
+PASS: Capacidad falla: NO se envía POST de pedido
+PASS: Capacidad falla: carrito NO se limpia
+PASS: Capacidad falla: error visible al usuario
+PASS: POST fallido: intento ejecutado pero falla
+PASS: Creación falla: carrito NO se limpia
+PASS: Creación falla: error del detalle API mostrado
+PASS: Doble clic: solo 1 POST (guard de doble envío)
+
+Resultado: TODOS LOS CHECKS PASARON
+PASS: Auth.login (usuario) ok
+PASS: Página de menú renderizada
+PASS: Lista de chips de categorías presente
+PASS: El cliente siguió el enlace "next" (navegación entre páginas)
+PASS: Contador "Todas" = 25 productos reales (25 productos)
+PASS: Chips = Todas + categorías reales de la API (3)
+PASS: Chip de Bebidas presente con data-cat = id real (10)
+PASS: Contador del chip Bebidas = 5 (productos reales)
+PASS: Bebidas muestra sus 5 productos (5)
+PASS: Cocacola grande (después del registro 20) visible en Bebidas
+PASS: Monster visible en Bebidas
+PASS: Contador indica 5 productos en Bebidas
+PASS: Buscar "monster" en Bebidas devuelve 1 resultado
+PASS: Buscar "cocacola" en Todas devuelve 1 resultado
+PASS: Limpiar búsqueda restaura los 25 productos
+PASS: Sin errores JavaScript (0)
+
+Resultado: TODOS LOS CHECKS PASARON
+PASS: QA-06: contraseña vacía muestra error sin excepción
+PASS: QA-06: escribir elimina la validación
+PASS: Navegación: un cambio de ruta produce un solo render
+PASS: Navegación: respuesta tardía no escribe en la vista cerrada
+PASS: QA-02: personalizaciones separadas y total $4.50
+PASS: QA-02: cambiar una línea conserva la otra
+PASS: QA-02: quitar variante no elimina el resto
+PASS: QA-02: selecciones idénticas se combinan
+PASS: QA-02: stock compartido por todas las variantes
+PASS: QA-07: producto ausente no rompe cantidad ni eliminación
+PASS: Continuar responde mientras termina de cargar la capacidad
+PASS: QA-01: dos cafés con leche envían dos adicionales
+PASS: Pedido rechazado conserva carrito y reactiva botón
+PASS: QA-04: lista vacía bloquea confirmación sin inventar medios
+PASS: QA-04: caída de métodos muestra error y no envía pedido
+PASS: QA-03: DEUNA tiene control de archivo y no muestra QR falso
+PASS: QA-03: comprobante obligatorio bloquea antes de adjuntar
+PASS: QA-03: archivo DEUNA viaja en multipart junto al pedido
+PASS: Cambiar método borra comprobante anterior
+PASS: Comprobante con formato inválido rechazado
+PASS: Comprobante mayor a 2 MB rechazado
+PASS: Método personalizado también permite comprobante
+PASS: Volver al checkout no reutiliza archivo de otro intento
+PASS: QA-05: 41 pedidos accesibles más allá de los límites 20 y 30
+PASS: QA-05: ventas incluyen tres páginas ($205 y 41 pedidos)
+PASS: Paginación interrumpida no devuelve un total parcial exitoso
+PASS: Paginación no sigue enlaces fuera del servidor
+PASS: Paginación repetida termina con error
+PASS: Sin excepciones de JavaScript durante los flujos
+Resultado: 29 comprobaciones QA aprobadas

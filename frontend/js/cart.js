@@ -11,23 +11,35 @@ const Cart = {
 
   total() { return this.items.reduce((s, i) => s + i.price * i.qty, 0); },
 
+  // La identidad de una línea incluye su personalización; también funciona
+  // con carritos guardados antes de introducir líneas independientes.
+  lineKey(item) {
+    return JSON.stringify([String(item.productId), (item.addons || []).map(a => String(a.id)).sort(), item.note || '']);
+  },
+
+  findLine(key) {
+    return this.items.find(i => this.lineKey(i) === key) || this.items.find(i => i.productId === key);
+  },
+
   add(product, qty, addons, note) {
-    if (!product.available) return { ok: false, msg: 'Producto agotado.' };
+    if (!product || !product.available) return { ok: false, msg: 'Producto agotado.' };
+    if (!Number.isInteger(qty) || qty < 1) return { ok: false, msg: 'Ingresa una cantidad válida.' };
     if (qty > product.stock) return { ok: false, msg: 'La cantidad supera el stock disponible.' };
-    const ex = this.items.find((i) => i.productId === product.id);
+    const selection = { productId: product.id, addons: addons || [], note: note || '' };
+    const ex = this.items.find((i) => this.lineKey(i) === this.lineKey(selection));
     const newQty = (ex?.qty || 0) + qty;
-    if (newQty > product.stock) return { ok: false, msg: 'No puedes agregar más de ' + product.stock + ' unidades (stock).' };
-    const addonsTotal = (addons || []).reduce((s, a) => s + a.price, 0) * qty;
+    const reserved = this.items.filter(i => String(i.productId) === String(product.id)).reduce((sum, i) => sum + i.qty, 0);
+    if (reserved + qty > product.stock) return { ok: false, msg: 'No puedes agregar más de ' + product.stock + ' unidades (stock).' };
     const name = product.name + ((addons || []).length ? ' + ' + addons.map((a) => a.name).join(', ') : '');
     if (ex) {
       ex.qty = newQty;
       ex.note = note || ex.note;
       ex.addons = addons || ex.addons;
       ex.name = name;
-      ex.price = product.price + (addons?.reduce((s, a) => s + a.price, 0) || 0);
+      ex.price = Number(product.price) + (addons?.reduce((s, a) => s + Number(a.price), 0) || 0);
     } else {
       this.items.push({
-        productId: product.id, qty, name, price: product.price + (addons?.reduce((s, a) => s + a.price, 0) || 0),
+        productId: product.id, qty, name, price: Number(product.price) + (addons?.reduce((s, a) => s + Number(a.price), 0) || 0),
         basePrice: product.price, addons: addons || [], note: note || '', emoji: clientProductIcon(product), prepMin: product.prepMin,
       });
     }
@@ -36,19 +48,23 @@ const Cart = {
     return { ok: true };
   },
 
-  setQty(productId, qty) {
-    const item = this.items.find((i) => i.productId === productId);
-    const product = Store.products.find((p) => p.id === productId);
+  setQty(key, qty) {
+    const item = this.findLine(key);
     if (!item) return;
-    if (qty <= 0) { this.remove(productId); return; }
-    if (qty > product.stock) { toast('No puedes superar el stock disponible (' + product.stock + ').', 'warning'); return; }
+    if (qty <= 0) { this.remove(key); return; }
+    if (!Number.isInteger(qty)) return;
+    const product = Store.products.find(p => String(p.id) === String(item.productId));
+    if (!product || !product.available) { toast('Este producto no está disponible. Puedes eliminarlo o volver al menú para actualizar el catálogo.', 'warning'); return; }
+    const otherQty = this.items.filter(i => i !== item && String(i.productId) === String(item.productId)).reduce((sum, i) => sum + i.qty, 0);
+    if (qty + otherQty > product.stock) { toast('No puedes superar el stock disponible (' + product.stock + ').', 'warning'); return; }
     item.qty = qty;
     this.save();
     refreshCartBadge();
   },
 
-  remove(productId) {
-    this.items = this.items.filter((i) => i.productId !== productId);
+  remove(key) {
+    const item = this.findLine(key);
+    this.items = this.items.filter(i => i !== item);
     this.save();
     refreshCartBadge();
   },
@@ -87,7 +103,9 @@ async function fetchCapacityInfo() {
 }
 
 async function renderCapacityCard(container) {
+  if (!container || !container.isConnected) return;
   const info = await fetchCapacityInfo();
+  if (!container.isConnected) return;
   let cls = 'bar-fill';
   if (info.stateCls === 'danger') cls += ' danger';
   else if (info.stateCls === 'warning') cls += ' warn';
@@ -150,6 +168,7 @@ async function renderCart(el) {
   if (!currentUser()) return route('login');
   const canOrder = await canPlaceOrder();
   const cap = await fetchCapacityInfo();
+  if (!app.isConnected) return;
 
   let banner = '';
   if (!canOrder) {
@@ -180,8 +199,6 @@ async function renderCart(el) {
       </aside>
     </div>`;
 
-  await renderCapacityCard($('#cartCapacity'));
-
   const itemsWrap = $('#cartItems');
   if (!Cart.items.length) {
     itemsWrap.innerHTML = emptyState(clientIcon('cart'), 'Tu carrito está vacío', 'Agrega productos desde el menú para continuar.');
@@ -206,9 +223,10 @@ async function renderCart(el) {
           <span class="bold" style="margin-left:auto">${money(item.price * item.qty)}</span>
         </div>
       </div>`;
-    $('[data-inc]', row).onclick = () => { Cart.setQty(item.productId, item.qty + 1); renderCart(); };
-    $('[data-dec]', row).onclick = () => { Cart.setQty(item.productId, item.qty - 1); renderCart(); };
-    $('[data-del]', row).onclick = () => { Cart.remove(item.productId); renderCart(); };
+    const lineKey = Cart.lineKey(item);
+    $('[data-inc]', row).onclick = () => { Cart.setQty(lineKey, item.qty + 1); renderCart(); };
+    $('[data-dec]', row).onclick = () => { Cart.setQty(lineKey, item.qty - 1); renderCart(); };
+    $('[data-del]', row).onclick = () => { Cart.remove(lineKey); renderCart(); };
     itemsWrap.appendChild(row);
   });
 
@@ -216,6 +234,7 @@ async function renderCart(el) {
     `<div class="summary-row"><span>${esc(i.name)} <i class="bx bx-x"></i> ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
 
   $('#btnCheckout').onclick = () => setRoute('checkout');
+  await renderCapacityCard($('#cartCapacity'));
 }
 
 /* ============================================================
@@ -226,7 +245,13 @@ async function renderCheckout(el) {
   if (!currentUser()) return route('login');
   if (!Cart.items.length) { toast('Tu carrito está vacío.', 'warning'); setRoute('menu'); return; }
   
+  delete window._voucher;
+  delete window._deliveryInfo;
+  window._payMethod = '';
+  window._payMethodDbId = '';
+  window._payMethodRequiresVoucher = false;
   const cap = await fetchCapacityInfo();
+  if (!app.isConnected) return;
   if (cap.stateCls === 'danger') { toast('La capacidad de preparación está completa. Intenta más tarde.', 'error'); setRoute('cart'); return; }
   
   const [configRes, deliveryConfigRes] = await Promise.all([
@@ -239,17 +264,14 @@ async function renderCheckout(el) {
   const deliveryOn = !!deliveryCfg.enabled && canOrder;
   
   // Obtener métodos de pago desde API
-  let payOptions = [
-    { id: 'deuna', name: 'DEUNA', desc: 'Pago con código QR. Aprobación en línea.', icon: clientIcon('mobile') },
-    { id: 'transferencia', name: 'Transferencia', desc: 'Carga tu comprobante. Revisión manual.', icon: clientIcon('transfer') },
-    { id: 'efectivo', name: 'Efectivo', desc: 'Paga en cafetería durante el receso (10:00 - 10:15).', icon: clientIcon('cash') },
-  ];
-  
+  let payOptions = [];
+
   const payMethodsRes = await ApiClient.get(API_ENDPOINTS.payments.methods);
+  if (!app.isConnected) return;
   if (payMethodsRes.ok && payMethodsRes.data) {
     const list = payMethodsRes.data.results || payMethodsRes.data;
     if (Array.isArray(list) && list.length) {
-      payOptions = list.map(pm => ({
+      payOptions = list.filter(pm => pm.active !== false && Number.isInteger(Number(pm.id)) && Number(pm.id) > 0).map(pm => ({
         id: pm.code,
         dbId: pm.id,
         name: pm.name,
@@ -310,7 +332,7 @@ async function renderCheckout(el) {
             <div class="bold" style="font-size:1.6rem;color:var(--primary-strong)">${money(Cart.total())}</div>
           </div>
         </div>
-        <button class="btn btn-primary btn-lg btn-block" style="margin-top:18px" id="btnConfirm">Confirmar pedido</button>
+        <button class="btn btn-primary btn-lg btn-block" style="margin-top:18px" id="btnConfirm" ${!payOptions.length ? 'disabled' : ''}>Confirmar pedido</button>
       </div>
     </div>`;
 
@@ -388,11 +410,11 @@ async function renderCheckout(el) {
 
   /* pagos */
   const payWrap = $('#payOptions');
-  payWrap.innerHTML = payOptions.map((p) => `
-    <div class="select-card" data-p="${p.id}" data-db-id="${p.dbId || ''}" data-requires-voucher="${p.requires_voucher || false}">
+  payWrap.innerHTML = payOptions.length ? payOptions.map((p, index) => `
+    <div class="select-card ${index === 0 ? 'active' : ''}" data-p="${esc(p.id)}" data-db-id="${p.dbId || ''}" data-requires-voucher="${p.requires_voucher || false}">
       <div class="sc-ico">${p.icon}</div>
-      <div><div class="sc-name">${p.name}</div><div class="sc-desc">${p.desc}</div></div>
-    </div>`).join('');
+      <div><div class="sc-name">${esc(p.name)}</div><div class="sc-desc">${esc(p.desc)}</div></div>
+    </div>`).join('') : `<div class="alert warning" role="alert">${payMethodsRes.ok ? 'No hay métodos de pago disponibles. Contacta a la cafetería.' : 'No se pudieron cargar los métodos de pago. Vuelve al carrito e inténtalo de nuevo.'}</div>`;
   payWrap.querySelectorAll('[data-p]').forEach((el) => {
     el.onclick = () => {
       payWrap.querySelectorAll('[data-p]').forEach((x) => x.classList.remove('active'));
@@ -403,23 +425,23 @@ async function renderCheckout(el) {
       renderPayDetail(el.dataset.p);
     };
   });
-  window._payMethod = payOptions[0]?.id || 'deuna';
+  window._payMethod = payOptions[0]?.id || '';
   window._payMethodDbId = payOptions[0]?.dbId || '';
   window._payMethodRequiresVoucher = payOptions[0]?.requires_voucher || false;
   renderPayDetail(window._payMethod);
 
   function renderPayDetail(method) {
+    delete window._voucher;
     const detail = $('#payDetail');
     const payOpt = payOptions.find(p => p.id === method);
     if (!payOpt) { detail.innerHTML = ''; return; }
     if (method === 'deuna') {
-      const hasData = payOpt.account_holder || payOpt.phone || payOpt.qr_info || payOpt.instructions;
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con ${esc(payOpt.name)}.</div>${payOpt.instructions ? esc(payOpt.instructions) + '<br>' : ''}Escanea el código QR para pagar <b>${money(Cart.total())}</b>.</div></div>
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con ${esc(payOpt.name)}.</div>${payOpt.instructions ? esc(payOpt.instructions) + '<br>' : ''}Usa los datos de pago indicados por la cafetería para abonar <b>${money(Cart.total())}</b>.</div></div>
         ${payOpt.account_holder ? `<div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)"><div class="muted small">Titular</div><div class="bold">${esc(payOpt.account_holder)}</div>${payOpt.phone ? `<div class="muted small">Celular: ${esc(payOpt.phone)}</div>` : ''}</div>` : ''}
-        ${payOpt.qr_info ? `<div class="card" style="margin-top:12px;background:var(--surface-2)"><div class="muted small">QR / Código</div><div class="bold" style="word-break:break-all">${esc(payOpt.qr_info)}</div></div>` : '<div class="qr-box"><div class="qr-pattern"></div></div>'}
+        ${payOpt.qr_info ? `<div class="card" style="margin-top:12px;background:var(--surface-2)"><div class="muted small">QR / Código</div><div class="bold" style="word-break:break-all">${esc(payOpt.qr_info)}</div></div>` : '<div class="alert warning">La cafetería no ha configurado un código QR. Solicita los datos de pago antes de transferir.</div>'}
         ${payOpt.phone && !payOpt.account_holder ? `<div class="muted small" style="text-align:center;margin-top:10px">Identificador: <b>${esc(payOpt.phone)}</b> — Total: <b>${money(Cart.total())}</b></div>` : `<div style="text-align:center" class="muted small" style="margin-top:10px">Total: <b>${money(Cart.total())}</b></div>`}
-        ${!hasData ? `<div class="tiny muted" style="text-align:center;margin-top:8px">Configurado por administradora del bar</div>` : ''}`;
+        `;
     } else if (method === 'transferencia') {
       detail.innerHTML = `
         <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('transfer')}</span><div><div class="a-title">Transferencia.</div>Realiza una transferencia por <b>${money(Cart.total())}</b> y adjunta el comprobante.${payOpt.instructions ? '<br><span class="tiny">' + esc(payOpt.instructions) + '</span>' : ''}</div></div>
@@ -429,33 +451,44 @@ async function renderCheckout(el) {
           ${payOpt.account_holder ? `<div class="muted small">Titular: ${esc(payOpt.account_holder)}</div>` : ''}
           ${payOpt.holder_id ? `<div class="muted small">Identificación: ${esc(payOpt.holder_id)}</div>` : ''}
         </div>
-        <div style="margin-top:12px">
-          <label class="label">Comprobante</label>
-          <div class="file-drop" id="fu"><div class="fd-ico">${clientIcon('clip')}</div><div>Haz clic para cargar tu comprobante</div><div class="tiny">PNG, JPG o PDF — máx 2MB</div></div>
-          <input id="voucherInput" type="file" accept="image/png,image/jpeg,application/pdf" hidden>
-          <div class="tiny muted" id="fuName" style="margin-top:6px"></div>
-        </div>`;
-      const fu = $('#fu');
-      const voucherInput = $('#voucherInput');
-      fu.onclick = () => voucherInput.click();
-      voucherInput.onchange = () => {
-        const file = voucherInput.files?.[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-          voucherInput.value = '';
-          delete window._voucher;
-          toast('El comprobante supera el máximo de 2 MB.', 'warning');
-          return;
-        }
-        fu.classList.add('success');
-        fu.innerHTML = `<span class="fd-ico" style="color:var(--success)">${clientIcon('check')}</span><div style="color:var(--success)">Comprobante cargado</div>`;
-        $('#fuName').textContent = file.name;
-        window._voucher = file;
-      };
+        `;
     } else if (method === 'efectivo') {
       detail.innerHTML = `
         <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">${clientIcon('cash')}</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b>${payOpt.instructions ? '<br><span class="tiny">' + esc(payOpt.instructions) + '</span>' : ''}</div></div>
         <div class="capacity-card"><div style="text-align:center"><span class="badge badge-warning">Pendiente de pago</span></div><div class="muted small" style="text-align:center;margin-top:8px">Abona tu pedido al retirarlo en la cafetería. Total: <b>${money(Cart.total())}</b>${payOpt.instructions ? '<br>' + esc(payOpt.instructions) : ''}</div></div>`;
+    } else {
+      detail.innerHTML = `<div class="alert info"><div><b>${esc(payOpt.name)}</b><p>${esc(payOpt.instructions || 'Sigue las indicaciones de la cafetería para realizar el pago.')}</p><p>Total: ${money(Cart.total())}</p></div></div>`;
+    }
+    if (payOpt.requires_voucher || method === 'transferencia') {
+      detail.insertAdjacentHTML('beforeend', `
+        <div style="margin-top:12px">
+          <label class="label" for="voucherInput">Comprobante${payOpt.requires_voucher ? ' (obligatorio)' : ' (opcional)'}</label>
+          <button type="button" class="file-drop" id="fu">Haz clic para cargar tu comprobante</button>
+          <input id="voucherInput" type="file" accept="image/png,image/jpeg,application/pdf" hidden>
+          <div class="tiny muted">PNG, JPG o PDF — máx 2 MB</div>
+          <div class="tiny muted" id="fuName" style="margin-top:6px" aria-live="polite"></div>
+        </div>`);
+      const fu = $('#fu');
+      const input = $('#voucherInput');
+      fu.onclick = () => input.click();
+      input.onchange = () => {
+        delete window._voucher;
+        fu.classList.remove('success', 'err');
+        fu.textContent = 'Haz clic para cargar tu comprobante';
+        $('#fuName').textContent = '';
+        const file = input.files?.[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024 || !['image/png', 'image/jpeg', 'application/pdf'].includes(file.type)) {
+          input.value = '';
+          fu.classList.add('err');
+          toast('Selecciona un PNG, JPG o PDF de máximo 2 MB.', 'warning');
+          return;
+        }
+        window._voucher = file;
+        fu.classList.add('success');
+        fu.textContent = 'Comprobante cargado';
+        $('#fuName').textContent = file.name;
+      };
     }
   }
 
@@ -478,6 +511,9 @@ let _confirmingOrder = false;
 
 async function confirmOrder() {
   if (_confirmingOrder) return;
+  if (!Cart.items.length) { toast('Tu carrito está vacío.', 'warning'); return; }
+  const pmId = Number(window._payMethodDbId);
+  if (!Number.isInteger(pmId) || pmId <= 0) { toast('Selecciona un método de pago disponible.', 'warning'); return; }
   const delivery = $('[data-d].active') ? $('[data-d].active').dataset.d : 'pickup';
 
   if (delivery === 'delivery') {
@@ -496,12 +532,11 @@ async function confirmOrder() {
     if (cap.stateCls === 'danger') { toast('La capacidad está completa. No se puede confirmar el pedido.', 'error'); return; }
 
     // Construir datos del pedido para la API - payment_method dinámico desde métodos activos
-    const pmId = window._payMethodDbId ? parseInt(window._payMethodDbId) : 1;
     const orderData = {
       items: Cart.items.map((i) => ({
         product_id: typeof i.productId === 'string' ? parseInt(i.productId.replace('p', '')) : i.productId,
         quantity: i.qty,
-        addons: i.addons ? i.addons.map(a => ({ addon_id: a.id, quantity: 1 })) : [],
+        addons: i.addons ? i.addons.map(a => ({ addon_id: a.id, quantity: i.qty })) : [],
         note: i.note || '',
       })),
       delivery_method: delivery === 'delivery' ? 'delivery' : 'pickup',
@@ -528,7 +563,8 @@ async function confirmOrder() {
     const response = await ApiClient.post(API_ENDPOINTS.orders.create, requestData);
 
     if (!response.ok) {
-      const errMsg = response.data?.detail || response.data?.items?.[0] || 'Error al crear el pedido';
+      const errorValue = response.data?.detail || response.data?.items || response.data?.payment_method || response.data?.voucher;
+      const errMsg = (Array.isArray(errorValue) ? errorValue[0] : errorValue) || 'Error al crear el pedido';
       toast('Error: ' + errMsg, 'error');
       return;
     }
@@ -539,6 +575,8 @@ async function confirmOrder() {
     mapped.payment = window._payMethod || '';
     mapped.cartTotal = Cart.total();
     Cart.clear();
+    delete window._voucher;
+    delete window._deliveryInfo;
     renderConfirmation(mapped);
   } catch (error) {
     toast('Error de conexión: ' + error.message, 'error');

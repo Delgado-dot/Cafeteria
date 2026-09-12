@@ -118,9 +118,9 @@ async function renderDevAdmin(page) {
 async function devDashboard(el) {
   const [usersRes, ordersRes, productsRes, auditRes, configRes, deliveryRes] = await Promise.all([
     ApiClient.get(API_ENDPOINTS.auth.users),
-    ApiClient.get(API_ENDPOINTS.orders.all),
-    ApiClient.get(API_ENDPOINTS.products.list),
-    ApiClient.get(API_ENDPOINTS.audit.list),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.products.list),
+    ApiClient.getAll(API_ENDPOINTS.audit.list),
     ApiClient.get(API_ENDPOINTS.config.get),
     ApiClient.get(API_ENDPOINTS.delivery.config),
   ]);
@@ -452,7 +452,7 @@ async function devConfig(el) {
    AUDITORÍA
    ============================================================ */
 async function devAudit(el) {
-  const auditRes = await ApiClient.get(API_ENDPOINTS.audit.list);
+  const auditRes = await ApiClient.getAll(API_ENDPOINTS.audit.list);
   const audit = auditRes.ok && auditRes.data ? (auditRes.data.results || auditRes.data) : [];
   
   el.innerHTML = `
