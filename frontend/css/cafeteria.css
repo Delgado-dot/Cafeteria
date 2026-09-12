@@ -79,7 +79,7 @@ body.has-bottom-nav .app::before {
   position: fixed;
   inset: -14px;
   z-index: -1;
-  background: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat;
+  background: var(--dashboard-background) center / cover no-repeat;
   filter: blur(7px);
   transform: scale(1.03);
 }

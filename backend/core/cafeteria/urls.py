@@ -14,12 +14,16 @@ urlpatterns = [
 
     # API
     path("api/", include("core.cafeteria.api")),
-
-    # Documentación de la API
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
+
+# Documentación de la API: solo en desarrollo (DEBUG=True).
+# En producción /api/schema/, /api/docs/ y /api/redoc/ devuelven 404.
+if settings.DEBUG:
+    urlpatterns += [
+        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+        path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+        path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    ]
 
 # Servir archivos multimedia en desarrollo
 if settings.DEBUG:

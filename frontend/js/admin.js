@@ -162,7 +162,7 @@ async function renderBarAdmin(page, params) {
       prepCount = orders.filter((o) => o.status === 'prep').length;
       readyCount = orders.filter((o) => o.status === 'ready').length;
     }
-  } catch(e) {}
+  } catch(e) { /* Dashboard se renderiza sin métricas si falla la carga */ }
 
   app.innerHTML = `
     <div class="admin-layout">
@@ -337,7 +337,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { setRoute('adminbar/profile'); ud.style.display = 'none'; } else setRoute(t); });
-  $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
+  $('#btnBarLogout').onclick = async (e) => { e.preventDefault(); await Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
 
   const content = $('#barContent');
 const renderers = {
@@ -593,7 +593,7 @@ async function barReports(el) {
   const totalVentas = orders.reduce((s, o) => s + o.total, 0);
   const totalHoy = todayOrders.reduce((s, o) => s + o.total, 0);
   const byMethod = { deuna: 0, transferencia: 0, efectivo: 0 };
-  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (byMethod.hasOwnProperty(k)) byMethod[k] += o.total; });
+  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (Object.prototype.hasOwnProperty.call(byMethod, k)) byMethod[k] += o.total; });
   const totalMetodo = byMethod.deuna + byMethod.transferencia + byMethod.efectivo || 1;
   const pct = (v) => Math.round((v / totalMetodo) * 100);
   // Ventas por hora hoy
@@ -794,7 +794,7 @@ async function barDashboard(el) {
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const rawCap = configRes.ok ? configRes.data : null;
-  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : capacityInfo();
+  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : await fetchCapacityInfo();
   const payPending = getPendingPayments(orders).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
@@ -1506,7 +1506,7 @@ function productFormModal(p) {
           const createCat = await ApiClient.post(API_ENDPOINTS.products.categories, { name: catName });
           if (createCat.ok) categoryId = createCat.data.id;
         }
-      } catch(e) {}
+      } catch(e) { /* La categoría se asocia cuando el usuario la ingrese */ }
       const productData = {
         name,
         category: categoryId,
@@ -1846,7 +1846,7 @@ async function barPayments(el) {
   const validToday = orders.filter((o) => o.date === today && isValidSale(o));
   const totalToday = validToday.reduce((s, o) => s + o.total, 0);
   const byMethod = { efectivo: 0, deuna: 0, transferencia: 0 };
-  validToday.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
+  validToday.forEach((o) => { if (Object.prototype.hasOwnProperty.call(byMethod, o.payment)) byMethod[o.payment] += o.total; });
   const pct = (v) => totalToday ? Math.round((v / totalToday) * 100) : 0;
 
   // Últimas transacciones para lista compacta
@@ -1923,7 +1923,7 @@ async function barPayments(el) {
       return;
     }
     logAudit('Actualizó pago', `${paymentId} <i class="bx bx-right-arrow-alt"></i> ${status}`);
-    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status), status === 'approved' ? 'success' : 'error');
+    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status === 'paid' ? 'marcado como pagado.' : status), status === 'approved' ? 'success' : 'error');
     renderBarAdmin('payments');
   };
 
@@ -1960,6 +1960,7 @@ async function barPayments(el) {
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
             ${['transferencia', 'deuna'].includes(o.payment) ? `<button class="btn btn-outline btn-sm" data-voucher="${o.id}" title="Ver comprobante" aria-label="Ver comprobante"><i class="bx bx-receipt"></i></button>` : ''}
+            ${['transferencia', 'deuna'].includes(o.payment) && o.paymentStatus === 'approved' ? `<button class="btn btn-primary btn-sm" data-paid="${o.id}">Marcar pagado</button>` : ''}
             ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
           </td>
         </tr>
@@ -1968,6 +1969,7 @@ async function barPayments(el) {
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+    $$('[data-paid]', el).forEach((b) => b.onclick = () => setPay(b.dataset.paid, 'paid'));
     
     // Trigger highlight animation for visited row
     if (lastVisitedPaymentId) {
@@ -2619,71 +2621,6 @@ async function barDelivery(el) {
    ============================================================ */
 async function barConfigHours(el) {
   return barConfigTabs(el, 'hours');
-  const cfg = null;
-  const originalValues = {
-    orderOpen: cfg.orderOpen,
-    orderClose: cfg.orderClose,
-    breakStart: cfg.breakStart,
-    breakEnd: cfg.breakEnd,
-    capacity: String(cfg.capacity)
-  };
-  let hasUnsavedChanges = false;
-  const btn = document.createElement('button');
-  btn.className = 'btn btn-primary';
-  btn.id = 'btnSaveConfigHours';
-  btn.innerHTML = 'Guardar cambios';
-  
-  el.innerHTML = `
-    <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
-    <div class="card" style="width:100%;max-width:none;margin:0">
-      <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
-      <div class="grid grid-2">
-        <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
-        <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
-      <div class="grid grid-2">
-        <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
-        <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
-      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
-        <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
-          <span class="pulse-dot"></span>
-        </span>
-        <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
-      </div>
-    </div>
-  `;
-  
-  const btnSave = $('#btnSaveConfigHours', el);
-  const indicator = $('#unsavedIndicator', el);
-  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
-  
-  const checkChanges = () => {
-    const currentValues = {
-      orderOpen: $('#ohOpen', el).value,
-      orderClose: $('#ohClose', el).value,
-      breakStart: $('#brStart', el).value,
-      breakEnd: $('#brEnd', el).value,
-      capacity: $('#cpCap', el).value
-    };
-    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
-    indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
-    btnSave.disabled = !hasUnsavedChanges;
-    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
-  };
-  
-  fields.forEach(id => {
-    const field = $('#' + id, el);
-    if (field) {
-      field.addEventListener('input', checkChanges);
-      field.addEventListener('change', checkChanges);
-    }
-  });
-  
-  btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
 }
 
 async function saveConfigHours(btn, indicator, originalValues) {
@@ -2719,25 +2656,6 @@ async function saveConfigHours(btn, indicator, originalValues) {
    ============================================================ */
 async function barConfigStatus(el) {
   return barConfigTabs(el, 'status');
-  const cfg = null;
-  const isOpen = false;
-  el.innerHTML = `
-    <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración - Estado</h1></div>
-    <div class="card" style="width:100%;max-width:none;margin:0">
-      <div style="text-align:center;margin-bottom:24px">
-        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
-      </div>
-      <div style="text-align:center">
-        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
-          ${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}
-        </button>
-      </div>
-      <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)">
-        <b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.
-      </div>
-    </div>
-  `;
-  $('#btnToggleCafeStatus', el).onclick = () => confirmToggleState(!isOpen, $('#btnToggleCafeStatus', el));
 }
 
 function barAdminProfile(el) {
@@ -2892,7 +2810,6 @@ window.addEventListener('resize', () => {
     if (topbar) {
       // Fuerza reflow para evitar cortes al rotar
       topbar.style.display = 'none';
-      // eslint-disable-next-line no-unused-expressions
       topbar.offsetHeight;
       topbar.style.display = '';
     }

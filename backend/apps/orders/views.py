@@ -1,6 +1,5 @@
 """Vistas de pedidos."""
 
-from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -8,14 +7,14 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import HasRolePermission, user_has_perm
 from apps.audit.services import record_audit
-from apps.payments.models import Payment, PaymentStatus
 
-from .models import Order, OrderStatus
+from .models import InvalidOrderTransition, Order, OrderStatus
 from .serializers import (
     OrderCreateSerializer,
     OrderSerializer,
     OrderStatusUpdateSerializer,
 )
+from .services import change_order_status
 
 
 def order_queryset():
@@ -64,7 +63,11 @@ class AllOrdersListView(generics.ListAPIView):
 
 class OrderDetailView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, HasRolePermission]
-    required_permission = {"GET": "orders.view_own", "PUT": "orders.change_status", "PATCH": "orders.change_status"}
+    required_permission = {
+        "GET": "orders.view_own",
+        "PUT": "orders.change_status",
+        "PATCH": "orders.change_status",
+    }
 
     def get_queryset(self):
         return order_queryset()
@@ -78,7 +81,10 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
         # Para GET, permitir view_own o view_all según rol
         if self.request.method == "GET":
             # delegar a HasRolePermission con código dinámico
-            if self.request.user.is_authenticated and self.request.user.role in ("adminbar", "admindev"):
+            if (
+                self.request.user.is_authenticated
+                and self.request.user.role in ("adminbar", "admindev")
+            ):
                 # admin intenta view_all, si no tiene, fallback a view_own
                 if user_has_perm(self.request.user, "orders.view_all"):
                     self.required_permission = "orders.view_all"
@@ -118,45 +124,15 @@ class OrderDetailView(generics.RetrieveUpdateAPIView):
                     {"status": "Solo puede cancelar pedidos en cola o confirmados."}
                 )
 
-        with transaction.atomic():
-            transitioned = obj.transition_to(
+        try:
+            transitioned = change_order_status(
+                obj,
                 new_status,
                 changed_by=request.user,
                 note=serializer.validated_data.get("note", ""),
-            )
-            if transitioned and new_status == OrderStatus.CANCELLED:
-                from apps.products.models import Product
-                from apps.stock.models import StockMovementType
-
-                for item in obj.order_items.all():
-                    if item.product_id:
-                        product = Product.objects.select_for_update().get(pk=item.product_id)
-                        product.adjust_stock(
-                            product.stock + item.quantity,
-                            movement_type=StockMovementType.RETURN,
-                            user=request.user,
-                            reason=f"Cancelacion del pedido {obj.order_number}",
-                            reference=obj.order_number,
-                        )
-            if new_status == OrderStatus.DELIVERED:
-                payment = Payment.objects.select_for_update().filter(order=obj).first()
-                if payment and payment.status in (
-                    PaymentStatus.PENDING,
-                    PaymentStatus.APPROVED,
-                ):
-                    payment.status = PaymentStatus.PAID
-                    payment.reviewed_by = request.user
-                    from django.utils import timezone
-
-                    payment.reviewed_at = timezone.now()
-                    payment.save(
-                        update_fields=[
-                            "status",
-                            "reviewed_by",
-                            "reviewed_at",
-                            "updated_at",
-                        ]
-                    )
+            )[1]
+        except InvalidOrderTransition as exc:
+            raise ValidationError({"status": str(exc)})
 
         if request.user.role in ("adminbar", "admindev") and transitioned:
             record_audit(

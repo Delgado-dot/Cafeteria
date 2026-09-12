@@ -143,16 +143,47 @@ const Store = {
 
 /* ---------- Funciones para cargar datos del API ---------- */
 
+/* Carga TODAS las páginas de /api/products/ siguiendo el enlace "next" de la
+   paginación. Con esto el menú del usuario ve todos los productos reales, no
+   solo los primeros 20 de la página 1. */
+async function fetchAllProducts() {
+  const all = [];
+  let url = API_ENDPOINTS.products.list;
+  while (url) {
+    const res = await ApiClient.get(url);
+    if (!res.ok) break;
+    const data = res.data;
+    if (Array.isArray(data)) {
+      all.push(...data);
+      break;
+    }
+    if (Array.isArray(data?.results)) all.push(...data.results);
+    url = data?.next || null;
+  }
+  const products = all.map(normalizeApiProduct);
+  Store.products = products;
+  return products;
+}
+window.fetchAllProducts = fetchAllProducts;
+
+/* Carga las categorías reales desde la API (id, nombre y orden). */
+async function fetchCategories() {
+  const res = await ApiClient.get(API_ENDPOINTS.products.categories);
+  if (!res.ok) return [];
+  const data = res.data;
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.results) ? data.results : [];
+}
+window.fetchCategories = fetchCategories;
+
 async function loadInitialData() {
   try {
-    // Cargar productos
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    if (productsRes.ok) {
-      Store.products = apiList(productsRes.data).map(normalizeApiProduct);
-    }
-    
-    // Cargar configuración
-    const configRes = await ApiClient.get(API_ENDPOINTS.config.get);
+    // Cargar configuración y productos (todas las páginas)
+    const [configRes] = await Promise.all([
+      ApiClient.get(API_ENDPOINTS.config.get),
+      fetchAllProducts(),
+    ]);
+
     if (configRes.ok && configRes.data) {
       Store.config = configRes.data;
     }

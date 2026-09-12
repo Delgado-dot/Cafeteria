@@ -14,4 +14,5 @@ urlpatterns = [
     path("config/", include("apps.config.urls")),
     path("suppliers/", include("apps.suppliers.urls")),
     path("stock/", include("apps.stock.urls")),
+    path("", include("apps.assets.urls")),
 ]

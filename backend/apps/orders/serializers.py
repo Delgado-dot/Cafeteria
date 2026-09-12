@@ -7,11 +7,30 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.config.models import PaymentMethod
-from apps.delivery.models import DeliveryConfig, DeliveryRequest
+from apps.delivery.models import DeliveryRequest
 from apps.payments.models import Payment
 from apps.products.models import Addon, Product
 
 from .models import DeliveryMethod, Order, OrderItem, OrderItemAddon, OrderStatus
+from .services import (
+    cafe_accepts_orders,
+    delivery_accepts_orders,
+    reserve_cafe_capacity,
+    reserve_delivery_capacity,
+)
+
+CAFE_RULES_MESSAGES = {
+    "cafe_closed": "La cafetería está cerrada. Inténtalo cuando abra.",
+    "cafe_hours": "La cafetería está fuera del horario de atención.",
+    "break_active": "La cafetería está en receso en este momento.",
+}
+DELIVERY_RULES_MESSAGES = {
+    "delivery_disabled": "El servicio de delivery está deshabilitado.",
+    "delivery_day": "El delivery no está disponible hoy.",
+    "delivery_hours": "El delivery está fuera del horario permitido.",
+}
+CAPACITY_FULL_CAFE = "La capacidad de preparación está completa. Intenta más tarde."
+CAPACITY_FULL_DELIVERY = "La capacidad de delivery está completa. Intenta más tarde."
 
 
 class OrderItemAddonSerializer(serializers.ModelSerializer):
@@ -130,15 +149,23 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         payment_method = attrs.get("payment_method")
         voucher = attrs.get("voucher")
 
+        # A) Regla de negocio global: la cafeteria debe estar abierta y dentro
+        # del horario/receso configurado para aceptar CUALQUIER pedido nuevo.
+        accepts, rejection_code = cafe_accepts_orders()
+        if not accepts:
+            raise serializers.ValidationError(
+                {"detail": CAFE_RULES_MESSAGES[rejection_code]}
+            )
+
         if delivery_method == DeliveryMethod.DELIVERY:
             if not delivery_info:
                 raise serializers.ValidationError(
                     {"delivery_info": "Piso y aula son obligatorios para delivery."}
                 )
-            config = DeliveryConfig.get_solo()
-            if not config.enabled:
+            accepts, rejection_code = delivery_accepts_orders()
+            if not accepts:
                 raise serializers.ValidationError(
-                    {"delivery_method": "El servicio de delivery esta deshabilitado."}
+                    {"detail": DELIVERY_RULES_MESSAGES[rejection_code]}
                 )
         elif delivery_info:
             raise serializers.ValidationError(
@@ -160,6 +187,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         user = validated_data.pop("user", self.context["request"].user)
 
         with transaction.atomic():
+            # Reserva atomica de capacidad de preparacion (y delivery si aplica),
+            # bajo bloqueo de fila: si esta llena se rechaza y TODO hace rollback
+            # (ni pedido ni stock). La libertad de estos contadores al cancelar o
+            # entregar se gestiona en services.change_order_status.
+            if not reserve_cafe_capacity():
+                raise serializers.ValidationError({"detail": CAPACITY_FULL_CAFE})
+            if validated_data.get("delivery_method") == DeliveryMethod.DELIVERY:
+                if not reserve_delivery_capacity():
+                    raise serializers.ValidationError(
+                        {"detail": CAPACITY_FULL_DELIVERY}
+                    )
+
             order = Order(user=user, **validated_data)
             order.save(changed_by=user)
             total = Decimal("0.00")

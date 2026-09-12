@@ -218,8 +218,6 @@ function showOrderDetail(o) {
 }
 window.showOrderDetail = showOrderDetail;
 
-function saveOrders() { Store.orders = Store.orders; }
-
 function fmtDate(d) {
   if (!d) return '';
   try {
@@ -271,8 +269,8 @@ function renderProfile(el) {
       </div>
     </div></div>`;
 
-  $('#btnLogout').onclick = () => {
-    Auth.logout();
+  $('#btnLogout').onclick = async () => {
+    await Auth.logout();
     toast('Sesión cerrada.', 'info');
     route('login');
   };
@@ -370,7 +368,7 @@ function renderProfileModal() {
       <button class="btn btn-danger-outline" id="pmLogout">Cerrar sesión</button>
     </div>`, { title: 'Mi perfil' });
   $('#pmChangePass', ov).onclick = () => changePasswordModal();
-  $('#pmLogout', ov).onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
+  $('#pmLogout', ov).onclick = async () => { await Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
 }
 window.renderProfileModal = renderProfileModal;
 

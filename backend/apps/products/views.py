@@ -11,6 +11,7 @@ from apps.accounts.permissions import HasRolePermission
 from apps.audit.services import record_audit
 
 from .models import Category, Product
+from .pagination import ProductsPagination
 from .serializers import (
     CategorySerializer,
     ProductCreateUpdateSerializer,
@@ -41,6 +42,7 @@ class ProductListView(generics.ListCreateAPIView):
     filterset_fields = ["category", "available"]
     search_fields = ["name", "description"]
     ordering_fields = ["name", "price", "stock", "added_at"]
+    pagination_class = ProductsPagination
 
     def get_serializer_class(self):
         if self.request.method == "POST":

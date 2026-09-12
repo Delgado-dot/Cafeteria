@@ -70,6 +70,7 @@
   position: absolute; top: calc(100% + 10px); right: 0; background: var(--surface);
   border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
   min-width: 235px; padding: 6px; z-index: 200; animation: menuIn var(--t-med); transform-origin: top right;
+  color: var(--text);
 }
 @keyframes menuIn { from { opacity: 0; transform: scale(0.95) translateY(-6px); } to { opacity: 1; transform: none; } }
 .dropdown-item { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--r-sm); font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--text); transition: background var(--t-fast); }
@@ -422,6 +423,12 @@ body.is-admin .admin-content .input:focus { border-color: var(--glass-border-str
 .admin-topbar .profile-chip .pname { color: #fff; }
 .admin-topbar .profile-chip:hover { background: rgba(255,255,255,0.14); }
 .admin-topbar .tb-title, .admin-topbar .page-name, .admin-topbar .profile-chip, .admin-topbar .bx { color: #fff; }
+/* El dropdown vive dentro del admin-topbar claro: sus iconos/texto conservan la paleta del menú */
+.admin-topbar .dropdown-menu .dropdown-item .dm-ico,
+.admin-topbar .dropdown-menu .dropdown-item .ico,
+.admin-topbar .dropdown-menu .dropdown-item .bx { color: var(--text-3); }
+.admin-topbar .dropdown-menu .dropdown-item.danger,
+.admin-topbar .dropdown-menu .dropdown-item.danger .bx { color: var(--danger); }
 /* Evita opacity heredada que vuelve transparentes los textos: usa rgba() en fondos, no opacity en contenedor */
 .admin-topbar, .admin-sidebar { opacity: 1; }
 .admin-content { flex: 1; padding: var(--sp-5); max-width: 1440px; width: 100%; margin: 0 auto; animation: fadeIn 200ms ease; min-width: 0; }
@@ -864,7 +871,7 @@ body.is-admin .admin-main {
 }
 body.is-admin .admin-main::before {
   content: ''; position: fixed; inset: -14px; z-index: -1;
-  background: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat;
+  background: var(--dashboard-background) center / cover no-repeat;
   filter: blur(7px); transform: scale(1.03); opacity: 0.52;
 }
 body.is-admin .admin-content { position: relative; }
