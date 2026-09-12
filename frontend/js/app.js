@@ -36,8 +36,12 @@ window.route = route;
 
 function setRoute(r) {
   if (!r) r = 'home';
+  if (window.location.hash === '#' + r) {
+    handleRoute();
+    return;
+  }
+  // hashchange realiza el render una sola vez.
   window.location.hash = r;
-  handleRoute();
 }
 window.setRoute = setRoute;
 
@@ -150,7 +154,7 @@ function renderUserShell(page) {
     <div class="app">
       <header class="user-header">
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark"><img class="brand-mark-img" src="assets/intesud-white-mark.png" alt="Logo INTESUD"></span>
+          <span class="brand-mark"><img class="brand-mark-img" src="${assetUrl('intesud-white-mark')}" alt="Logo INTESUD"></span>
           <span class="brand-name">Bar INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
@@ -193,7 +197,7 @@ function renderUserShell(page) {
   const ud = $('#userDropdown');
   $('#userMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
-  $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
+  $('#btnUserLogout').onclick = async (e) => { e.preventDefault(); await Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); route('login'); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
   // header search <i class="bx bx-right-arrow-alt"></i> go to menu with query
@@ -239,28 +243,23 @@ function userHome(el) {
   const app = el || $('#mainContent') || $('#app');
   
   (async () => {
-    // Cargar configuración y productos
-    const [configRes, productsRes] = await Promise.all([
+    // Cargar configuración, categorías reales y todos los productos (todas las páginas)
+    const [configRes, cats] = await Promise.all([
       ApiClient.get(API_ENDPOINTS.config.get),
-      ApiClient.get(API_ENDPOINTS.products.list),
+      fetchCategories(),
     ]);
-    
+    const products = await fetchAllProducts();
     let cfg = Store.config;
-    let products = Store.products;
     
     if (configRes.ok) {
       cfg = configRes.data;
       Store.config = cfg;
     }
     
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
-    }
-    
     const cap = await fetchCapacityInfo();
     const featured = products.filter((p) => p.available && p.stock > 0).slice(0, 4);
     const open = await canPlaceOrder();
+    if (!app.isConnected) return;
 
     let statusBanner = '';
     if (!open) {
@@ -299,7 +298,7 @@ function userHome(el) {
       <div class="cat-banner">
         <div class="cat-banner-inner">
           <div class="cat-banner-left">
-            <div class="cat-s"><img src="assets/intesud-white-mark.png" alt="Logo oficial INTESUD"></div>
+            <div class="cat-s"><img src="${assetUrl('intesud-white-mark')}" alt="Logo oficial INTESUD"></div>
             <div class="cat-titles">
               <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
               <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
@@ -308,9 +307,9 @@ function userHome(el) {
           <div class="cat-banner-deco" aria-hidden="true"></div>
         </div>
         <div class="cat-pills">
-          ${CATEGORIES.map((c) => {
-            const n = products.filter((p) => p.category === c).length;
-            return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${clientCatIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+          ${cats.map((c) => {
+            const n = products.filter((p) => String(p.categoryId) === String(c.id)).length;
+            return `<a class="cat-pill-card" href="#" data-cat="${c.id}"><span class="cp-ico">${clientCatIcon(c.name)}</span><div><div class="cp-name">${esc(c.name)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
           }).join('')}
         </div>
       </div>
@@ -378,20 +377,20 @@ const params = { product: null, cat: null };
 function userMenuPage(el) {
   const app = el || $('#mainContent') || $('#app');
   
-  // Cargar productos desde API
+  // Cargar productos (todas las páginas) y categorías reales desde la API
   (async () => {
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    let products = [];
-    
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
-    }
+    const [products, cats] = await Promise.all([fetchAllProducts(), fetchCategories()]);
+    if (!app.isConnected) return;
     
     let activeCat = sessionStorage.getItem('int_cat') || 'Todas';
     let search = sessionStorage.getItem('int_search') || '';
     sessionStorage.removeItem('int_search');
     sessionStorage.removeItem('int_cat');
+    // Si el filtro guardado no es una categoría real (p. ej. un nombre viejo),
+    // se descarta y se muestra el catálogo completo.
+    if (activeCat !== 'Todas' && !cats.some((c) => String(c.id) === String(activeCat))) {
+      activeCat = 'Todas';
+    }
 
     app.innerHTML = `
       <div class="menu-page">
@@ -424,12 +423,17 @@ function userMenuPage(el) {
 
     const renderChips = () => {
       const wrap = $('#menuChips');
-      const cats = ['Todas', ...CATEGORIES];
-      const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
-      wrap.innerHTML = cats.map((c) => `
-        <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-          <span class="cp-ico">${clientCatIcon(c)}</span>
-          <span class="cp-name">${esc(c)}</span>
+      const chipCats = cats
+        .filter((c) => products.some((p) => String(p.categoryId) === String(c.id)))
+        .sort((a, b) => Number(a.order) - Number(b.order));
+      const list = [{ id: 'Todas', name: 'Todas' }, ...chipCats];
+      const countFor = (c) => (
+        c.id === 'Todas' ? products.length : products.filter((p) => String(p.categoryId) === String(c.id)).length
+      );
+      wrap.innerHTML = list.map((c) => `
+        <button class="cat-pill ${String(activeCat) === String(c.id) ? 'active' : ''}" data-cat="${c.id}">
+          <span class="cp-ico">${clientCatIcon(c.name)}</span>
+          <span class="cp-name">${esc(c.name)}</span>
           <span class="cp-badge">${countFor(c)}</span>
         </button>`).join('');
       $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
@@ -442,7 +446,7 @@ function userMenuPage(el) {
 
     const render = () => {
       let list = products;
-      if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
+      if (activeCat !== 'Todas') list = list.filter((p) => String(p.categoryId) === String(activeCat));
       if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
       const grid = $('#menuGrid');
       const mc = $('#menuCount');
@@ -474,21 +478,18 @@ async function fetchProductAddons(productId) {
 
 function userProductPage(el) {
   const app = el || $('#mainContent') || $('#app');
+  const productId = params.product;
 
   (async () => {
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    let products = Store.products;
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
-    }
-
-    const p = products.find((product) => String(product.id) === String(params.product));
+    const products = await fetchAllProducts();
+    if (!app.isConnected) return;
+    const p = products.find((product) => String(product.id) === String(productId));
     if (!p) { setRoute('menu'); return; }
     const soldOut = !p.available || p.stock === 0;
     const addons = p.addons || [];
     const maxQty = p.stock;
     const canOrder = await canPlaceOrder();
+    if (!app.isConnected) return;
 
     app.innerHTML = `
       <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Volver al menú</button>
@@ -573,6 +574,7 @@ window.syncBodyClass = syncBodyClass;
 window.onhashchange = handleRoute;
 
 window.addEventListener('DOMContentLoaded', () => {
+  bindAssetCssVars();
   syncBodyClass();
   handleRoute();
 });

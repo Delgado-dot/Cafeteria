@@ -6,6 +6,8 @@ from .models import CafeConfig, PaymentMethod
 
 
 class CafeConfigSerializer(serializers.ModelSerializer):
+    hero_background_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = CafeConfig
         fields = [
@@ -19,9 +21,20 @@ class CafeConfigSerializer(serializers.ModelSerializer):
             "total_capacity",
             "current_capacity",
             "is_open",
+            "hero_background",
+            "hero_background_url",
             "updated_at",
         ]
-        read_only_fields = ["id", "updated_at"]
+        read_only_fields = ["id", "updated_at", "hero_background_url"]
+
+    def get_hero_background_url(self, obj):
+        if not obj.hero_background:
+            return None
+        url = obj.hero_background.url
+        request = self.context.get("request")
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

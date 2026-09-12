@@ -81,6 +81,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "username",
             "first_name",
             "last_name",
             "email",
@@ -90,6 +91,15 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "avatar",
             "is_active",
         ]
+
+    def validate_username(self, value):
+        # Unicidad case-insensitive: no puede existir otro usuario con el mismo username.
+        qs = User.objects.filter(username__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe otro usuario con ese nombre de usuario.")
+        return value
 
 
 class SelfUserUpdateSerializer(serializers.ModelSerializer):

@@ -65,8 +65,16 @@ const Auth = {
     }
   },
   
-  // Logout
-  logout() {
+  // Logout: invalida el refresh token en el backend y limpia la sesión local
+  async logout() {
+    try {
+      const refresh = ApiClient.getRefreshToken();
+      if (refresh) {
+        await ApiClient.post(API_ENDPOINTS.auth.logout, { refresh });
+      }
+    } catch (e) {
+      // Si el servidor no responde, igual se limpia la sesión local.
+    }
     this.clear();
   },
 };
@@ -91,12 +99,12 @@ function renderLogin() {
   <div class="login-screen login-screen--auth">
     <div class="login-layout">
       <div class="login-mascot" aria-hidden="true">
-        <img src="assets/images/panda-login.png" alt="">
+        <img src="${assetUrl('images/panda-login')}" alt="">
       </div>
       <div class="login-section">
         <div class="login-card">
           <div class="login-head login-brand-head">
-            <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
+            <img class="login-logo" src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD">
             <h2>Iniciar sesión</h2>
             <p>Ingresa con tu cuenta institucional</p>
           </div>
@@ -134,7 +142,8 @@ function renderLogin() {
   if (remembered) { $('#li_email').value = remembered; $('#li_remember').checked = true; }
 
   const setErr = (field, msg) => {
-    const inp = $('#li_' + field); const err = $('#li_' + field + 'Err');
+    const id = field === 'password' ? 'pass' : field;
+    const inp = $('#li_' + id); const err = $('#li_' + id + 'Err');
     if (inp) inp.classList.toggle('err', !!msg);
     err.textContent = msg || '';
   };
@@ -189,7 +198,7 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
+      <div class="brand-logo-badge"><img src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Funcionalidad en desarrollo</p>
     </div>

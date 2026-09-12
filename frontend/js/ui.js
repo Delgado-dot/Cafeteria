@@ -142,7 +142,7 @@ function catIcon(cat) {
   const c = (cat || '').toLowerCase();
   if (c.includes('hamburguesa') || c.includes('hot dog') || c.includes('sándwich') || c.includes('sandwich')) return '<i class="bx bx-hamburger"></i>';
   if (c.includes('bebida') || c.includes('jugo') || c.includes('té') || c.includes('te ')) return '<i class="bx bx-drink"></i>';
-  if (c.includes('snack') || c.includes('galleta')) return '<i class="bx bx-cookie"></i>';
+  if (c.includes('dulce') || c.includes('chocolate') || c.includes('gomita') || c.includes('galleta') || c.includes('snack')) return '<i class="bx bx-cookie"></i>';
   if (c.includes('papa') || c.includes('salchipapa')) return '<i class="bx bx-bowl-hot"></i>';
   if (c.includes('postre') || c.includes('helado')) return '<i class="bx bx-ice-cream"></i>';
   if (c.includes('café') || c.includes('cafe')) return '<i class="bx bx-coffee"></i>';

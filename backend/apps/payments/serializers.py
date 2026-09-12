@@ -77,7 +77,12 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class PaymentReviewSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
-        choices=[PaymentStatus.APPROVED, PaymentStatus.REJECTED, PaymentStatus.REFUNDED]
+        choices=[
+            PaymentStatus.APPROVED,
+            PaymentStatus.PAID,
+            PaymentStatus.REJECTED,
+            PaymentStatus.REFUNDED,
+        ]
     )
 
 

@@ -1,0 +1,11 @@
+{
+  "results": [
+    "Inicio de sesión real y validación de contraseña: OK",
+    "Compra real DEUNA: dos cafés con leche, total $5.00, comprobante y carrito limpio: OK",
+    "Historial real: 21 pedidos anteriores accesibles: OK",
+    "Panel bar con API real: 21 ventas pagadas suman $105.00: OK"
+  ],
+  "errors": [],
+  "orderTotal": "5.00",
+  "addonsQuantity": 2
+}

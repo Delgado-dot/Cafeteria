@@ -20,6 +20,24 @@ class OrderStatus(models.TextChoices):
     NOT_PICKED_UP = "nopickup", "No retirado"
 
 
+class InvalidOrderTransition(Exception):
+    """Transicion de estado de pedido no permitida por la maquina de estados."""
+
+
+# Maquina de estados: estados terminales (delivered/cancelled) no tienen salida.
+# No existe funcionalidad de reapertura: un pedido cancelado NO puede volver a
+# QUEUE/CONFIRMED sin una operacion explicita que vuelva a reservar stock.
+ORDER_TRANSITIONS = {
+    OrderStatus.QUEUE: {OrderStatus.CONFIRMED, OrderStatus.CANCELLED},
+    OrderStatus.CONFIRMED: {OrderStatus.PREPARATION, OrderStatus.CANCELLED},
+    OrderStatus.PREPARATION: {OrderStatus.READY, OrderStatus.CANCELLED},
+    OrderStatus.READY: {OrderStatus.DELIVERED, OrderStatus.NOT_PICKED_UP},
+    OrderStatus.NOT_PICKED_UP: {OrderStatus.DELIVERED, OrderStatus.CANCELLED},
+    OrderStatus.DELIVERED: set(),
+    OrderStatus.CANCELLED: set(),
+}
+
+
 class Priority(models.TextChoices):
     NORMAL = "normal", "Normal"
     PRIORITY = "priority", "Prioridad"
@@ -124,7 +142,16 @@ class Order(models.Model):
                 )
 
     def transition_to(self, new_status, *, changed_by=None, note=""):
-        """Change status under a row lock; no-op transitions do not duplicate history."""
+        """Change status under a row lock enforcing the state machine.
+
+        - Invalid status values raise ``ValueError``.
+        - Transitions not allowed by ``ORDER_TRANSITIONS`` raise
+          ``InvalidOrderTransition`` (e.g. CANCELLED -> CONFIRMED,
+          DELIVERED -> CANCELLED).
+        - No-op transitions return False and never duplicate history.
+        The row lock serializes concurrent transitions so cancel/reopen cannot
+        run twice.
+        """
         if new_status not in OrderStatus.values:
             raise ValueError("Estado de pedido invalido.")
 
@@ -132,6 +159,11 @@ class Order(models.Model):
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             if locked.status == new_status:
                 return False
+            allowed = ORDER_TRANSITIONS.get(locked.status, set())
+            if new_status not in allowed:
+                raise InvalidOrderTransition(
+                    f"Transicion {locked.status} -> {new_status} no permitida."
+                )
             locked.status = new_status
             locked.save(
                 changed_by=changed_by,

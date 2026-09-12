@@ -3,16 +3,16 @@ const path = require('path');
 
 const root = path.join(__dirname, '..', '..', 'frontend');
 
-// jsdom es dev-dependency no persistente: si no está disponible este smoke
-// test se salta (no rompe `npm test`), si está presente ejecuta la verificación.
+// Una dependencia ausente debe fallar; no equivale a una prueba aprobada.
 let JSDOM;
 try {
   JSDOM = require(path.join(root, 'node_modules', 'jsdom')).JSDOM;
 } catch (e) {
-  console.log('SKIP: jsdom no disponible; landing-smoke.test.js omitido.');
-  process.exit(0);
+  console.error('ERROR: falta jsdom. Instala las dependencias del frontend antes de ejecutar las pruebas.');
+  process.exit(1);
 }
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const landingCss = fs.readFileSync(path.join(root, 'css', 'landing.css'), 'utf8');
 
 const scriptSrcs = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
 let js = scriptSrcs.map((s) => fs.readFileSync(path.join(root, s), 'utf8')).join('\n;\n');
@@ -24,6 +24,7 @@ const dom = new JSDOM(html, {
   url: 'http://localhost/',
   beforeParse(window) {
     window.scrollTo = () => {};
+    window.HTMLElement.prototype.scrollTo = function () {};
     window.HTMLElement.prototype.scrollIntoView = function () {};
     window.matchMedia = window.matchMedia || function () {
       return { matches: false, addListener() {}, removeListener() {} };
@@ -43,7 +44,7 @@ const mockProducts = [
   { id: 3, name: 'Jugo', price: '1.80', category_name: 'Bebidas', description: 'Jugo natural', prep_time: 2, stock: 15, min_stock: 5, available: true, addons: [] },
   { id: 4, name: 'Galleta', price: '0.80', category_name: 'Snacks', description: 'Galleta artesanal', prep_time: 1, stock: 20, min_stock: 5, available: true, addons: [] },
 ];
-const mockConfig = { orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15' };
+const mockConfig = { orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15', hero_background_url: 'http://127.0.0.1:8000/media/home/fododeledificio.png' };
 // Mock temprano para que el primer renderLanding() ya reciba datos sin backend
 window.eval(js);
 // Sobrescribir ApiClient antes de que las promesas de renderLanding se resuelvan
@@ -79,6 +80,20 @@ async function main() {
   // 1. Initial load => Landing
   ok(!!document.querySelector('.landing'), 'Landing renderizado al cargar sin sesión');
   ok(!!document.querySelector('.lp-hero'), 'Hero presente en Landing');
+  const lpBgStyle = document.querySelector('.lp-bg')?.getAttribute('style') || '';
+  ok(lpBgStyle.includes('http://127.0.0.1:8000/media/home/fododeledificio.png'), 'Fondo del hero desde config (hero_background_url)');
+  ok(!!document.querySelector('.lp-bg-overlay'), 'Capa oscura sobre el hero presente');
+  ok(/\.lp-bg\s*\{[^}]*background-repeat:\s*no-repeat;[^}]*background-position:\s*center center;[^}]*background-size:\s*cover;/s.test(landingCss), 'Fondo centrado, sin repetición y con cover');
+  ok(/\.lp-bg-overlay\s*\{[^}]*rgba\(8,\s*31,\s*36,\s*0\.16\)/s.test(landingCss), 'Overlay uniforme al 16%');
+  ok(/body\.is-landing\s*\{[^}]*overflow:\s*hidden/s.test(landingCss), 'Página sin scrollbar horizontal');
+  const initialBgStyle = document.querySelector('.lp-bg').getAttribute('style');
+  const dots = [...document.querySelectorAll('.lp-dot')];
+  dots.forEach((dot) => dot.dispatchEvent(new window.Event('click', { bubbles: true })));
+  ok(
+    dots.length === document.querySelectorAll('.lp-slide').length
+      && document.querySelector('.lp-bg').getAttribute('style') === initialBgStyle,
+    'Fondo permanece igual al recorrer todos los slides'
+  );
   ok(!document.querySelector('.lp-header'), 'Header/navbar eliminado de Landing');
   ok(!!document.querySelector('.lp-topbar .lp-brand-mark'), 'Logo visible sin header tradicional');
   ok(!!document.querySelector('.lp-topbar [data-lp-login]'), 'Acceder visible en la esquina superior');

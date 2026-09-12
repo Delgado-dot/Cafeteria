@@ -16,7 +16,22 @@ class CafeConfigAdmin(admin.ModelAdmin):
         "break_end",
         "total_capacity",
         "current_capacity",
+        "hero_background",
     )
+    fields = (
+        "name",
+        "description",
+        "order_open_time",
+        "order_close_time",
+        "break_start",
+        "break_end",
+        "total_capacity",
+        "current_capacity",
+        "is_open",
+        "hero_background",
+        "updated_at",
+    )
+    readonly_fields = ("updated_at",)
 
     def has_add_permission(self, request):
         return not CafeConfig.objects.exists()

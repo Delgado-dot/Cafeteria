@@ -40,7 +40,7 @@ function mapApiOrder(order) {
 }
 
 async function loadMyOrders() {
-  const response = await ApiClient.get(API_ENDPOINTS.orders.list);
+  const response = await ApiClient.getAll(API_ENDPOINTS.orders.list);
   if (!response.ok) return { ok: false, orders: [], error: response.data?.detail || response.error };
   const rawOrders = Array.isArray(response.data) ? response.data : (response.data.results || []);
   const orders = rawOrders.map(mapApiOrder);
@@ -52,6 +52,7 @@ async function renderOrders(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
   const response = await loadMyOrders();
+  if (!app.isConnected) return;
   if (!response.ok) {
     app.innerHTML = emptyState(clientIcon('danger'), 'No se pudieron cargar tus pedidos', 'Verifica la conexión con el servidor e inténtalo de nuevo.');
     return;
@@ -84,7 +85,7 @@ async function renderOrders(el) {
   const histWrap = $('#historyOrders');
   if (!history.length) histWrap.innerHTML = emptyState(clientIcon('orders'), 'Sin historial', 'No hay pedidos anteriores.');
   else {
-    histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
+    histWrap.innerHTML = history.map((o) => historyCard(o)).join('');
     $$('[data-history-detail]', histWrap).forEach((button) => {
       button.onclick = () => showOrderDetail(history.find((o) => o.id === button.dataset.historyDetail));
     });
@@ -218,8 +219,6 @@ function showOrderDetail(o) {
 }
 window.showOrderDetail = showOrderDetail;
 
-function saveOrders() { Store.orders = Store.orders; }
-
 function fmtDate(d) {
   if (!d) return '';
   try {
@@ -271,8 +270,8 @@ function renderProfile(el) {
       </div>
     </div></div>`;
 
-  $('#btnLogout').onclick = () => {
-    Auth.logout();
+  $('#btnLogout').onclick = async () => {
+    await Auth.logout();
     toast('Sesión cerrada.', 'info');
     route('login');
   };
@@ -370,7 +369,7 @@ function renderProfileModal() {
       <button class="btn btn-danger-outline" id="pmLogout">Cerrar sesión</button>
     </div>`, { title: 'Mi perfil' });
   $('#pmChangePass', ov).onclick = () => changePasswordModal();
-  $('#pmLogout', ov).onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
+  $('#pmLogout', ov).onclick = async () => { await Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
 }
 window.renderProfileModal = renderProfileModal;
 
@@ -378,4 +377,3 @@ function initials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
 window.initials = initials;
-

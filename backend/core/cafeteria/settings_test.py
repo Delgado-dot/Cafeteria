@@ -12,6 +12,14 @@ DATABASES = {
     }
 }
 
+# Límites altísimos: el test client comparte la misma IP simulada y los
+# tests ejecutan muchos login/register; no debe throttlearse.
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+    "login": "1000000/min",
+    "register": "1000000/hour",
+    "assets": "1000000/min",
+}
+
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]

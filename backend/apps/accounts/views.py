@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -31,6 +32,8 @@ class RegisterView(APIView):
     """Registro de un nuevo usuario (acceso público)."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
     def post(self, request):
         serializer = UserCreateSerializer(data=request.data)
@@ -59,6 +62,24 @@ class LoginView(TokenObtainPairView):
     """Login con JWT mediante nombre de usuario o correo."""
 
     serializer_class = UsernameOrEmailTokenObtainPairSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+
+class LogoutView(APIView):
+    """Cierre de sesión: invalida (blacklist) el refresh token JWT."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except Exception:
+                # Token inválido o ya en blacklist: el logout local procede igual.
+                pass
+        return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
 class UserListView(generics.ListAPIView):
@@ -97,6 +118,9 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
             new_role = data.get("role")
             if new_role and new_role != target.role:
                 raise PermissionDenied("No puedes cambiar tu propio rol.")
+        # Solo el administrador desarrollador puede editar el username
+        if "username" in data and request_user.role != "admindev":
+            raise PermissionDenied("Solo el administrador desarrollador puede editar el nombre de usuario.")
         # adminbar no puede gestionar usuarios admindev
         if request_user.role == "adminbar" and target.role == "admindev":
             raise PermissionDenied("No tienes permiso para gestionar usuarios desarrolladores.")
@@ -144,7 +168,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         if response.status_code == 200:
             details = {
                 field: request.data[field]
-                for field in ("first_name", "last_name", "email", "role", "cargo", "aula", "avatar")
+                for field in ("username", "first_name", "last_name", "email", "role", "cargo", "aula", "avatar")
                 if field in request.data
             }
             if "is_active" in request.data:
