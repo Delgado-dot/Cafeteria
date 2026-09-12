@@ -150,7 +150,7 @@ async function renderBarAdmin(page, params) {
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
   const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
   const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
-  const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
+  const activeSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
   syncBodyClass();
 
   let queueCount = 0, prepCount = 0, readyCount = 0;
@@ -164,25 +164,27 @@ async function renderBarAdmin(page, params) {
     }
   } catch(e) {}
 
+  const BOTTOM_NAV_ITEMS = [
+    { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
+    { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
+    { id: 'orders', label: 'Pedidos', icon: 'bx-receipt' },
+    { id: 'stock', label: 'Stock', icon: 'bx-box' },
+    { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
+  ];
+
+  const MORE_ITEMS = [
+    { id: 'payments', label: 'Pagos', icon: 'bx-credit-card' },
+    { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
+    { id: 'delivery', label: 'Delivery', icon: 'bx-cycling' },
+    { id: 'suppliers', label: 'Proveedores', icon: 'bx-store' },
+    { id: 'reports', label: 'Informes', icon: 'bx-bar-chart-alt-2' },
+    { id: 'config-hours', label: 'Configuración', icon: 'bx-cog' },
+  ];
+
   app.innerHTML = `
     <div class="admin-layout">
-      <aside class="admin-sidebar" id="adminSidebar" aria-label="Menú principal">
-        <div class="sb-brand"><span style="font-size:1.5rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span><button class="sb-close" id="sbClose" aria-label="Cerrar menú"><i class="bx bx-x"></i></button></div>
-        <nav class="sb-nav">
-${Object.entries(BAR_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
-              <span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span>
-              ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
-            </a>`).join('')}
-        </nav>
-        <div class="sb-footer">
-          <div class="bold small">${esc(currentUser().name)}</div>
-          <div class="tiny muted">Administradora Bar</div>
-        </div>
-      </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="admin-menu-toggle" id="adminMenuToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="adminSidebar"><i class="bx bx-menu"></i></button>
           <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
           <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -197,33 +199,19 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             </div>
           </div>
         </div>
-        <div class="admin-content" id="barContent">
-        </div>
+        <div class="admin-content" id="barContent"></div>
       </div>
       <nav class="admin-bottom-nav" id="adminBottomNav">
-        <div class="abn-grid">
-          ${[
-            { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
-            { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
-            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount, center: true },
-            { id: 'stock', label: 'Stock', icon: 'bx-box' },
-            { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
-          ].map((item, idx) => {
+        <div class="bn-grid">
+          ${BOTTOM_NAV_ITEMS.map((item) => {
             const isActive = item.id === 'more'
-              ? ['payments','sales-dashboard','sales-history','delivery','suppliers','reports','config-hours','config-status'].includes(activeSidebarSection)
-              : activeSidebarSection === item.id;
-            const isAdjacent = idx === 1 || idx === 3;
-            if (item.center) {
-              return `<a class="abn-item center ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
-                <span class="abn-circle"><i class="bx ${item.icon}"></i></span>
-                <span class="abn-label">${item.label}</span>
-                ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
-              </a>`;
-            }
-            return `<a class="abn-item ${isAdjacent ? 'adjacent' : ''} ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
-              <span class="abn-ico bx ${item.icon}"></span>
+              ? ['payments','sales-dashboard','sales-history','delivery','suppliers','reports','config-hours','config-status'].includes(activeSection)
+              : activeSection === item.id;
+            const badge = item.id === 'orders' && queueCount ? `<span class="bn-badge">${queueCount}</span>` : '';
+            return `<a class="bn-item ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+              <span class="bn-ico bx ${item.icon}"></span>
               <span>${item.label}</span>
-              ${item.badge ? `<span class="abn-badge">${item.badge}</span>` : ''}
+              ${badge}
             </a>`;
           }).join('')}
         </div>
@@ -231,67 +219,8 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       <div id="adminMoreModal" style="display:none"></div>
     </div>`;
 
-  // Limpieza legacy
-  document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
-  document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
-
-  // Drawer móvil: hamburguesa + scrim + Escape + autocierre al navegar
-  const sidebar = $('#adminSidebar', app);
-  const menuToggle = $('#adminMenuToggle', app);
-  const sbClose = $('#sbClose', app);
-  let sbScrim = null;
-  let escHandler = null;
-  const ensureScrim = () => {
-    if (sbScrim || !sidebar) return;
-    sbScrim = document.createElement('div');
-    sbScrim.className = 'sb-scrim';
-    sbScrim.setAttribute('aria-hidden', 'true');
-    sbScrim.style.display = 'none';
-    document.body.appendChild(sbScrim);
-    sbScrim.addEventListener('click', closeSidebar);
-  };
-  const removeScrim = () => {
-    if (sbScrim) { sbScrim.remove(); sbScrim = null; }
-    document.querySelectorAll('.sb-scrim').forEach((el) => { if (el !== sbScrim) el.remove(); });
-  };
-  function openSidebar() {
-    if (!sidebar) return;
-    ensureScrim();
-    sidebar.classList.add('open');
-    if (sbScrim) sbScrim.style.display = 'block';
-    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-    if (!escHandler) {
-      escHandler = (e) => { if (e.key === 'Escape') closeSidebar(); };
-      document.addEventListener('keydown', escHandler);
-    }
-  }
-  function closeSidebar() {
-    if (!sidebar) return;
-    sidebar.classList.remove('open');
-    if (sbScrim) sbScrim.style.display = 'none';
-    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-    if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
-  }
-  window._adminCloseSidebar = closeSidebar;
-  if (menuToggle) menuToggle.addEventListener('click', (e) => { e.preventDefault(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
-  if (sbClose) sbClose.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); });
-  // Cerrar si se hace clic en cualquier link del sidebar
-  const layout = $('.admin-layout', app);
-  // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
   const moreModal = $('#adminMoreModal', app);
-  const MORE_ITEMS = [
-    { id: 'payments', label: 'Pagos', icon: 'bx-credit-card' },
-    { id: 'sales-dashboard', label: 'Ventas', icon: 'bx-line-chart' },
-    { id: 'delivery', label: 'Delivery', icon: 'bx-cycling' },
-    { id: 'suppliers', label: 'Proveedores', icon: 'bx-store' },
-    { id: 'reports', label: 'Informes', icon: 'bx-bar-chart-alt-2' },
-    { id: 'config-hours', label: 'Configuración', icon: 'bx-cog' },
-  ];
-  const closeMoreModal = () => {
-    if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
-  };
+  const closeMoreModal = () => { if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; } };
   const openMoreModal = () => {
     if (!moreModal) return;
     moreModal.innerHTML = `
@@ -302,7 +231,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
           <button class="btn btn-ghost btn-sm" id="closeMoreBtn"><i class="bx bx-x"></i></button>
         </div>
         ${MORE_ITEMS.map(item => `
-          <a class="admin-more-item ${activeSidebarSection === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
+          <a class="admin-more-item ${activeSection === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
             <span class="ami-ico bx ${item.icon}"></span>
             <span>${item.label}</span>
           </a>
@@ -315,24 +244,17 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
     $$('[data-more]', moreModal).forEach(a => a.addEventListener('click', (e) => {
       e.preventDefault();
       closeMoreModal();
-      closeSidebar();
       setRoute('adminbar/' + a.dataset.more);
     }));
   };
+
   $$('[data-bnav]', app).forEach(a => a.addEventListener('click', (e) => {
     e.preventDefault();
     const target = a.dataset.bnav;
-    if (target === 'more') {
-      openMoreModal();
-    } else {
-      closeSidebar();
-      closeMoreModal();
-      setRoute('adminbar/' + target);
-    }
+    if (target === 'more') openMoreModal();
+    else { closeMoreModal(); setRoute('adminbar/' + target); }
   }));
-  $$('[data-bar]', app).forEach((a) => a.addEventListener('click', (e) => {
-    e.preventDefault(); closeSidebar(); setRoute('adminbar/' + a.dataset.bar);
-  }));
+
   const ud = $('#barUserDropdown');
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
@@ -340,7 +262,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
 
   const content = $('#barContent');
-const renderers = {
+  const renderers = {
     dashboard: barDashboard,
     orders: barOrders,
     products: barProducts,
@@ -357,13 +279,11 @@ const renderers = {
     'config-status': (target) => barConfigTabs(target, 'status'),
     profile: barAdminProfile,
   };
-  // Skeleton outer solo para secciones sin skeleton propio; Pedidos gestiona su propio ciclo con finally
   if (sec === 'orders') {
     renderers[sec](content, params);
   } else {
     content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
     setTimeout(() => {
-      // Evita skeleton duplicado si el usuario ya cambió de sección durante el delay
       if (content.getAttribute('data-loading') === 'true') return;
       renderers[sec](content, params);
     }, 260);

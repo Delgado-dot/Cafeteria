@@ -1,5 +1,5 @@
 /* ============================================================
-   devadmin.js — Panel del Administrador Desarrollador
+   devadmin.js — Panel del Administrador Desarrollador (Dark Glass Unificado)
    ============================================================ */
 
 const DEV_SECTIONS = {
@@ -11,6 +11,19 @@ const DEV_SECTIONS = {
   audit: { label: 'Auditoría', icon: 'bx-file' },
 };
 
+const DEV_BOTTOM_NAV = [
+  { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
+  { id: 'users', label: 'Usuarios', icon: 'bx-group' },
+  { id: 'roles', label: 'Roles', icon: 'bx-shield' },
+  { id: 'cafe', label: 'Cafetería', icon: 'bx-store' },
+  { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
+];
+
+const DEV_MORE_ITEMS = [
+  { id: 'config', label: 'Configuración', icon: 'bx-cog' },
+  { id: 'audit', label: 'Auditoría', icon: 'bx-file' },
+];
+
 async function renderDevAdmin(page) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'admindev') return route('login');
@@ -19,20 +32,8 @@ async function renderDevAdmin(page) {
 
   app.innerHTML = `
     <div class="admin-layout">
-      <aside class="admin-sidebar" id="adminSidebar" aria-label="Menú principal">
-        <div class="sb-brand"><span style="font-size:1.3rem"><i class="bx bx-cog"></i></span> Sistema INTESUD<button class="sb-close" id="sbClose" aria-label="Cerrar menú"><i class="bx bx-x"></i></button></div>
-        <nav class="sb-nav">
-          ${Object.entries(DEV_SECTIONS).map(([k, v]) => `
-            <a class="sb-link ${k === sec ? 'active' : ''}" href="#" data-dev="${k}"><span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span></a>`).join('')}
-        </nav>
-        <div class="sb-footer">
-          <div class="bold small">${esc(currentUser().name)}</div>
-          <div class="tiny muted">Administrador desarrollador</div>
-        </div>
-      </aside>
       <div class="admin-main">
         <div class="admin-topbar">
-          <button class="admin-menu-toggle" id="devHamburger" aria-label="Abrir menú" aria-expanded="false" aria-controls="adminSidebar"><i class="bx bx-menu"></i></button>
           <span style="font-size:1.3rem"><i class="bx ${DEV_SECTIONS[sec].icon}"></i></span>
           <span class="page-name">${DEV_SECTIONS[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -48,50 +49,63 @@ async function renderDevAdmin(page) {
         </div>
         <div class="admin-content" id="devContent"></div>
       </div>
-    </div>
-    <nav class="mobile-nav role-admin" id="devMobileNav"></nav>`;
+      <nav class="admin-bottom-nav" id="devBottomNav">
+        <div class="bn-grid">
+          ${DEV_BOTTOM_NAV.map((item) => {
+            const isActive = item.id === 'more'
+              ? ['config','audit'].includes(sec)
+              : sec === item.id;
+            return `<a class="bn-item ${isActive ? 'active' : ''}" href="#" data-bnav="${item.id}">
+              <span class="bn-ico bx ${item.icon}"></span>
+              <span>${item.label}</span>
+            </a>`;
+          }).join('')}
+        </div>
+      </nav>
+      <div id="devMoreModal" style="display:none"></div>
+    </div>`;
+
+  const moreModal = $('#devMoreModal', app);
+  const closeMoreModal = () => { if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; } };
+  const openMoreModal = () => {
+    if (!moreModal) return;
+    moreModal.innerHTML = `
+      <div class="admin-more-scrim"></div>
+      <div class="admin-more-sheet">
+        <div class="admin-more-header">
+          <span>Más opciones</span>
+          <button class="btn btn-ghost btn-sm" id="closeMoreBtn"><i class="bx bx-x"></i></button>
+        </div>
+        ${DEV_MORE_ITEMS.map(item => `
+          <a class="admin-more-item ${sec === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
+            <span class="ami-ico bx ${item.icon}"></span>
+            <span>${item.label}</span>
+          </a>
+        `).join('')}
+      </div>
+    `;
+    moreModal.style.display = 'block';
+    $('.admin-more-scrim', moreModal)?.addEventListener('click', closeMoreModal);
+    $('#closeMoreBtn', moreModal)?.addEventListener('click', closeMoreModal);
+    $$('[data-more]', moreModal).forEach(a => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMoreModal();
+      setRoute('admindev/' + a.dataset.more);
+    }));
+  };
+
+  $$('[data-bnav]', app).forEach(a => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = a.dataset.bnav;
+    if (target === 'more') openMoreModal();
+    else { closeMoreModal(); setRoute('admindev/' + target); }
+  }));
 
   const ud = $('#devUserDropdown');
   $('#devUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { renderProfileModal(); ud.style.display = 'none'; } else setRoute(t); });
   $('#btnDevLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
-
-  const sidebar = $('#adminSidebar', app);
-  const devHamburger = $('#devHamburger', app);
-  const sbClose = $('#sbClose', app);
-  let sbScrim = null;
-  let escHandler = null;
-  const ensureScrim = () => {
-    if (sbScrim || !sidebar) return;
-    sbScrim = document.createElement('div');
-    sbScrim.className = 'sb-scrim';
-    sbScrim.setAttribute('aria-hidden', 'true');
-    sbScrim.style.display = 'none';
-    document.body.appendChild(sbScrim);
-    sbScrim.addEventListener('click', closeSidebar);
-  };
-  function openSidebar() {
-    if (!sidebar) return;
-    ensureScrim();
-    sidebar.classList.add('open');
-    if (sbScrim) sbScrim.style.display = 'block';
-    if (devHamburger) devHamburger.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-    if (!escHandler) { escHandler = (e) => { if (e.key === 'Escape') closeSidebar(); }; document.addEventListener('keydown', escHandler); }
-  }
-  function closeSidebar() {
-    if (!sidebar) return;
-    sidebar.classList.remove('open');
-    if (sbScrim) sbScrim.style.display = 'none';
-    if (devHamburger) devHamburger.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-    if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
-  }
-  window._devCloseSidebar = closeSidebar;
-  if (devHamburger) devHamburger.addEventListener('click', (e) => { e.preventDefault(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
-  if (sbClose) sbClose.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); });
-  $$('[data-dev]', app).forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); setRoute('admindev/' + a.dataset.dev); }));
 
   const content = $('#devContent');
   const renderers = {
@@ -102,7 +116,6 @@ async function renderDevAdmin(page) {
     config: devConfig,
     audit: devAudit,
   };
-  // Show loading skeleton
   content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div></div>`;
   try {
     await renderers[sec](content);

@@ -1,6 +1,6 @@
 /* ============================================================
    main.css — Sistema de diseño: tokens, base, layout, formularios
-   Cafetería INTESUD · Identidad SaaS moderna
+   Cafetería INTESUD · Identidad SaaS moderna — Dark Glass Unificado
    ============================================================ */
 
 /* ---------- Design tokens ---------- */
@@ -12,14 +12,13 @@
   --primary-soft: #e7f1f0;
   --primary-softer: #f2f8f7;
   --primary-glass: rgba(64, 128, 126, 0.12);
-  --primary-very-light: #E8F3F1;
   --primary-light: #7FB5AE;
   --primary-mid: #5AA9A5;
   --on-primary: #ffffff;
 
   --color-primary-dark: #173432;
 
-  /* Superficies y texto */
+  /* Superficies y texto (light mode base - usado solo en landing hero sin glass) */
   --bg: #f4f7f6;
   --surface: #ffffff;
   --surface-2: #f8faf9;
@@ -54,7 +53,7 @@
   --r-xl: 22px;
   --r-pill: 999px;
 
-  /* Sombras (SaaS, sutiles) */
+  /* Sombras */
   --shadow-xs: 0 1px 2px rgba(18, 34, 33, 0.05);
   --shadow-sm: 0 1px 3px rgba(18, 34, 33, 0.07), 0 1px 2px rgba(18, 34, 33, 0.04);
   --shadow-md: 0 4px 12px rgba(18, 34, 33, 0.08), 0 2px 4px rgba(18, 34, 33, 0.04);
@@ -82,29 +81,66 @@
   --fw-extrabold: 800;
 
   --font: 'Segoe UI', system-ui, -apple-system, 'Inter', Roboto, 'Helvetica Neue', sans-serif;
+  --font-serif: "Arvo", serif;
+  --font-display: "Playfair Display", serif;
+  --font-hero: "Berkshire Swash", cursive;
   --lh-tight: 1.2;
   --lh-normal: 1.5;
 
   /* Layout */
   --header-h: 68px;
-  --sidebar-w: 264px;
-  --sidebar-w-cond: 84px;
   --content-max: 1240px;
+  --bottom-nav-h: 72px;
 
   /* Transiciones */
   --t-fast: 0.14s ease;
   --t-med: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-slow: 0.34s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Glass institucional unificado — TODOS los paneles */
+  /* ===== DARK GLASS UNIFICADO — Esquema visual único para TODO el sistema ===== */
+  /* Fondo base: foto café + overlay oscuro (se aplica en body shells) */
+  --app-photo: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg");
+
+  /* Glass tokens canónicos (dark mode) */
   --glass-bg: rgba(32, 82, 79, 0.58);
   --glass-bg-dark: rgba(18, 55, 53, 0.78);
   --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-border-strong: rgba(255, 255, 255, 0.36);
   --glass-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   --glass-blur: blur(20px) saturate(130%);
   --text-on-glass: #ffffff;
   --text-secondary-on-glass: rgba(255, 255, 255, 0.78);
+  --text-muted-on-glass: rgba(255, 255, 255, 0.58);
   --institutional-green: #40807e;
+
+  /* Inputs sobre glass */
+  --input-glass-bg: rgba(255, 255, 255, 0.92);
+  --input-glass-text: #173432;
+  --input-glass-border: rgba(255, 255, 255, 0.32);
+  --input-glass-focus-bg: #ffffff;
+  --input-glass-focus-border: var(--institutional-green);
+  --input-glass-placeholder: rgba(23, 52, 50, 0.55);
+
+  /* Botones sobre glass */
+  --btn-primary-glass-bg: var(--institutional-green);
+  --btn-primary-glass-hover: #2f605e;
+  --btn-primary-glass-text: #fff;
+
+  /* Tablas sobre glass */
+  --table-head-glass-bg: rgba(255, 255, 255, 0.14);
+  --table-head-glass-text: #ffffff;
+  --table-body-glass-text: rgba(255, 255, 255, 0.92);
+  --table-border-glass: rgba(255, 255, 255, 0.12);
+  --table-hover-glass-bg: rgba(255, 255, 255, 0.08);
+
+  /* Scrollbar sobre glass */
+  --scrollbar-thumb-glass: rgba(255, 255, 255, 0.35);
+  --scrollbar-thumb-hover-glass: rgba(255, 255, 255, 0.55);
+
+  /* Badge active sobre glass (blanco sólido) */
+  --badge-active-glass-bg: #ffffff;
+  --badge-active-glass-border: #ffffff;
+  --badge-active-glass-text: var(--primary-strong);
 }
 
 /* ---------- Reset / base ---------- */
@@ -138,8 +174,8 @@ h4 { font-size: var(--fs-md); }
 
 /* Scrollbar */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: #c5d1cf; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
-*::-webkit-scrollbar-thumb:hover { background: #a9bab7; background-clip: content-box; }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--text-3); background-clip: content-box; }
 *::-webkit-scrollbar-track { background: transparent; }
 
 /* Tipografía utilitaria */
@@ -218,7 +254,7 @@ h4 { font-size: var(--fs-md); }
 }
 .input::placeholder { color: var(--text-3); }
 .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3.5px var(--primary-glass); }
-.input:hover:not(:focus):not(:disabled) { border-color: #b7c6c4; }
+.input:hover:not(:focus):not(:disabled) { border-color: var(--border-strong); }
 .input:disabled { background: var(--surface-3); color: var(--text-3); cursor: not-allowed; }
 .input.err { border-color: var(--danger); box-shadow: 0 0 0 3.5px rgba(217, 75, 75, 0.12); }
 .input-err-msg { color: var(--danger); font-size: var(--fs-xs); margin-top: 5px; }
@@ -264,12 +300,12 @@ textarea.input { resize: vertical; min-height: 84px; }
 
 /* ---------- Glass panel reutilizable (unificado cliente / admin) ---------- */
 .glass-panel {
-  background: var(--glass-surface);
+  background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
-  border-radius: var(--glass-radius);
+  border-radius: var(--r-lg);
 }
 
 /* ---------- Cards ---------- */
@@ -318,10 +354,10 @@ textarea.input { resize: vertical; min-height: 84px; }
 }
 .alert .a-ico { font-size: 1.15rem; line-height: 1.3; }
 .alert .a-title { font-weight: var(--fw-semibold); }
-.alert.success { background: var(--success-soft); color: var(--success-strong); border-color: #cdeeda; }
-.alert.warning { background: var(--warning-soft); color: #8a5c05; border-color: #f0dfb0; }
-.alert.danger { background: var(--danger-soft); color: var(--danger-strong); border-color: #f3cfcf; }
-.alert.info { background: var(--info-soft); color: var(--info); border-color: #cfe0f7; }
+.alert.success { background: var(--success-soft); color: var(--success-strong); border-color: var(--success-soft); }
+.alert.warning { background: var(--warning-soft); color: var(--warning-strong); border-color: var(--warning-soft); }
+.alert.danger { background: var(--danger-soft); color: var(--danger-strong); border-color: var(--danger-soft); }
+.alert.info { background: var(--info-soft); color: var(--info); border-color: var(--info-soft); }
 .alert.neutral { background: var(--neutral-soft); color: var(--neutral); border-color: var(--border); }
 .alert.danger strong, .alert.success strong, .alert.warning strong, .alert.info strong { color: inherit; }
 
@@ -448,26 +484,27 @@ tbody tr:hover { background: var(--primary-softer); }
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+  border-radius: var(--r-lg);
 }
 /* Títulos/etiquetas/íconos blancos sobre glass, secundarios semitransparentes */
 .card .card-title, .stat-card .st-label, .stat-card .stat-label, .page-title h1, .section-title,
-.modal-title, .card-header .card-title, .queue-order .bold { color: var(--text-on-glass) !important; }
-.card .card-sub, .stat-card .st-sub, .stat-card .stat-sub, .page-sub, .modal-sub, .muted { color: var(--text-secondary-on-glass) !important; }
+.modal-title, .card-header .card-title, .queue-order .bold { color: var(--text-on-glass); }
+.card .card-sub, .stat-card .st-sub, .stat-card .stat-sub, .page-sub, .modal-sub, .muted { color: var(--text-secondary-on-glass); }
 .card .bx, .stat-card .bx, .queue-order .bx, .table-wrap .bx, .modal .bx { color: rgba(255,255,255,0.92); }
-/* Campos blanco translúcido texto verde oscuro — sin opacity */
-.input, textarea.input, select.input { background: rgba(255,255,255,0.92) !important; color: #173432 !important; border-color: rgba(255,255,255,0.32) !important; min-height: 44px; }
-.input::placeholder { color: rgba(23,52,50,0.55) !important; }
-.input:focus { background: #ffffff !important; border-color: var(--institutional-green) !important; box-shadow: 0 0 0 3px rgba(255,255,255,0.22) !important; }
+/* Campos blanco translúcido texto verde oscuro */
+.input, textarea.input, select.input { background: var(--input-glass-bg); color: var(--input-glass-text); border-color: var(--input-glass-border); min-height: 44px; }
+.input::placeholder { color: var(--input-glass-placeholder); }
+.input:focus { background: var(--input-glass-focus-bg); border-color: var(--input-glass-focus-border); box-shadow: 0 0 0 3px rgba(255,255,255,0.22); }
 /* Botones principales verde institucional */
-.btn-primary { background: var(--institutional-green) !important; border-color: var(--institutional-green) !important; color: #fff !important; }
-.btn-primary:hover { background: #2f605e !important; border-color: #2f605e !important; }
+.btn-primary { background: var(--btn-primary-glass-bg); border-color: var(--btn-primary-glass-bg); color: var(--btn-primary-glass-text); }
+.btn-primary:hover { background: var(--btn-primary-glass-hover); border-color: var(--btn-primary-glass-hover); }
 /* Tablas legibles sobre glass */
-.table-wrap thead th { background: rgba(255,255,255,0.14) !important; color: #ffffff !important; border-bottom-color: var(--glass-border) !important; }
-.table-wrap tbody td { color: rgba(255,255,255,0.92) !important; border-bottom-color: rgba(255,255,255,0.12) !important; }
-.table-wrap tbody tr:hover { background: rgba(255,255,255,0.08) !important; }
+.table-wrap thead th { background: var(--table-head-glass-bg); color: var(--table-head-glass-text); border-bottom-color: var(--glass-border); }
+.table-wrap tbody td { color: var(--table-body-glass-text); border-bottom-color: var(--table-border-glass); }
+.table-wrap tbody tr:hover { background: var(--table-hover-glass-bg); }
 /* Modales responsive 320px+ */
-.modal { width: calc(100% - 32px) !important; max-width: 560px; max-height: 90vh; overflow-y: auto; border-radius: 16px; }
-.modal.wide { max-width: min(880px, calc(100% - 32px)) !important; }
+.modal { width: calc(100% - 32px); max-width: 560px; max-height: 90vh; overflow-y: auto; border-radius: 16px; }
+.modal.wide { max-width: min(880px, calc(100% - 32px)); }
 .modal-overlay { padding: 16px; }
 /* Imágenes fluidas sin deformación */
 img { max-width: 100%; height: auto; object-fit: contain; }
@@ -511,7 +548,6 @@ img { max-width: 100%; height: auto; object-fit: contain; }
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  /* mantiene colores originales, sin blur */
 }
 .login-screen.login-screen--auth {
   min-height: 100vh;
@@ -585,38 +621,38 @@ img { max-width: 100%; height: auto; object-fit: contain; }
 .login-section { position: relative; z-index: 2; width: 100%; max-width: 430px; display: flex; align-self: center; justify-self: start; justify-content: center; }
 .login-card {
   width: 100%;
-  background: linear-gradient(145deg, rgba(20, 91, 85, 0.54), rgba(8, 49, 46, 0.42));
-  backdrop-filter: blur(20px) saturate(135%);
-  -webkit-backdrop-filter: blur(20px) saturate(135%);
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 28px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--r-xl);
   padding: clamp(24px, 4vw, 38px);
-  box-shadow: 0 24px 60px rgba(3, 28, 26, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .login-head { text-align: center; margin-bottom: var(--sp-5); }
-.login-head h2 { font-size: var(--fs-2xl); margin-bottom: 4px; color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
-.login-head p { color: rgba(255, 255, 255, 0.85); font-size: var(--fs-md); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+.login-head h2 { font-size: var(--fs-2xl); margin-bottom: 4px; color: var(--text-on-glass); }
+.login-head p { color: var(--text-secondary-on-glass); font-size: var(--fs-md); }
 .login-brand-head .login-logo {
   width: 72px; height: 72px; object-fit: contain; margin: 0 auto 14px;
-  border-radius: 18px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; background: var(--input-glass-bg); border: 1px solid var(--glass-border);
   padding: 12px; box-shadow: var(--shadow-sm);
 }
-/* Legibilidad panel glass claro — sin opacity */
-.login-card .label { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
-.login-card .checkbox-row { color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
-.login-card .small.bold[href], .login-card a.small.bold { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
-.login-card .small.bold[href]:hover, .login-card a.small.bold:hover { color: #b7ebe8 !important; }
-.login-card .input { background: #ffffff; color: #173432; border-color: rgba(255,255,255,0.65); }
-.login-card .input::placeholder { color: #6b7a78; }
-.login-card .input:focus { background: #ffffff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(64,128,126,0.18); }
-.login-card .btn-primary { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+/* Legibilidad panel glass */
+.login-card .label { color: var(--text-on-glass); }
+.login-card .checkbox-row { color: var(--text-on-glass); }
+.login-card .small.bold[href], .login-card a.small.bold { color: var(--text-on-glass); }
+.login-card .small.bold[href]:hover, .login-card a.small.bold:hover { color: var(--primary-light); }
+.login-card .input { background: var(--input-glass-bg); color: var(--input-glass-text); border-color: var(--input-glass-border); }
+.login-card .input::placeholder { color: var(--input-glass-placeholder); }
+.login-card .input:focus { background: var(--input-glass-focus-bg); border-color: var(--input-glass-focus-border); box-shadow: 0 0 0 3px rgba(64,128,126,0.18); }
+.login-card .btn-primary { background: var(--btn-primary-glass-bg); border-color: var(--btn-primary-glass-bg); color: var(--btn-primary-glass-text); }
 .login-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 18px; }
 
-/* Tipografía del login, aislada del resto de shells. */
-.login-screen { font-family: "Arvo", serif; }
+/* Tipografía del login */
+.login-screen { font-family: var(--font-serif); }
 .login-screen h1,
 .login-screen h2,
-.login-screen h3 { font-family: "Playfair Display", serif; }
+.login-screen h3 { font-family: var(--font-display); }
 
 @media (max-width: 900px) {
   .login-screen { padding: var(--sp-5); }
@@ -668,28 +704,214 @@ img { max-width: 100%; height: auto; object-fit: contain; }
 }
 
 /* ============================================================
-   PANEL ADMIN BAR (integración Delgado) — estilos scoped
-   Estas reglas SOLO afectan al área admin (.is-admin / .admin-*),
-   NO al login, landing ni panel del cliente.
+   SHELLS UNIFICADOS — Dark Glass para TODO (Cliente, Admin Bar, Admin Dev)
    ============================================================ */
-body.is-admin { font-family: 'DM Sans', var(--font); }
-body.is-admin h1,
-body.is-admin .page-title h1,
-body.is-admin .admin-topbar .tb-title { font-family: 'Berkshire Swash', cursive; font-weight: 400; letter-spacing: 0.02em; }
-body.is-admin .btn,
-body.is-admin .badge,
-body.is-admin .status-chip,
-body.is-admin .priority-tag,
-body.is-admin .sb-badge,
-body.is-admin .category-chip,
-body.is-admin .cat-chip,
-body.is-admin .status-banner { font-family: 'Lobster', cursive; font-weight: 400; letter-spacing: 0.02em; }
-body.is-admin .btn { letter-spacing: 0.03em; }
 
-/* Admin bar: las fuentes de Delgado de body.is-admin y sus componentes específicos prevalecen. */
-body.is-adminbar .admin-content { font-family: "Arvo", serif; }
-body.is-adminbar .admin-content h2,
-body.is-adminbar .admin-content h3,
-body.is-adminbar .admin-content .card-title,
-body.is-adminbar .admin-content .section-title { font-family: "Playfair Display", serif; }
+/* Fondo base con foto + overlay oscuro para todos los shells con glass */
+body.has-bottom-nav .app,
+body.is-admin .app,
+body.is-admindev .app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: rgba(8, 27, 26, 0.78);
+  background-image: var(--app-photo);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+body.has-bottom-nav .app::before,
+body.is-admin .app::before,
+body.is-admindev .app::before {
+  content: '';
+  position: fixed;
+  inset: -14px;
+  z-index: -1;
+  background: var(--app-photo) center / cover no-repeat;
+  filter: blur(7px);
+  transform: scale(1.03);
+}
+
+/* Tipografía unificada: System UI para UI, Arvo/Playfair para contenido editorial */
+body.has-bottom-nav .app,
+body.is-admin .app,
+body.is-admindev .app {
+  font-family: var(--font);
+}
+body.has-bottom-nav .app h1,
+body.has-bottom-nav .app h2,
+body.has-bottom-nav .app h3,
+body.has-bottom-nav .app h4,
+body.is-admin .app h1,
+body.is-admin .app h2,
+body.is-admin .app h3,
+body.is-admin .app h4,
+body.is-admindev .app h1,
+body.is-admindev .app h2,
+body.is-admindev .app h3,
+body.is-admindev .app h4 {
+  font-family: var(--font-display);
+}
+
+/* Bottom Nav unificada (Cliente, Admin Bar, Admin Dev) */
+.bottom-nav,
+.admin-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: var(--glass-bg-dark);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+}
+.bottom-nav .bn-grid,
+.admin-bottom-nav .bn-grid {
+  display: flex;
+  gap: 4px;
+  max-width: 520px;
+  width: 100%;
+}
+.bottom-nav .bn-item,
+.admin-bottom-nav .bn-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 8px;
+  border-radius: 14px;
+  color: var(--text-secondary-on-glass);
+  background: transparent;
+  font-size: 0.66rem;
+  font-weight: var(--fw-semibold);
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  text-decoration: none;
+}
+.bottom-nav .bn-item .bn-ico,
+.admin-bottom-nav .bn-item .bn-ico {
+  font-size: 1.32rem;
+  line-height: 1;
+  transition: transform var(--t-fast);
+}
+.bottom-nav .bn-item.active,
+.admin-bottom-nav .bn-item.active {
+  color: var(--text-on-glass);
+  background: rgba(255,255,255,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.bottom-nav .bn-item.active .bn-ico,
+.admin-bottom-nav .bn-item.active .bn-ico {
+  transform: scale(1.08);
+}
+.bottom-nav .bn-item .bn-badge,
+.admin-bottom-nav .bn-item .bn-badge {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  margin-left: 8px;
+  background: var(--danger);
+  border: 2px solid var(--glass-bg-dark);
+  color: #fff;
+  font-size: 0.60rem;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-weight: var(--fw-bold);
+}
+
+/* Espacio para bottom nav */
+body.has-bottom-nav .app,
+body.is-admin .app,
+body.is-admindev .app {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+}
+
+/* Header unificado para Admin (topbar con glass oscuro) */
+.admin-topbar {
+  height: var(--header-h);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-5);
+  gap: var(--sp-4);
+  position: sticky;
+  top: 0;
+  z-index: 110;
+  flex-shrink: 0;
+  color: var(--text-on-glass);
+}
+.admin-topbar .page-name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  color: var(--text-on-glass);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-topbar .profile-chip {
+  color: var(--text-on-glass);
+}
+.admin-topbar .profile-chip .pname {
+  color: var(--text-on-glass);
+}
+.admin-topbar .profile-chip:hover {
+  background: rgba(255,255,255,0.10);
+}
+.admin-topbar .bx {
+  color: var(--text-on-glass);
+}
+
+/* Admin content area */
+.admin-content {
+  flex: 1;
+  padding: var(--sp-5);
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+/* Scrollbar sobre glass */
+body.has-bottom-nav ::-webkit-scrollbar-thumb,
+body.is-admin ::-webkit-scrollbar-thumb,
+body.is-admindev ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-glass);
+}
+body.has-bottom-nav ::-webkit-scrollbar-thumb:hover,
+body.is-admin ::-webkit-scrollbar-thumb:hover,
+body.is-admindev ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-glass);
+}
+
+/* Badge active unificado (blanco sólido) */
+.category-chip.active,
+.cat-chip.active,
+.cat-pill.active,
+.bn-item.active .bn-badge { /* badge is different */ }
+.category-chip.active,
+.cat-chip.active,
+.cat-pill.active {
+  background: var(--badge-active-glass-bg) !important;
+  border-color: var(--badge-active-glass-border) !important;
+  color: var(--badge-active-glass-text) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
 
