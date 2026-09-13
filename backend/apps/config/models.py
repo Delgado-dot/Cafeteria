@@ -16,6 +16,12 @@ class CafeConfig(models.Model):
     total_capacity = models.PositiveIntegerField("capacidad de preparacion", default=10)
     current_capacity = models.PositiveIntegerField("capacidad en uso", default=0)
     is_open = models.BooleanField("cafeteria abierta", default=True)
+    hero_background = models.ImageField(
+        "fondo de portada",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 
     class Meta:

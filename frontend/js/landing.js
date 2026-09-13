@@ -10,7 +10,7 @@ function lpIcon(name, extra = '') {
   const map = {
     cup: 'bx-coffee', burger: 'bx-food-menu', hotdog: 'bx-food-menu', sandwich: 'bx-food-menu',
     fries: 'bx-food-menu', drink: 'bx-drink', snack: 'bx-cookie', plate: 'bx-restaurant',
-    check: 'bx-check', clock: 'bx-time', hourglass: 'bx-time-five', bag: 'bx-shopping-bag',
+    check: 'bx-check', clock: 'bx-time', calendar: 'bx-calendar', hourglass: 'bx-time-five', bag: 'bx-shopping-bag',
     grad: 'bx-graduation', building: 'bx-building', zap: 'bx-bolt', clipboard: 'bx-clipboard',
     flag: 'bx-flag', pencil: 'bx-edit-alt', chef: 'bx-restaurant', pin: 'bx-map', scooter: 'bx-cycling',
     arrow: 'bx-right-arrow-alt', bulb: 'bx-bulb', list: 'bx-list-ul', clock2: 'bx-time-five', eye: 'bx-show',
@@ -60,6 +60,13 @@ function renderLanding() {
     if (productsRes.ok) {
       products = apiList(productsRes.data).map(normalizeApiProduct);
     }
+
+    // Fondo del hero: proviene de CafeConfig.hero_background. Se admite el
+    // alias camelCase por compatibilidad y se usa el archivo solicitado si la
+    // configuración todavía no está disponible.
+    const heroBg = cfg.hero_background_url
+      || cfg.heroBackgroundUrl
+      || 'assets/fododeledificio.png';
     
     // Usar 4 productos al azar como menú preview
     const menuItems = products.slice(0, 4);
@@ -88,15 +95,14 @@ function renderLanding() {
   <div class="landing">
 
     <!-- ======= CAPA DE FONDO FIJA (siempre visible, nunca cambia) ======= -->
-    <div class="lp-bg" aria-hidden="true">
-      <img src="assets/images/Cafeteria1.jpg" alt="">
+    <div class="lp-bg" aria-hidden="true" style="background-image:url('${heroBg}')">
       <div class="lp-bg-overlay"></div>
     </div>
 
     <!-- ======= IDENTIDAD Y ACCESO ======= -->
     <div class="lp-topbar">
       <a class="lp-brand" href="#" data-lp-scroll="home">
-        <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
+        <span class="lp-brand-mark"><img class="lp-brand-img" src="${assetUrl('bar-intesud-logo')}" alt="Logo INTESUD"></span>
         <span class="lp-brand-name">Bar INTESUD<small>Pedidos en línea</small></span>
       </a>
       <button class="lp-btn-acceder" data-lp-login>ACCEDER</button>
@@ -117,9 +123,9 @@ function renderLanding() {
           <button class="lp-btn-hero" data-lp-login>ACCEDER ${lpIcon('arrow')}</button>
         </div>
         <div class="lp-hero-stats">
-          <div class="lp-hero-stat"><div class="v">15 min</div><div class="l">de receso para retirar</div></div>
-          <div class="lp-hero-stat"><div class="v">${esc(cfg.orderOpen || '09:00')}–${esc(cfg.orderClose || '09:45')}</div><div class="l">horario de pedidos</div></div>
-          <div class="lp-hero-stat"><div class="v">Delivery</div><div class="l">dentro del instituto</div></div>
+          <div class="lp-hero-stat"><span class="lp-hero-stat-icon">${lpIcon('clock')}</span><div class="v">15 min</div><div class="l">de receso para retirar</div></div>
+          <div class="lp-hero-stat"><span class="lp-hero-stat-icon">${lpIcon('calendar')}</span><div class="v">${esc(cfg.orderOpen || '09:00')}–${esc(cfg.orderClose || '09:45')}</div><div class="l">horario de pedidos</div></div>
+          <div class="lp-hero-stat"><span class="lp-hero-stat-icon">${lpIcon('bag')}</span><div class="v">Delivery</div><div class="l">dentro del instituto</div></div>
         </div>
       </div>
     </section>
@@ -137,9 +143,9 @@ function renderLanding() {
         <li><span class="pi">${lpIcon('zap')}</span><div><div class="pt">Rapidez y organización</div><div class="ps">Tu pedido listo para cuando empiece el receso.</div></div></li>
       </ul>
       <figure class="lp-gallery">
-        <div class="lp-g-card"><img src="assets/images/galeria-1.svg" alt="Barra de atención de la cafetería"><figcaption>Barra de atención</figcaption></div>
-        <div class="lp-g-card"><img src="assets/images/galeria-2.svg" alt="Espacio para disfrutar en la cafetería"><figcaption>Espacio para disfrutar</figcaption></div>
-        <div class="lp-g-card"><img src="assets/images/galeria-3.svg" alt="Café y snacks de la cafetería"><figcaption>Café y snacks</figcaption></div>
+        <div class="lp-g-card"><img src="${assetUrl('images/galeria-1')}" alt="Barra de atención de la cafetería"><figcaption>Barra de atención</figcaption></div>
+        <div class="lp-g-card"><img src="${assetUrl('images/galeria-2')}" alt="Espacio para disfrutar en la cafetería"><figcaption>Espacio para disfrutar</figcaption></div>
+        <div class="lp-g-card"><img src="${assetUrl('images/galeria-3')}" alt="Café y snacks de la cafetería"><figcaption>Café y snacks</figcaption></div>
       </figure>
     `)}
 
@@ -227,8 +233,8 @@ function renderLanding() {
       <!-- ======= FOOTER (fila compacta dentro del slide de cierre) ======= -->
       <div class="lp-footer-strip">
         <div class="lp-f-brand">
-          <a class="lp-brand" href="#" data-lp-scroll="home">
-            <span class="lp-brand-mark"><img class="lp-brand-img" src="assets/bar-intesud-logo.png" alt="Logo INTESUD"></span>
+<a class="lp-brand" href="#" data-lp-scroll="home">
+            <span class="lp-brand-mark"><img class="lp-brand-img" src="${assetUrl('bar-intesud-logo')}" alt="Logo INTESUD"></span>
             <span class="lp-brand-name">Bar INTESUD</span>
           </a>
         </div>
@@ -310,14 +316,14 @@ function renderLanding() {
   $('[data-lp-prev]')?.addEventListener('click', () => goTo(current - 1));
   $('[data-lp-next]')?.addEventListener('click', () => goTo(current + 1));
 
-  // Teclado ← →
+  // Teclado <i class="bx bx-arrow-back"></i> <i class="bx bx-right-arrow-alt"></i>
   document.addEventListener('keydown', (e) => {
     if (!document.body.classList.contains('is-landing')) return;
     if (e.key === 'ArrowRight') goTo(current + 1);
     if (e.key === 'ArrowLeft') goTo(current - 1);
   });
 
-  // Botón "Explora" / enlaces de navegación → cada atributo apunta a una slide
+  // Botón "Explora" / enlaces de navegación <i class="bx bx-right-arrow-alt"></i> cada atributo apunta a una slide
   const idToIndex = {};
   slides.forEach((s, i) => { if (s.id) idToIndex[s.id] = i; });
   const scrollTo = (id) => {

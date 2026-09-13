@@ -71,19 +71,19 @@ async function fetchCapacityInfo() {
     const response = await ApiClient.get(API_ENDPOINTS.config.get);
     if (response.ok && response.data) {
       const cfg = response.data;
-      const total = cfg.total_capacity;
-      const used = Math.min(cfg.current_capacity, total);
+      const total = cfg.total_capacity || 10;
+      const used = Math.min(cfg.current_capacity != null ? cfg.current_capacity : 0, total);
       const pct = total ? Math.round((used / total) * 100) : 0;
       let state = 'DISPONIBLE', stateCls = 'success', warnMsg = '';
       if (pct >= 100) { state = 'CAPACIDAD LLENA'; stateCls = 'danger'; }
       else if (pct >= 70) { state = 'ALTA DEMANDA'; stateCls = 'warning'; warnMsg = 'Alta demanda. Tu pedido podría tardar más de lo habitual.'; }
-      return { pct, used, total, state, stateCls, warnMsg, cfg };
+      return { ok: true, pct, used, total, state, stateCls, warnMsg, cfg };
     }
   } catch (error) {
     console.error('Error fetching capacity info:', error);
   }
-  // Fallback
-  return { pct: 0, used: 0, total: 10, state: 'DISPONIBLE', stateCls: 'success', warnMsg: '', cfg: {} };
+  // Fallback ante fallo de consulta (ok:false para que el checkout no cree pedidos a ciegas)
+  return { ok: false, pct: 0, used: 0, total: 10, state: 'DISPONIBLE', stateCls: 'success', warnMsg: '', cfg: {} };
 }
 
 async function renderCapacityCard(container) {
@@ -162,7 +162,7 @@ async function renderCart(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Seguir comprando</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Seguir comprando</button>
     <div class="page-title"><h1>Mi carrito</h1><span class="badge badge-primary" id="cartTotalTop">${money(Cart.total())}</span></div>
     ${banner}
     <div style="margin-bottom:18px" id="cartCapacity"></div>
@@ -198,7 +198,7 @@ async function renderCart(el) {
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
         <div class="ci-line">
           <div class="qty-stepper">
-            <button data-dec>−</button>
+            <button data-dec><i class="bx bx-minus"></i></button>
             <span class="qty-val" data-qty>${item.qty}</span>
             <button data-inc>+</button>
           </div>
@@ -213,7 +213,7 @@ async function renderCart(el) {
   });
 
   $('#summaryRows').innerHTML = Cart.items.map((i) =>
-    `<div class="summary-row"><span>${esc(i.name)} × ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
+    `<div class="summary-row"><span>${esc(i.name)} <i class="bx bx-x"></i> ${i.qty}</span><span>${money(i.price * i.qty)}</span></div>`).join('');
 
   $('#btnCheckout').onclick = () => setRoute('checkout');
 }
@@ -269,7 +269,7 @@ async function renderCheckout(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')">← Volver al carrito</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('cart')"><i class="bx bx-arrow-back"></i> Volver al carrito</button>
     <div class="page-title"><h1>Confirmar pedido</h1><span class="muted">${money(Cart.total())}</span></div>
     <p class="page-sub">Verifica el resumen antes de confirmar.</p>
 
@@ -462,7 +462,7 @@ async function renderCheckout(el) {
   /* resumen items */
   $('#checkoutItems').innerHTML = Cart.items.map((i) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
+      <span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
     </div>`).join('');
 
   $('#btnConfirm').onclick = confirmOrder;
@@ -474,11 +474,11 @@ function estimatedTime() {
 }
 window.estimatedTime = estimatedTime;
 
+let _confirmingOrder = false;
+
 async function confirmOrder() {
+  if (_confirmingOrder) return;
   const delivery = $('[data-d].active') ? $('[data-d].active').dataset.d : 'pickup';
-  const pay = window._payMethod || 'deuna';
-  const cap = capacityInfo();
-  if (cap.stateCls === 'danger') { toast('La capacidad está completa. No se puede confirmar el pedido.', 'error'); return; }
 
   if (delivery === 'delivery') {
     if (!window._deliveryInfo) { toast('Selecciona el piso y el aula para el delivery interno.', 'warning'); return; }
@@ -486,9 +486,15 @@ async function confirmOrder() {
   if (window._payMethodRequiresVoucher && !window._voucher) { toast('Carga el comprobante requerido.', 'warning'); $('#fu')?.classList.add('err'); return; }
 
   const btn = $('[id="btnConfirm"]');
+  _confirmingOrder = true;
   if (btn) { btn.disabled = true; btn.textContent = 'Confirmando...'; }
 
   try {
+    // Capacidad real desde la API: si falla NO se crea el pedido
+    const cap = await fetchCapacityInfo();
+    if (!cap.ok) { toast('No se pudo consultar la capacidad. Intenta nuevamente.', 'error'); return; }
+    if (cap.stateCls === 'danger') { toast('La capacidad está completa. No se puede confirmar el pedido.', 'error'); return; }
+
     // Construir datos del pedido para la API - payment_method dinámico desde métodos activos
     const pmId = window._payMethodDbId ? parseInt(window._payMethodDbId) : 1;
     const orderData = {
@@ -524,16 +530,20 @@ async function confirmOrder() {
     if (!response.ok) {
       const errMsg = response.data?.detail || response.data?.items?.[0] || 'Error al crear el pedido';
       toast('Error: ' + errMsg, 'error');
-      if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; }
       return;
     }
 
-    // Pedido creado exitosamente
-    const order = response.data;
+    // Pedido creado exitosamente: mapear la respuesta snake_case de la API al
+    // formato del frontend y limpiar el carrito SOLO después del éxito.
+    const mapped = mapApiOrder(response.data);
+    mapped.payment = window._payMethod || '';
+    mapped.cartTotal = Cart.total();
     Cart.clear();
-    renderConfirmation(order);
+    renderConfirmation(mapped);
   } catch (error) {
     toast('Error de conexión: ' + error.message, 'error');
+  } finally {
+    _confirmingOrder = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmar pedido'; }
   }
 }
@@ -547,18 +557,22 @@ function nextOrderNumber() {
 
 function renderConfirmation(order) {
   const app = $('#mainContent') || $('#app');
+  const total = Number.isFinite(Number(order.total)) ? Number(order.total) : (order.cartTotal || 0);
+  const itemsConf = (order.items || []).map((i) => `${esc(i.name)} <span class="muted">× ${i.qty}</span>`).join('<br>');
   app.innerHTML = `
     <div class="card" style="text-align:center;padding:44px 24px;max-width:560px;margin:0 auto">
       <div style="font-size:3.4rem;margin-bottom:8px">${clientIcon('celebrate')}</div>
       <h1 style="color:var(--success)">¡Pedido realizado!</h1>
       <p class="muted" style="margin:6px 0 18px">Tu pedido está en cola y comenzará a prepararse.</p>
-      <div style="font-size:1.6rem;font-weight:800;color:var(--primary-strong)" id="confNum">${order.id}</div>
+      <div style="font-size:1.6rem;font-weight:800;color:var(--primary-strong)" id="confNum">${esc(order.id)}</div>
       <div class="card" style="background:var(--surface-2);margin-top:22px;text-align:left">
         <div class="kv">
-          <dt>Tiempo estimado</dt><dd>${order.prepMin} minutos</dd>
-          <dt>Entrega</dt><dd>${order.delivery === 'delivery' ? 'Delivery interno · Piso ' + (order.deliveryInfo?.piso || '') + ' · Aula ' + (order.deliveryInfo?.aula || '—') : 'Retiro en cafetería'}</dd>
-          <dt>Pago</dt><dd>${paymentMethodLabel(order.payment)}</dd>
-          <dt>Estado</dt><dd>${statusMeta('queue')}</dd>
+          <dt>Tiempo estimado</dt><dd>${order.prepMin != null ? order.prepMin + ' minutos' : '—'}</dd>
+          <dt>Entrega</dt><dd>${deliveryMeta(order)}</dd>
+          <dt>Pago</dt><dd>${paymentMethodLabel(order.payment) || '—'}</dd>
+          <dt>Productos</dt><dd class="cart-items-conf">${itemsConf || '—'}</dd>
+          <dt>Total a pagar</dt><dd>${money(total)}</dd>
+          <dt>Estado</dt><dd>${statusMeta(order.status)}</dd>
         </div>
       </div>
       <div style="margin-top:28px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">

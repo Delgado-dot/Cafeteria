@@ -13,6 +13,7 @@ const API_ENDPOINTS = {
   // Autenticación
   auth: {
     login: `${API_BASE_URL}/api/auth/login/`,
+    logout: `${API_BASE_URL}/api/auth/logout/`,
     refresh: `${API_BASE_URL}/api/auth/refresh/`,
     verify: `${API_BASE_URL}/api/auth/verify/`,
     register: `${API_BASE_URL}/api/auth/register/`,
@@ -20,6 +21,8 @@ const API_ENDPOINTS = {
     password: `${API_BASE_URL}/api/auth/password/`,
     users: `${API_BASE_URL}/api/auth/users/`,
     userDetail: (id) => `${API_BASE_URL}/api/auth/users/${id}/`,
+    permissions: `${API_BASE_URL}/api/auth/permissions/`,
+    permissionsBulk: `${API_BASE_URL}/api/auth/permissions/bulk/`,
   },
   
   // Productos
@@ -76,6 +79,14 @@ const API_ENDPOINTS = {
   stock: {
     movements: `${API_BASE_URL}/api/stock/movements/`,
   },
+
+  // Activos visuales (almacenados en PostgreSQL)
+  // Las claves pueden contener "/" (p. ej. "images/Cafeteria1"); se codifica
+  // por segmento para conservar las rutas sin que Django reciba "%2F".
+  assets: {
+    get: (key) =>
+      `${API_BASE_URL}/api/assets/${key.split('/').map(encodeURIComponent).join('/')}/`,
+  },
   
   // Usuarios (admin)
   users: {
@@ -87,6 +98,30 @@ const API_ENDPOINTS = {
 function apiList(data) {
   if (Array.isArray(data)) return data;
   return Array.isArray(data?.results) ? data.results : [];
+}
+
+/* ---------- Activos visuales (imágenes servidas por PostgreSQL) ---------- */
+
+// Devuelve la URL pública de un activo almacenado en /api/assets/.
+function assetUrl(key) {
+  return API_ENDPOINTS.assets.get(key);
+}
+
+// Reapunta las variables CSS de fondos a /api/assets/ para que el navegador
+// deje de pedir los archivos locales y use la copia centralizada.
+function bindAssetCssVars() {
+  const map = {
+    '--intesud-white-mark': assetUrl('intesud-white-mark'),
+    '--login-background': assetUrl('bar-intesud-login'),
+    '--auth-background': assetUrl('images/image'),
+    '--dashboard-background': assetUrl('images/Como-decorar-una-cafeteria-pequena-con-poco-dinero'),
+  };
+  const root = document.documentElement;
+  for (const [prop, url] of Object.entries(map)) {
+    root.style.setProperty(prop, `url('${url}')`);
+  }
+  const icon = document.querySelector('link[rel="icon"]');
+  if (icon) icon.href = assetUrl('bar-intesud-logo');
 }
 
 /* ---------- Utilidades para peticiones HTTP ---------- */
@@ -212,3 +247,5 @@ window.API_BASE_URL = API_BASE_URL;
 window.API_ENDPOINTS = API_ENDPOINTS;
 window.ApiClient = ApiClient;
 window.apiList = apiList;
+window.assetUrl = assetUrl;
+window.bindAssetCssVars = bindAssetCssVars;

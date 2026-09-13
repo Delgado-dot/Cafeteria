@@ -65,8 +65,16 @@ const Auth = {
     }
   },
   
-  // Logout
-  logout() {
+  // Logout: invalida el refresh token en el backend y limpia la sesión local
+  async logout() {
+    try {
+      const refresh = ApiClient.getRefreshToken();
+      if (refresh) {
+        await ApiClient.post(API_ENDPOINTS.auth.logout, { refresh });
+      }
+    } catch (e) {
+      // Si el servidor no responde, igual se limpia la sesión local.
+    }
     this.clear();
   },
 };
@@ -88,39 +96,44 @@ window.AUTH_ICO = AUTH_ICO;
 function renderLogin() {
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
-    <div class="login-section">
-      <div class="login-card">
-        <div class="login-head login-brand-head">
-          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
-          <h2>Iniciar sesión</h2>
-          <p>Ingresa con tu cuenta institucional</p>
-        </div>
+  <div class="login-screen login-screen--auth">
+    <div class="login-layout">
+      <div class="login-mascot" aria-hidden="true">
+        <img src="${assetUrl('images/panda-login')}" alt="">
+      </div>
+      <div class="login-section">
+        <div class="login-card">
+          <div class="login-head login-brand-head">
+            <img class="login-logo" src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD">
+            <h2>Iniciar sesión</h2>
+            <p>Ingresa con tu cuenta institucional</p>
+          </div>
 
-        <form id="loginForm" novalidate>
-          <div class="field">
-            <label class="label" for="li_email">Usuario o correo</label>
-            <div class="input-wrap">
-              <span class="leading-ico">${AUTH_ICO.user}</span>
-              <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label class="label" for="li_email">Usuario o correo</label>
+              <div class="input-wrap">
+                <span class="leading-ico">${AUTH_ICO.user}</span>
+                <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
+                <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+              </div>
+              <div class="input-err-msg" id="li_emailErr"></div>
             </div>
-            <div class="input-err-msg" id="li_emailErr"></div>
-          </div>
-          <div class="field">
-            <label class="label" for="li_pass">Contraseña</label>
-            <div class="input-group">
-              <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+            <div class="field">
+              <label class="label" for="li_pass">Contraseña</label>
+              <div class="input-group">
+                <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
+                <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+              </div>
+              <div class="input-err-msg" id="li_passErr"></div>
             </div>
-            <div class="input-err-msg" id="li_passErr"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 18px">
-            <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
-            <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
-        </form>
+            <div class="login-options">
+              <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
+              <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>`;
@@ -184,7 +197,7 @@ function renderForgot() {
   app.innerHTML = `
   <div class="login-screen">
     <div class="login-brand">
-      <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
+      <div class="brand-logo-badge"><img src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Funcionalidad en desarrollo</p>
     </div>

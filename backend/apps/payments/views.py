@@ -5,7 +5,10 @@ from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsAdminBar
+from rest_framework import permissions as drf_permissions
+
+from apps.accounts.permissions import HasRolePermission
+from apps.audit.services import record_audit
 from apps.config.models import PaymentMethod
 from apps.config.serializers import PaymentMethodAdminSerializer
 
@@ -22,7 +25,8 @@ class PaymentMethodListView(generics.ListAPIView):
 
     queryset = PaymentMethod.objects.filter(active=True)
     serializer_class = ActivePaymentMethodSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.create"
     pagination_class = None
 
 
@@ -31,7 +35,8 @@ class PaymentMethodAdminListView(generics.ListAPIView):
 
     queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodAdminSerializer
-    permission_classes = [IsAdminBar]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.view_all"
     pagination_class = None
 
 
@@ -40,12 +45,26 @@ class PaymentMethodDetailView(generics.RetrieveUpdateAPIView):
 
     queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodAdminSerializer
-    permission_classes = [IsAdminBar]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = {"GET": "payments.view_all", "PATCH": "payments.view_all", "PUT": "payments.view_all"}
+
+    def perform_update(self, serializer):
+        method = serializer.save()
+        record_audit(
+            request=self.request,
+            action="payment_method.update",
+            target=f"payment_method:{method.pk} ({method.name})",
+            details={
+                key: (value.isoformat() if hasattr(value, "isoformat") else value)
+                for key, value in serializer.validated_data.items()
+            },
+        )
 
 
 class PaymentCreateView(generics.CreateAPIView):
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.create"
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -54,7 +73,8 @@ class PaymentCreateView(generics.CreateAPIView):
 
 class MyPaymentsListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.view_own"
 
     def get_queryset(self):
         return Payment.objects.select_related("order", "user", "payment_method").filter(
@@ -64,7 +84,8 @@ class MyPaymentsListView(generics.ListAPIView):
 
 class AllPaymentsListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
-    permission_classes = [IsAdminBar]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.view_all"
 
     def get_queryset(self):
         return Payment.objects.select_related("order", "user", "payment_method")
@@ -73,7 +94,8 @@ class AllPaymentsListView(generics.ListAPIView):
 class PaymentReviewView(generics.UpdateAPIView):
     queryset = Payment.objects.select_related("order", "user", "payment_method")
     serializer_class = PaymentReviewSerializer
-    permission_classes = [IsAdminBar]
+    permission_classes = [drf_permissions.IsAuthenticated, HasRolePermission]
+    required_permission = "payments.review"
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -81,11 +103,23 @@ class PaymentReviewView(generics.UpdateAPIView):
 
         with transaction.atomic():
             payment = Payment.objects.select_for_update().get(pk=kwargs["pk"])
+            previous_status = payment.status
             payment.status = serializer.validated_data["status"]
             payment.reviewed_by = request.user
             payment.reviewed_at = timezone.now()
             payment.save(
                 update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"]
             )
+
+        record_audit(
+            request=request,
+            action="payment.review",
+            target=f"payment:{payment.pk} (order:{payment.order_id})",
+            details={
+                "from": previous_status,
+                "to": payment.status,
+                "order": payment.order_id,
+            },
+        )
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_200_OK)

@@ -58,6 +58,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
+            "id",
             "name",
             "description",
             "price",
@@ -69,6 +70,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             "emoji",
             "category",
         ]
+        read_only_fields = ["id"]
 
     @transaction.atomic
     def create(self, validated_data):

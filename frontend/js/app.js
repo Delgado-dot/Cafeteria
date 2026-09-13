@@ -19,16 +19,12 @@ function clientIcon(name, extra = '') {
 window.clientIcon = clientIcon;
 
 function clientCatIcon(category) {
-  const icons = {
-    Hamburguesas: 'food', 'Hot Dogs': 'food', Sándwiches: 'food', 'Papas y Salchipapas': 'food',
-    Bebidas: 'food', Snacks: 'food',
-  };
-  return clientIcon(icons[category] || 'food');
+  return catIcon(category);
 }
 window.clientCatIcon = clientCatIcon;
 
 function clientProductIcon(product) {
-  return clientCatIcon(product.category);
+  return catIcon(product && product.category);
 }
 window.clientProductIcon = clientProductIcon;
 
@@ -79,6 +75,8 @@ window.homeRouteFor = homeRouteFor;
 function handleRoute() {
   const user = Auth.current();
   let r = (window.location.hash || '#home').replace('#', '');
+  // Tolerar deep-links y hashes canonizados con barra inicial (#/ruta → ruta).
+  r = r.replace(/^\/+/, '');
   params.product = null;
 
   document.body.classList.remove('is-landing');
@@ -110,8 +108,13 @@ function handleRoute() {
 
   // Separación por rol: cada rol vive en su propia interfaz.
   if (routeTargetRole(r) !== user.role) {
-    setRoute(homeRouteFor(user.role));
-    return;
+    const home = homeRouteFor(user.role);
+    // Solo redirigir si el destino es legítimo para el rol; un rol desconocido
+    // no puede quedar en un bucle setRoute→handleRoute (crash de stack).
+    if (routeTargetRole(home) === user.role && home !== r) {
+      setRoute(home);
+      return;
+    }
   }
 
   if (r.startsWith('adminbar')) {
@@ -149,7 +152,7 @@ function renderUserShell(page) {
     <div class="app">
       <header class="user-header">
         <a class="brand" href="#" data-nav="home">
-          <span class="brand-mark"><img class="brand-mark-img" src="assets/intesud-white-mark.png" alt="Logo INTESUD"></span>
+          <span class="brand-mark"><img class="brand-mark-img" src="${assetUrl('intesud-white-mark')}" alt="Logo INTESUD"></span>
           <span class="brand-name">Bar INTESUD<span class="brand-sub">Pedidos en línea</span></span>
         </a>
         <div class="header-actions">
@@ -161,7 +164,7 @@ function renderUserShell(page) {
           <div class="user-chip" id="userMenu">
             <div class="avatar">${esc(initials(user.name))}</div>
             <span class="chip-info bold" style="font-size:var(--fs-sm)">${esc(user.name.split(' ')[0])}</span>
-            <span class="chip-info" style="color:var(--text-3);font-size:.7rem">▾</span>
+            <span class="chip-info" style="color:var(--text-3);font-size:.7rem"><i class="bx bx-chevron-down"></i></span>
             <div class="dropdown-menu" id="userDropdown" style="display:none">
               <div class="dropdown-head">
                 <div class="bold small">${esc(user.name)}</div>
@@ -192,10 +195,10 @@ function renderUserShell(page) {
   const ud = $('#userDropdown');
   $('#userMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
-  $('#btnUserLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); handleRoute(); };
+  $('#btnUserLogout').onclick = async (e) => { e.preventDefault(); await Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); route('login'); };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
-  // header search → go to menu with query
+  // header search <i class="bx bx-right-arrow-alt"></i> go to menu with query
   const hs = $('#headerSearch');
   if (hs) hs.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && hs.value.trim()) {
@@ -238,23 +241,17 @@ function userHome(el) {
   const app = el || $('#mainContent') || $('#app');
   
   (async () => {
-    // Cargar configuración y productos
-    const [configRes, productsRes] = await Promise.all([
+    // Cargar configuración, categorías reales y todos los productos (todas las páginas)
+    const [configRes, cats] = await Promise.all([
       ApiClient.get(API_ENDPOINTS.config.get),
-      ApiClient.get(API_ENDPOINTS.products.list),
+      fetchCategories(),
     ]);
-    
+    const products = await fetchAllProducts();
     let cfg = Store.config;
-    let products = Store.products;
     
     if (configRes.ok) {
       cfg = configRes.data;
       Store.config = cfg;
-    }
-    
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
     }
     
     const cap = await fetchCapacityInfo();
@@ -298,7 +295,7 @@ function userHome(el) {
       <div class="cat-banner">
         <div class="cat-banner-inner">
           <div class="cat-banner-left">
-            <div class="cat-s"><img src="assets/intesud-white-mark.png" alt="Logo oficial INTESUD"></div>
+            <div class="cat-s"><img src="${assetUrl('intesud-white-mark')}" alt="Logo oficial INTESUD"></div>
             <div class="cat-titles">
               <div class="cat-title"><span class="cat-t-white">¿QUÉ SE TE</span><br><span class="cat-t-teal">ANTOJA HOY?</span></div>
               <div class="cat-sub">Elige tu antojo favorito <span class="cat-sub-line"></span></div>
@@ -307,16 +304,16 @@ function userHome(el) {
           <div class="cat-banner-deco" aria-hidden="true"></div>
         </div>
         <div class="cat-pills">
-          ${CATEGORIES.map((c) => {
-            const n = products.filter((p) => p.category === c).length;
-            return `<a class="cat-pill-card" href="#" data-cat="${esc(c)}"><span class="cp-ico">${clientCatIcon(c)}</span><div><div class="cp-name">${esc(c)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
+          ${cats.map((c) => {
+            const n = products.filter((p) => String(p.categoryId) === String(c.id)).length;
+            return `<a class="cat-pill-card" href="#" data-cat="${c.id}"><span class="cp-ico">${clientCatIcon(c.name)}</span><div><div class="cp-name">${esc(c.name)}</div><div class="cp-count"><span class="cp-badge">${n}</span> opciones</div></div></a>`;
           }).join('')}
         </div>
       </div>
 
       <div class="reco-head">
         <h2 class="reco-title">RECOMENDADOS DE HOY</h2>
-        <a class="reco-btn" href="#" data-nav="menu">Ver menú completo →</a>
+        <a class="reco-btn" href="#" data-nav="menu">Ver menú completo <i class="bx bx-right-arrow-alt"></i></a>
       </div>
       <div class="reco-grid" id="featuredGrid"></div>`;
 
@@ -377,20 +374,19 @@ const params = { product: null, cat: null };
 function userMenuPage(el) {
   const app = el || $('#mainContent') || $('#app');
   
-  // Cargar productos desde API
+  // Cargar productos (todas las páginas) y categorías reales desde la API
   (async () => {
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    let products = [];
-    
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
-    }
+    const [products, cats] = await Promise.all([fetchAllProducts(), fetchCategories()]);
     
     let activeCat = sessionStorage.getItem('int_cat') || 'Todas';
     let search = sessionStorage.getItem('int_search') || '';
     sessionStorage.removeItem('int_search');
     sessionStorage.removeItem('int_cat');
+    // Si el filtro guardado no es una categoría real (p. ej. un nombre viejo),
+    // se descarta y se muestra el catálogo completo.
+    if (activeCat !== 'Todas' && !cats.some((c) => String(c.id) === String(activeCat))) {
+      activeCat = 'Todas';
+    }
 
     app.innerHTML = `
       <div class="menu-page">
@@ -423,12 +419,17 @@ function userMenuPage(el) {
 
     const renderChips = () => {
       const wrap = $('#menuChips');
-      const cats = ['Todas', ...CATEGORIES];
-      const countFor = (c) => c === 'Todas' ? products.length : products.filter((p) => p.category === c).length;
-      wrap.innerHTML = cats.map((c) => `
-        <button class="cat-pill ${activeCat === c ? 'active' : ''}" data-cat="${esc(c)}">
-          <span class="cp-ico">${clientCatIcon(c)}</span>
-          <span class="cp-name">${esc(c)}</span>
+      const chipCats = cats
+        .filter((c) => products.some((p) => String(p.categoryId) === String(c.id)))
+        .sort((a, b) => Number(a.order) - Number(b.order));
+      const list = [{ id: 'Todas', name: 'Todas' }, ...chipCats];
+      const countFor = (c) => (
+        c.id === 'Todas' ? products.length : products.filter((p) => String(p.categoryId) === String(c.id)).length
+      );
+      wrap.innerHTML = list.map((c) => `
+        <button class="cat-pill ${String(activeCat) === String(c.id) ? 'active' : ''}" data-cat="${c.id}">
+          <span class="cp-ico">${clientCatIcon(c.name)}</span>
+          <span class="cp-name">${esc(c.name)}</span>
           <span class="cp-badge">${countFor(c)}</span>
         </button>`).join('');
       $$('[data-cat]', wrap).forEach((c) => c.onclick = () => {
@@ -441,7 +442,7 @@ function userMenuPage(el) {
 
     const render = () => {
       let list = products;
-      if (activeCat !== 'Todas') list = list.filter((p) => p.category === activeCat);
+      if (activeCat !== 'Todas') list = list.filter((p) => String(p.categoryId) === String(activeCat));
       if (search) list = list.filter((p) => (p.name + ' ' + p.desc + ' ' + p.category).toLowerCase().includes(search.toLowerCase()));
       const grid = $('#menuGrid');
       const mc = $('#menuCount');
@@ -475,13 +476,7 @@ function userProductPage(el) {
   const app = el || $('#mainContent') || $('#app');
 
   (async () => {
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    let products = Store.products;
-    if (productsRes.ok) {
-      products = apiList(productsRes.data).map(normalizeApiProduct);
-      Store.products = products;
-    }
-
+    const products = await fetchAllProducts();
     const p = products.find((product) => String(product.id) === String(params.product));
     if (!p) { setRoute('menu'); return; }
     const soldOut = !p.available || p.stock === 0;
@@ -490,7 +485,7 @@ function userProductPage(el) {
     const canOrder = await canPlaceOrder();
 
     app.innerHTML = `
-      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')">← Volver al menú</button>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Volver al menú</button>
       <div class="card card-flush" style="overflow:hidden">
         <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
           <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
@@ -506,12 +501,12 @@ function userProductPage(el) {
             <p class="muted" style="margin:10px 0 18px;max-width:520px">${esc(p.desc)}</p>
             <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px">
               <span style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(p.price)}</span>
-              <span class="small muted">⏱ Tiempo estimado: <b>${p.prepMin} min</b></span>
+              <span class="small muted"><i class="bx bx-time"></i> Tiempo estimado: <b>${p.prepMin} min</b></span>
             </div>
 
             <div class="field"><label class="label">Cantidad (máx ${p.stock || 0})</label>
               <div class="qty-stepper">
-                <button id="qdDec">−</button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
+                <button id="qdDec"><i class="bx bx-minus"></i></button><span class="qty-val" id="qdVal">1</span><button id="qdInc">+</button>
               </div>
             </div>
 
@@ -572,6 +567,7 @@ window.syncBodyClass = syncBodyClass;
 window.onhashchange = handleRoute;
 
 window.addEventListener('DOMContentLoaded', () => {
+  bindAssetCssVars();
   syncBodyClass();
   handleRoute();
 });

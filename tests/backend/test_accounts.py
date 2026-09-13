@@ -107,3 +107,43 @@ class LoginApiTests(TestCase):
         user.refresh_from_db()
         self.assertEqual(user.password, password_hash)
         self.assertTrue(user.check_password(self.passwords["user"]))
+
+
+class LogoutApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="logoutuser",
+            email="logout@intesud.edu.ec",
+            password="testpass123",
+        )
+
+    def test_logout_blacklists_refresh_token(self):
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "logoutuser", "password": "testpass123"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, 200, login.data)
+        refresh = login.data["refresh"]
+        access = login.data["access"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        logout = self.client.post(
+            "/api/auth/logout/", {"refresh": refresh}, format="json"
+        )
+        self.assertEqual(logout.status_code, 205, logout.data)
+        reused = self.client.post(
+            "/api/auth/refresh/", {"refresh": refresh}, format="json"
+        )
+        self.assertEqual(reused.status_code, 401, reused.data)
+
+    def test_logout_without_refresh_still_succeeds(self):
+        login = self.client.post(
+            "/api/auth/login/",
+            {"username": "logoutuser", "password": "testpass123"},
+            format="json",
+        )
+        self.assertEqual(login.status_code, 200, login.data)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+        logout = self.client.post("/api/auth/logout/", {}, format="json")
+        self.assertEqual(logout.status_code, 205)

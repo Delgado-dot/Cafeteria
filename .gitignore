@@ -16,9 +16,11 @@ pip-delete-this-directory.txt
 
 # Virtual environments
 venv/
+.venv/
+.venv-1/
+venv-1/
 env/
 .env/
-.venv/
 ENV/
 
 # Django
@@ -26,6 +28,7 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+cafeteria.db
 backend/media/*
 !backend/media/uploads/
 !backend/media/vouchers/

@@ -49,6 +49,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "crispy_forms",
@@ -66,6 +67,7 @@ LOCAL_APPS = [
     "apps.payments",
     "apps.audit",
     "apps.config",
+    "apps.assets",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -208,6 +210,13 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Throttling por scope: solo endpoints de autenticación y assets públicos.
+    # No se aplica throttling global a toda la API.
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "register": "5/hour",
+        "assets": "600/min",
+    },
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
