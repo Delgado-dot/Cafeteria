@@ -889,3 +889,30 @@ body.is-adminbar .sales-hour-chart {
   color: var(--text) !important;
 }
 
+/* ============================================================
+   Visibilidad de textos/iconos del panel principal adminbar
+   (solo /adminbar/dashboard, marcado con clase bb en admin.js).
+   No toca fondo/glass/tamaños de las tarjetas: solo color de
+   letras e iconos sobre el glass, con la paleta existente.
+   ============================================================ */
+body.is-adminbar .bb .st-sub a {
+  color: #cdf4e4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+body.is-adminbar .bb .stat-ico {
+  opacity: 0.92 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+/* Tarjeta "Productos más vendidos" (sigue al grid .bb en el dashboard):
+   unidades e icono de cada chip sobre fondo claro --surface-2 → tinta oscura. */
+body.is-adminbar .bb + .card .tiny.muted {
+  color: var(--text-2) !important;
+}
+body.is-adminbar .bb + .card > div:nth-of-type(2) i {
+  color: var(--text-2) !important;
+}
+body.is-adminbar .bb + .card a.tiny {
+  color: #cdf4e4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+

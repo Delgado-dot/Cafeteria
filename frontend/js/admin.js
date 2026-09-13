@@ -114,6 +114,13 @@ function ensureAdminbarPresentationStyles() {
     /* Modals - fade + scale */
     .modal-overlay .modal { animation: adminbarModalIn var(--t-med) both; }
 
+    /* Fix superposición menú acciones sobre badge Disponible/Inactivo */
+    .product-actions-menu { position: absolute !important; z-index: 1000 !important; }
+    .admin-table td[data-label="Acciones"] { overflow: visible !important; position: relative; z-index: 5; }
+    .admin-table tr:has(.product-actions-menu[style*="block"]) { position: relative; z-index: 20; }
+    .table-wrap, .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { overflow: visible !important; }
+    .admin-table .badge { position: relative; z-index: 1; }
+
     @media (prefers-reduced-motion: reduce) {
       .sales-summary-grid .sales-summary-card,
       .grid-3 .stat-card,
@@ -410,9 +417,10 @@ function barSalesTabs(el, initialTab) {
 
 async function barConfigTabs(el, initialTab) {
   el.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div></div>`;
-  const [configRes, productsRes] = await Promise.all([
+  const [configRes, productsRes, categoriesList] = await Promise.all([
     ApiClient.get(API_ENDPOINTS.config.get),
     ApiClient.getAll(API_ENDPOINTS.products.list),
+    fetchCategories().catch(() => []),
   ]);
   if (!configRes.ok) {
     el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudo cargar la configuración');
@@ -431,6 +439,7 @@ async function barConfigTabs(el, initialTab) {
     _raw: raw,
   };
   const products = productsRes.ok ? apiList(productsRes.data).map(normalizeApiProduct) : [];
+  const displayCats = Array.isArray(categoriesList) && categoriesList.length ? categoriesList.map(c => c.name) : CATEGORIES;
   const isOpen = cfg.cafeOpen;
   const originalValues = {
     orderOpen: cfg.orderOpen,
@@ -476,7 +485,7 @@ async function barConfigTabs(el, initialTab) {
           <div style="margin-bottom:14px">
             <div style="font-weight:700;margin-bottom:8px">Categorías de productos</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              ${CATEGORIES.map((c) => {
+              ${displayCats.map((c) => {
                 const cnt = products.filter((p) => p.category === c).length;
                 return `<span class="badge badge-primary" style="font-size:13px;padding:6px 10px">${esc(c)} · ${cnt}</span>`;
               }).join('')}
@@ -825,7 +834,7 @@ async function barDashboard(el) {
       ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     </div>
 
-    <div class="grid grid-4" style="margin-bottom:20px">
+    <div class="grid grid-4 bb" style="margin-bottom:20px">
       <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><span class="stat-ico bx bx-time ${queue.length >= 5 ? 'danger' : 'primary'}"></span><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
       <div class="stat-card"><span class="stat-ico bx bx-restaurant warning"></span><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">preparándose ahora</div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-check-double success"></span><div class="st-label">Listos</div><div class="st-value">${ready.length}</div><div class="st-sub">listos para retirar</div></div>
@@ -845,7 +854,7 @@ async function barDashboard(el) {
       </div>
     </div>
 
-    <div class="grid grid-4">
+    <div class="grid grid-4 bb">
       <div class="stat-card"><span class="stat-ico bx bx-credit-card warning"></span><div class="st-label">Por cobrar</div><div class="st-value warning">${payPending}</div><div class="st-sub"><a href="#" data-goto="adminbar/payments">Revisar</a></div></div>
       <div class="stat-card"><span class="stat-ico bx bx-cycling primary"></span><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-line-chart success"></span><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
@@ -856,15 +865,18 @@ async function barDashboard(el) {
         <div style="font-weight:700">Productos más vendidos</div>
         <a href="#" class="tiny" data-goto="adminbar/products" style="color:var(--primary);font-weight:600">Ver todos los productos <i class="bx bx-right-arrow-alt"></i></a>
       </div>
-      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>`
+      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>{
+        const img = product.image ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(product.image) : product.image) : '';
+        const thumb = img ? `<img src="${esc(img)}" alt="${esc(product.name)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>` : `<div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>`;
+        return `
         <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
-          <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>
+          <div style="flex-shrink:0;display:flex">${thumb}</div>
           <div style="min-width:0">
             <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product.name)}</div>
             <div class="tiny muted">${qty} unidades vendidas</div>
           </div>
-        </div>
-      `).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
+        </div>`;
+      }).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
     </div>`;
 
   renderCapacityCard(el.querySelector('#dashCap'));
@@ -892,7 +904,12 @@ function priorityMiniCard(o) {
         </div>
       </div>
       <div class="queue-items">
-        ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`).join('')}
+        ${o.items.map((i) => {
+          const img = i.product_image || i.image || i.product?.image || '';
+          const url = img ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img) : '';
+          const thumb = url ? `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:28px;height:28px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem" title="${esc(i.name)}"><i class="bx bx-restaurant"></i></span>`;
+          return `<div style="display:flex;align-items:center;gap:6px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
+        }).join('')}
       </div>
       <div class="tiny muted" style="color:var(--text-2)"><b>${esc(o.userName)}</b> · ${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)} · est. ${o.prepMin} min</div>
     </div>`;
@@ -900,7 +917,7 @@ function priorityMiniCard(o) {
 
 /* ============================================================
    PEDIDOS (cola) - Con API real
-   ============================================================ */
+  ============================================================ */
 async function barOrders(el) {
   // Estado de carga único — se limpia siempre vía finally (éxito, vacío o error)
   el.setAttribute('data-loading', 'true');
@@ -1114,7 +1131,12 @@ function queueOrderCard(o, tab) {
         </div>
       </div>
       <div class="queue-items">
-        ${d.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`).join('')}
+        ${d.items.map((i) => {
+          const img = i.product_image || i.image || '';
+          const url = img ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img) : '';
+          const thumb = url ? `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:32px;height:32px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem" title="${esc(i.name)}"><i class="bx bx-restaurant"></i></span>`;
+          return `<div style="display:flex;align-items:center;gap:8px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
+        }).join('')}
       </div>
       <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(d.userName)} · <b>Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b>Nota:</b> ${esc(d.note)}` : ''}</div>
       ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(d.payment)}: ${d.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(d.paymentStatus)}</div></div>` : ''}
@@ -1238,9 +1260,9 @@ async function barProducts(el) {
         <td data-label="Prep"><span>${p.prepMin} min</span></td>
         <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
         <td data-label="Acciones">
-            <div style="position:relative">
+            <div style="position:relative; overflow: visible">
               <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
-              <div class="dropdown-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:10">
+              <div class="dropdown-menu product-actions-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:1000">
                 <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
                 <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
               </div>
@@ -1248,16 +1270,36 @@ async function barProducts(el) {
           </td>
       </tr>
     `).join('');
-    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit))));
+    $$('[data-edit]', tbody).forEach((b) => b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit)));
+    });
     $$('[data-toggle]', tbody).forEach((b) => {
-      b.onclick = async () => {
+      b.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const productId = b.dataset.toggle;
         const product = products.find((x) => x.id === parseInt(productId));
-        if (!product) return;
+        if (!product) {
+          console.error('[toggle] producto no encontrado', productId, products);
+          return;
+        }
         const newAvailable = !product.available;
-        const res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        console.log('[toggle] PATCH', API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        let res;
+        try {
+          res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        } catch (err) {
+          console.error('[toggle] fetch exception', err);
+          toast('Error de conexión al cambiar estado', 'error');
+          return;
+        }
+        console.log('[toggle] response', res.status, res.data, res.error);
         if (!res.ok) {
-          toast('Error al cambiar estado: ' + (res.data?.detail || 'Error desconocido'), 'error');
+          const detail = res.data?.detail || (res.data ? JSON.stringify(res.data) : null) || res.error || 'Error desconocido';
+          console.error('[toggle] PATCH failed', res.status, detail);
+          toast('Error al cambiar estado: ' + detail, 'error');
           return;
         }
         toast(product.name + (newAvailable ? ' activado.' : ' desactivado.'), 'success');
@@ -1293,9 +1335,14 @@ async function barProducts(el) {
   renderRows();
 }
 
-function productFormModal(p) {
+async function productFormModal(p) {
   const isEdit = !!p;
-  const cats = CATEGORIES;
+  let cats = [];
+  try {
+    const apiCats = await fetchCategories();
+    if (Array.isArray(apiCats) && apiCats.length) cats = apiCats.map(c => c.name);
+  } catch(e) {}
+  if (!cats.length) cats = CATEGORIES;
   const originalValues = isEdit ? {
     name: p.name,
     category: p.category,
@@ -1309,6 +1356,8 @@ function productFormModal(p) {
     image: p.image || ''
   } : null;
   let hasUnsavedChanges = false;
+  let imageReplaced = false;
+  let imageRemoved = false;
 
   function setFieldError(fieldId, msg) {
     const field = $('#' + fieldId, ov);
@@ -1394,7 +1443,7 @@ function productFormModal(p) {
             <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
               <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
               <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
-              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG, WEBP — máximo 2 MB, se sube a PostgreSQL</div>
             </div>
             <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
             <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
@@ -1430,6 +1479,7 @@ function productFormModal(p) {
       if (key === 'stock' || key === 'prepMin' || key === 'minStock') return currentValues[key] !== originalValues[key];
       return currentValues[key] !== originalValues[key];
     });
+    hasUnsavedChanges = hasUnsavedChanges || imageReplaced || (imageRemoved && !!originalValues.image);
     btnSave.disabled = !hasUnsavedChanges;
     btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
   };
@@ -1460,15 +1510,23 @@ function productFormModal(p) {
     pfImagePreview.style.display = 'none';
     if (pfDropPlaceholder) pfDropPlaceholder.style.display = '';
     if (pfRemoveImage) pfRemoveImage.style.display = 'none';
+    if (originalValues) {
+      imageReplaced = false;
+      imageRemoved = true;
+      checkChanges();
+    }
   };
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) { toast('La imagen no puede superar los 2 MB.', 'warning'); return; }
+    imageReplaced = true;
+    imageRemoved = false;
     const reader = new FileReader();
     reader.onload = (e) => showPreview(e.target.result);
     reader.readAsDataURL(file);
   };
   if (pfImage && pfImagePreview && pfDropZone) {
-    pfImage.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
+    pfImage.addEventListener('change', (e) => { handleFile(e.target.files?.[0]); checkChanges(); });
     pfDropZone.addEventListener('click', (e) => { if (e.target.closest('#pfRemoveImage')) return; pfImage.click(); });
     pfDropZone.addEventListener('dragover', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--primary)'; pfDropZone.style.background = 'var(--primary-soft)'; });
     pfDropZone.addEventListener('dragleave', () => { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; });
@@ -1543,23 +1601,60 @@ function productFormModal(p) {
         btnSave.innerHTML = originalText;
         return;
       }
-      
+      const newFile = imageReplaced ? (pfImage?.files?.[0] || null) : null;
+      const shouldSendMultipart = !!newFile;
+      const payload = shouldSendMultipart ? new FormData() : null;
+      if (shouldSendMultipart) {
+        Object.entries(productData).forEach(([k, v]) => payload.append(k, v));
+        payload.append('image', newFile);
+      }
+      const sendData = shouldSendMultipart ? payload : productData;
+
       let res;
       if (isEdit) {
-        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), productData);
+        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), sendData);
         if (!res.ok) {
-          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al actualizar';
+          console.error(res.status, res.data, res.error);
+          let msg = res.data?.detail;
+          if (!msg && res.data && typeof res.data === 'object') {
+            const firstKey = Object.keys(res.data)[0];
+            if (firstKey) {
+              const firstVal = res.data[firstKey];
+              const text = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
+              msg = `${firstKey}: ${text}`;
+            }
+          }
+          if (!msg || msg === 'null') {
+            try { msg = res.data ? JSON.stringify(res.data) : null; } catch(e) { msg = null; }
+          }
+          msg = msg || res.error || `Error ${res.status || ''}`.trim() || 'Error al actualizar';
+          if (msg === 'null' || msg === '{}' || msg === 'undefined') msg = `Error ${res.status}: no se pudo procesar la imagen. Verifica formato (JPG/PNG/WEBP/AVIF) y tamaño <2 MB.`;
           toast('Error: ' + msg, 'error');
           btnSave.disabled = false;
           btnSave.innerHTML = originalText;
           return;
         }
         logAudit('Editó producto', name);
+        if (shouldSendMultipart) logAudit('Cambió imagen de producto', name);
         toast('Producto actualizado en PostgreSQL.', 'success');
       } else {
-        res = await ApiClient.post(API_ENDPOINTS.products.list, productData);
+        res = await ApiClient.post(API_ENDPOINTS.products.list, sendData);
         if (!res.ok) {
-          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al crear';
+          console.error(res.status, res.data, res.error);
+          let msg = res.data?.detail;
+          if (!msg && res.data && typeof res.data === 'object') {
+            const firstKey = Object.keys(res.data)[0];
+            if (firstKey) {
+              const firstVal = res.data[firstKey];
+              const text = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
+              msg = `${firstKey}: ${text}`;
+            }
+          }
+          if (!msg || msg === 'null') {
+            try { msg = res.data ? JSON.stringify(res.data) : null; } catch(e) { msg = null; }
+          }
+          msg = msg || res.error || `Error ${res.status || ''}`.trim() || 'Error al crear';
+          if (msg === 'null' || msg === '{}' || msg === 'undefined') msg = `Error ${res.status}: no se pudo procesar la imagen. Verifica formato (JPG/PNG/WEBP/AVIF) y tamaño <2 MB.`;
           toast('Error: ' + msg, 'error');
           btnSave.disabled = false;
           btnSave.innerHTML = originalText;
@@ -2826,11 +2921,11 @@ function barAdminProfile(el) {
     const last_name = rest.join(' ');
     const res = await ApiClient.patch(API_ENDPOINTS.auth.me, { first_name, last_name });
     if (!res.ok) { toast(res.data?.detail || 'No se pudo actualizar perfil', 'error'); return; }
-    const session = Store.load('int_session', null);
+    const session = SessionStore.get('int_session', null);
     if (session) {
       session.name = newName;
       if (newPhotoBase64 !== undefined) session.photo = newPhotoBase64;
-      Store.save('int_session', session);
+      SessionStore.set('int_session', session);
     }
     Store.save('int_admin_name_' + user.id, newName);
     Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
