@@ -3,19 +3,19 @@
    ============================================================ */
 
 const Auth = {
-  // Obtener usuario actual desde localStorage
+  // Obtener usuario actual desde la sesión de esta pestaña (sessionStorage)
   current() {
-    return Store.load('int_session', null);
+    return SessionStore.get('int_session', null);
   },
   
   // Guardar usuario actual
   set(u) {
-    Store.save('int_session', u);
+    SessionStore.set('int_session', u);
   },
   
-  // Limpiar sesión
+  // Limpiar sesión (solo esta pestaña)
   clear() {
-    localStorage.removeItem('int_session');
+    SessionStore.remove('int_session');
     ApiClient.clearTokens();
   },
   

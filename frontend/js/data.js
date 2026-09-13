@@ -3,7 +3,7 @@
    NOTA: Los datos de productos, usuarios, órdenes, config ahora vienen del API backend
    ============================================================ */
 
-const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipapas', 'Bebidas', 'Snacks'];
+const CATEGORIES = ['Hamburguesas', 'Sándwiches', 'Snacks', 'Dulces y chocolates', 'Galletas y pastelería', 'Bebidas', 'Comida preparada'];
 
 const ROLE_LABELS = { user: 'Usuario institucional', adminbar: 'Administradora bar', admindev: 'Administrador desarrollador' };
 
@@ -19,6 +19,7 @@ const PERMISSIONS_CATALOG = {
   "products.create": "Crear productos",
   "products.edit": "Editar productos",
   "products.delete": "Eliminar productos",
+  "products.change_image": "Cambiar imagen de productos",
   "orders.view_all": "Ver todos los pedidos",
   "orders.change_status": "Cambiar estado pedidos",
   "stock.view": "Ver stock",
@@ -57,6 +58,35 @@ function normalizeApiProduct(product) {
   };
 }
 window.normalizeApiProduct = normalizeApiProduct;
+
+function resolveMediaUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/media/')) return (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '') + path;
+  return path;
+}
+window.resolveMediaUrl = resolveMediaUrl;
+
+function productThumbHtml(product, size) {
+  const w = size === 'sm' ? 40 : size === 'lg' ? 56 : 48;
+  const img = product && product.image ? resolveMediaUrl(product.image) : '';
+  if (img) {
+    return `<img src="${esc(img)}" alt="${esc(product.name || '')}" style="width:${w}px;height:${w}px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:${w}px;height:${w}px;border-radius:10px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem">${clientProductIcon(product)}</div>`;
+  }
+  return `<div style="width:${w}px;height:${w}px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem">${clientProductIcon(product)}</div>`;
+}
+window.productThumbHtml = productThumbHtml;
+
+function cartItemThumbHtml(item, product) {
+  const img = (item && item.image) ? resolveMediaUrl(item.image) : (product && product.image ? resolveMediaUrl(product.image) : '');
+  const name = (item && item.name) || (product && product.name) || '';
+  const fallbackProduct = product || { name, category: item && item.category };
+  if (img) {
+    return `<img src="${esc(img)}" alt="${esc(name)}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:56px;height:56px;border-radius:12px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem">${clientProductIcon(fallbackProduct)}</div>`;
+  }
+  return `<div style="width:56px;height:56px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem">${clientProductIcon(fallbackProduct)}</div>`;
+}
+window.cartItemThumbHtml = cartItemThumbHtml;
 
 const PERMISSION_MATRIX = [
   { fn: 'Inicio', user: '✓', adminbar: '✓', admindev: '✓' },

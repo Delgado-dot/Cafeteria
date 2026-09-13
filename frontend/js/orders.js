@@ -25,6 +25,8 @@ function mapApiOrder(order) {
       productId: item.product_id,
       qty: item.quantity,
       name: item.product_name,
+      image: item.product_image || '',
+      product_image: item.product_image || '',
       price: Number(item.unit_price),
       addons: item.addons || [],
     })),
@@ -132,6 +134,15 @@ function orderTrackingCard(o) {
       <div>
         <div class="order-glance-label">${orderStateMessage(o)}</div>
         <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} <i class="bx bx-x"></i>${i.qty}`).join(' · ')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${o.items.map((i) => {
+          const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+          const img = i.image || i.product_image || prod?.image || '';
+          if (img) {
+            const url = typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img;
+            return `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`;
+          }
+          return `<span style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="${esc(i.name)}">${clientProductIcon(prod || { category: '' })}</span>`;
+        }).join('')}</div>
       </div>
       <div class="order-eta">
         <span class="tiny muted">TIEMPO ESTIMADO</span>
@@ -162,10 +173,20 @@ function orderTrackingCard(o) {
 }
 
 function historyCard(o) {
+  const histThumbs = o.items.slice(0, 4).map((i) => {
+    const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+    const img = i.image || i.product_image || prod?.image || '';
+    if (img) {
+      const url = typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img;
+      return `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`;
+    }
+    return `<span style="width:32px;height:32px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="${esc(i.name)}">${clientProductIcon(prod || { category: '' })}</span>`;
+  }).join('');
   return `
     <div class="order-card order-card-history" data-order-detail="${esc(o.id)}">
       <div>
         <div class="order-num" style="font-size:var(--fs-md)">#${o.id} <span class="badge badge-outline">${fmtDate(o.date)} · ${o.time}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">${histThumbs}${o.items.length > 4 ? `<span class="tiny muted">+${o.items.length - 4} más</span>` : ''}</div>
         <div class="small muted" style="margin-top:6px">${o.items.slice(0, 3).map((i) => esc(i.name)).join(', ')}${o.items.length > 3 ? ` +${o.items.length - 3} más` : ''}</div>
       </div>
       <div class="order-history-meta">
@@ -206,7 +227,12 @@ function showOrderDetail(o) {
     <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
     <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
     ${terminal}${progress}
-    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
+    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => {
+      const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+      const img = i.image || i.product_image || prod?.image || '';
+      const thumb = img ? `<img src="${esc(typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img)}" alt="${esc(i.name)}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:10px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${clientProductIcon(prod || { category: '' })}</span>`;
+      return `<div class="detail-item" style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0">${thumb}</div><span style="flex:1">${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`;
+    }).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
     <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
   `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {

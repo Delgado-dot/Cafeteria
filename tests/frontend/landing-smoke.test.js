@@ -167,8 +167,24 @@ async function main() {
   ok(!!document.querySelector('.app'), 'Usuario: shell de usuario renderizado');
   ok(!document.body.classList.contains('is-landing'), 'is-landing removido tras iniciar sesión');
 
-  // logout -> landing
+  // OBS-001: sesión por pestaña. Los datos de sesión viven en sessionStorage,
+  // aislado por pestaña, NO en localStorage (compartido entre pestañas).
+  ok(!!window.sessionStorage.getItem('int_session'), 'OBS-001: int_session guardada en sessionStorage');
+  ok(!window.localStorage.getItem('int_session'), 'OBS-001: int_session NO está en localStorage');
+  ok(!!window.sessionStorage.getItem('access_token'), 'OBS-001: access_token guardada en sessionStorage');
+  ok(!!window.sessionStorage.getItem('refresh_token'), 'OBS-001: refresh_token guardada en sessionStorage');
+  ok(!window.localStorage.getItem('access_token') && !window.localStorage.getItem('refresh_token'), 'OBS-001: tokens NO están en localStorage');
+  // Simular otra pestaña escribiendo en localStorage (medio compartido): esta
+  // pestaña no debe verse afectada porque su sesión vive en sessionStorage.
+  window.localStorage.setItem('int_session', JSON.stringify({ id: 99, name: 'Otra Pestaña', role: 'adminbar' }));
+  ok(
+    window.__AUTH.current() && window.__AUTH.current().role === 'user',
+    'OBS-001: escritura de otra pestaña (localStorage) no altera esta sesión'
+  );
   window.localStorage.removeItem('int_session');
+
+  // logout -> landing
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   ok(!!document.querySelector('.landing'), 'Tras logout vuelve al Landing');
@@ -184,7 +200,7 @@ async function main() {
   ok(window.currentUser() && window.currentUser().role === 'adminbar', 'Rol adminbar activo');
 
   // 4. admindev via API mock
-  window.localStorage.removeItem('int_session');
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   clickLogin();
@@ -197,7 +213,7 @@ async function main() {
   ok(window.currentUser() && window.currentUser().role === 'admindev', 'Rol admindev activo');
 
   // 5. Sin sesión, cualquier ruta interna muestra Landing (no rompe rutas)
-  window.localStorage.removeItem('int_session');
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   ok(!!document.querySelector('.landing'), 'Sin sesión se muestra el Landing público');

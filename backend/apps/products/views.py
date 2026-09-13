@@ -4,7 +4,7 @@ Vistas de la aplicación de productos.
 
 from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, permissions, status
+from rest_framework import filters, generics, parsers, permissions, status
 from rest_framework.response import Response
 
 from apps.accounts.permissions import HasRolePermission
@@ -43,6 +43,7 @@ class ProductListView(generics.ListCreateAPIView):
     search_fields = ["name", "description"]
     ordering_fields = ["name", "price", "stock", "added_at"]
     pagination_class = ProductsPagination
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -75,15 +76,37 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Ver, actualizar o eliminar un producto."""
 
     queryset = Product.objects.select_related("category").prefetch_related("addons")
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
             return ProductCreateUpdateSerializer
         return ProductSerializer
 
+    def _has_image_change(self):
+        """True si la petición adjunta una imagen nueva (no es solo quitar)."""
+        content_type = (getattr(self.request, "content_type", "") or "")
+        if content_type.startswith("multipart/form-data"):
+            if any(self.request.FILES.getlist("image")):
+                return True
+            posted = self.request.POST.get("image", None)
+            return posted is not None and posted not in ("", "null", "undefined", "false")
+        data = getattr(self.request, "data", {})
+        if "image" not in data:
+            return False
+        value = data.get("image")
+        if value is None:
+            return False
+        if hasattr(value, "name") or hasattr(value, "read"):
+            return True
+        return value not in ("", "null", "undefined", "false")
+
     def get_permissions(self):
         if self.request.method in ("PUT", "PATCH"):
-            self.required_permission = "products.edit"
+            if self._has_image_change():
+                self.required_permission = "products.change_image"
+            else:
+                self.required_permission = "products.edit"
             return [permissions.IsAuthenticated(), HasRolePermission()]
         if self.request.method == "DELETE":
             self.required_permission = "products.delete"

@@ -75,6 +75,7 @@ class OrderItemAddonSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(read_only=True)
+    product_image = serializers.SerializerMethodField()
     addons = OrderItemAddonSerializer(source="item_addons", many=True, read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     line_total = serializers.DecimalField(
@@ -87,6 +88,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "id",
             "product_id",
             "product_name",
+            "product_image",
             "quantity",
             "unit_price",
             "addons",
@@ -95,6 +97,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "line_total",
         ]
         read_only_fields = fields
+
+    def get_product_image(self, obj):
+        product = getattr(obj, "product", None)
+        if product and getattr(product, "image", None):
+            try:
+                if product.image:
+                    return product.image.url
+            except Exception:
+                pass
+            # Fallback al nombre del archivo
+            try:
+                return product.image.name and f"/media/{product.image.name}"
+            except Exception:
+                return None
+        return None
 
 
 class AddonSelectionSerializer(serializers.Serializer):

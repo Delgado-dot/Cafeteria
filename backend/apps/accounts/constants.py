@@ -18,6 +18,7 @@ PERMISSIONS_CATALOG = {
     "products.create": "Crear productos",
     "products.edit": "Editar productos",
     "products.delete": "Eliminar productos",
+    "products.change_image": "Cambiar imagen de productos",
     "orders.view_all": "Ver todos los pedidos",
     "orders.change_status": "Cambiar estado de pedidos",
     "stock.view": "Ver stock",
@@ -94,5 +95,6 @@ DEFAULT_ROLE_PERMISSIONS = {
         "profile.view",
         "profile.edit",
         "products.view",
+        "products.create",
     ],
 }

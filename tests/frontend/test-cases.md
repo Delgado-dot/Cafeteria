@@ -80,9 +80,31 @@
 // 6. Verificar que aparezca en la lista
 
 /* ============================================================
-   Responsividad
+   Sesiones por pestaña (OBS-001)
    ============================================================ */
 
+// Caso de prueba: sesiones independientes entre pestañas (roles distintos)
+// 1. Abrir la pestaña A e iniciar sesión como usuario institucional
+// 2. Abrir la pestaña B e iniciar sesión como administradora bar
+// 3. Verificar que A sigue mostrando la interfaz de usuario y B la de adminbar
+
+// Caso de prueba: logout aislado
+// 1. Con sesión activa en A y B, cerrar sesión en A
+// 2. Verificar que A vuelve al Landing y B conserva su sesión
+
+// Caso de prueba: recarga conserva la sesión de la pestaña
+// 1. Iniciar sesión en una pestaña
+// 2. Recargar la pestaña
+// 3. Verificar que la sesión se mantiene (sessionStorage sobrevive a la recarga)
+
+// Caso de prueba: las claves de sesión no se comparten
+// 1. Iniciar sesión en una pestaña
+// 2. Verificar en DevTools que int_session, access_token y refresh_token
+//    están en sessionStorage y NO en localStorage
+
+/* ============================================================
+   Responsividad
+   ============================================================ */
 // Caso de prueba: Menú móvil
 // 1. Reducir la ventana a 390px de ancho
 // 2. Verificar que aparezca la navegación inferior

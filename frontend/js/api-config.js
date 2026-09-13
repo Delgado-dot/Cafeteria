@@ -124,32 +124,53 @@ function bindAssetCssVars() {
   if (icon) icon.href = assetUrl('bar-intesud-logo');
 }
 
+/* ---------- Sesión por pestaña (OBS-001) ----------
+   Cada pestaña mantiene su propia sesión: los tokens y el usuario actual se
+   guardan en sessionStorage (aislado por pestaña), no en localStorage
+   (compartido entre pestañas del mismo origen). */
+const SessionStore = {
+  get(key, fallback = null) {
+    try {
+      const v = sessionStorage.getItem(key);
+      return v ? JSON.parse(v) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  },
+  remove(key) {
+    sessionStorage.removeItem(key);
+  },
+};
+
 /* ---------- Utilidades para peticiones HTTP ---------- */
 const ApiClient = {
-  // Obtener token JWT del localStorage
+  // Obtener token JWT de la sesión de esta pestaña
   getToken() {
-    return localStorage.getItem('access_token');
+    return SessionStore.get('access_token', '') || '';
   },
   
-  // Guardar token JWT en localStorage
+  // Guardar token JWT en la sesión de esta pestaña
   setToken(token) {
-    if (token) localStorage.setItem('access_token', token);
+    if (token) SessionStore.set('access_token', token);
   },
   
-  // Guardar refresh token
+  // Guardar refresh token (sesión de esta pestaña)
   setRefreshToken(token) {
-    if (token) localStorage.setItem('refresh_token', token);
+    if (token) SessionStore.set('refresh_token', token);
   },
   
   // Obtener refresh token
   getRefreshToken() {
-    return localStorage.getItem('refresh_token');
+    return SessionStore.get('refresh_token', '') || '';
   },
   
   // Limpiar tokens
   clearTokens() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    SessionStore.remove('access_token');
+    SessionStore.remove('refresh_token');
   },
   
   // Encabezados por defecto con autorización
@@ -247,7 +268,7 @@ const ApiClient = {
       });
       if (!response.ok) {
         ApiClient.clearTokens();
-        localStorage.removeItem('int_session');
+        SessionStore.remove('int_session');
         return false;
       }
       const data = await response.json();
@@ -275,6 +296,7 @@ const ApiClient = {
 window.API_BASE_URL = API_BASE_URL;
 window.API_ENDPOINTS = API_ENDPOINTS;
 window.ApiClient = ApiClient;
+window.SessionStore = SessionStore;
 window.apiList = apiList;
 window.assetUrl = assetUrl;
 window.bindAssetCssVars = bindAssetCssVars;

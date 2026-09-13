@@ -37,10 +37,13 @@ const Cart = {
       ex.addons = addons || ex.addons;
       ex.name = name;
       ex.price = Number(product.price) + (addons?.reduce((s, a) => s + Number(a.price), 0) || 0);
+      if (!ex.image && product.image) ex.image = product.image;
+      if (!ex.category && product.category) ex.category = product.category;
     } else {
       this.items.push({
         productId: product.id, qty, name, price: Number(product.price) + (addons?.reduce((s, a) => s + Number(a.price), 0) || 0),
         basePrice: product.price, addons: addons || [], note: note || '', emoji: clientProductIcon(product), prepMin: product.prepMin,
+        image: product.image || '', category: product.category || '',
       });
     }
     this.save();
@@ -205,11 +208,11 @@ async function renderCart(el) {
   }
 
   Cart.items.forEach((item) => {
-    const product = Store.products.find((p) => p.id === item.productId);
+    const product = Store.products.find((p) => String(p.id) === String(item.productId));
     const row = document.createElement('div');
     row.className = 'cart-item';
     row.innerHTML = `
-      <div class="ci-media">${clientProductIcon(product)}</div>
+      <div class="ci-media" style="display:flex;align-items:center;justify-content:center;flex-shrink:0">${cartItemThumbHtml(item, product)}</div>
       <div class="ci-body">
         <div class="ci-name">${esc(item.name)}</div>
         <div class="ci-meta">${money(item.price)} c/u${item.note ? ` · Nota: ${esc(item.note)}` : ''}</div>
@@ -498,11 +501,13 @@ async function renderCheckout(el) {
     }
   }
 
-  /* resumen items */
-  $('#checkoutItems').innerHTML = Cart.items.map((i) => `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span>${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><span>${money(i.price * i.qty)}</span>
-    </div>`).join('');
+  /* resumen items - con miniatura real si existe */
+  $('#checkoutItems').innerHTML = Cart.items.map((i) => {
+    const product = Store.products.find((p) => String(p.id) === String(i.productId));
+    const thumbProduct = { name: i.name, category: i.category || product?.category, image: i.image || product?.image || '' };
+    const thumb = productThumbHtml(thumbProduct, 'sm');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex-shrink:0">${thumb}</div><div style="flex:1;min-width:0"><div class="bold" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(i.name)}">${esc(i.name)}</div><div class="tiny muted">Cantidad: ${i.qty} · ${money(i.price)} c/u</div></div><span class="bold">${money(i.price * i.qty)}</span></div>`;
+  }).join('');
 
   $('#btnConfirm').onclick = confirmOrder;
 }
@@ -602,7 +607,12 @@ function nextOrderNumber() {
 function renderConfirmation(order) {
   const app = $('#mainContent') || $('#app');
   const total = Number.isFinite(Number(order.total)) ? Number(order.total) : (order.cartTotal || 0);
-  const itemsConf = (order.items || []).map((i) => `${esc(i.name)} <span class="muted">× ${i.qty}</span>`).join('<br>');
+  const itemsConf = (order.items || []).map((i) => {
+    const product = Store.products.find((p) => String(p.id) === String(i.productId));
+    const img = i.image || i.product_image || product?.image || '';
+    const thumb = img ? `<img src="${esc(resolveMediaUrl(img))}" alt="${esc(i.name)}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${clientProductIcon(product || { category: '' })}</span>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0">${thumb}<span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span></div>`;
+  }).join('');
   app.innerHTML = `
     <div class="card" style="text-align:center;padding:44px 24px;max-width:560px;margin:0 auto">
       <div style="font-size:3.4rem;margin-bottom:8px">${clientIcon('celebrate')}</div>

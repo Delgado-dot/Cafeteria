@@ -339,7 +339,8 @@ function productCard(p, size = '') {
     <div class="product-media">
       <span class="pc-dots"></span>
       <span class="pc-wave"></span>
-      <span class="p-emoji">${clientProductIcon(p)}</span>
+      ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2">` : ''}
+      <span class="p-emoji" ${p.image ? 'style="display:none"' : ''}>${clientProductIcon(p)}</span>
       ${clientCatIcon(p.category) ? `<span class="p-cat badge badge-primary">${clientCatIcon(p.category)} ${esc(p.category)}</span>` : ''}
       ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
     </div>
@@ -496,7 +497,8 @@ function userProductPage(el) {
       <div class="card card-flush" style="overflow:hidden">
         <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:0" class="prod-detail">
           <div class="product-media" style="height:100%;min-height:340px;font-size:5.5rem;align-items:center">
-            ${clientProductIcon(p)}
+            ${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2">` : ''}
+            <span class="p-emoji" ${p.image ? 'style="display:none"' : ''}>${clientProductIcon(p)}</span>
             ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
           </div>
           <div style="padding:var(--sp-6)">
