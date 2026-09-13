@@ -139,7 +139,7 @@ window.paymentMethodLabel = paymentMethodLabel;
 
 /* Categoría icono por categoría — Boxicons unificado (fuente única para cliente y panel) */
 function catIcon(cat) {
-  const c = (cat || '').toLowerCase();
+  const c = String(cat ?? '').toLowerCase();
   if (c.includes('hamburguesa') || c.includes('hot dog') || c.includes('sándwich') || c.includes('sandwich')) return '<i class="bx bx-hamburger"></i>';
   if (c.includes('bebida') || c.includes('jugo') || c.includes('té') || c.includes('te ')) return '<i class="bx bx-drink"></i>';
   if (c.includes('dulce') || c.includes('chocolate') || c.includes('gomita') || c.includes('galleta') || c.includes('snack')) return '<i class="bx bx-cookie"></i>';

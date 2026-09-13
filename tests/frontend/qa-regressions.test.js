@@ -300,8 +300,8 @@ async function main() {
     check('Regresión guardar: modal desaparece', () => assert.equal(productWindow.document.querySelector('.modal-overlay'), null));
     check('Regresión guardar: lista actualizada', () => {
       assert.equal(productListReads, 1);
-      assert.match(productWindow.document.querySelector('#prodRows').textContent, /Test Product Edit/);
-      assert.match(productWindow.document.querySelector('#prodRows').textContent, /Inactivo/);
+      assert.match(productWindow.document.querySelector('#prodCards').textContent, /Test Product Edit/);
+      assert.match(productWindow.document.querySelector('#prodCards').textContent, /Inactivo/);
     });
     check('Regresión guardar: mensaje de éxito visible', () => {
       const successToast = productWindow.document.querySelector('.toast.success');

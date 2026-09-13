@@ -1370,10 +1370,7 @@ async function barProducts(el) {
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
     </div>
-    <div class="table-wrap"><table class="admin-table">
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="prodRows"></tbody>
-    </table></div>`;
+    <div class="prod-grid" id="prodCards"><div class="skeleton" style="height:220px;width:100%"></div></div>`;
 
   const productsRes = await ApiClient.getAll(API_ENDPOINTS.products.list);
   if (!productsRes.ok) {
@@ -1410,10 +1407,7 @@ async function barProducts(el) {
         return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
       }).join('')}
     </div>
-    <div class="table-wrap"><table class="admin-table">
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="prodRows"></tbody>
-    </table></div>`;
+    <div class="prod-grid" id="prodCards"></div>`;
 
   const renderRows = () => {
     let list = cat === 'Todas' ? products : products.filter((p) => (p.category || 'Sin categoría') === cat);
@@ -1421,36 +1415,44 @@ async function barProducts(el) {
       const term = searchTerm.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.category || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term));
     }
-    const tbody = $('#prodRows', el);
+    const grid = $('#prodCards', el);
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></td></tr>';
+      grid.innerHTML = '<div class="prod-empty"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></div>';
       return;
     }
-    tbody.innerHTML = list.map((p) => `
-      <tr>
-        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category || 'Sin categoría')}">${esc(p.category || 'Sin categoría')}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.description || '')}">${esc(p.description || '')}</div></div></div></td>
-        <td data-label="Categoría"><span>${esc(p.category || 'Sin categoría')}</span></td>
-        <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
-        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.min_stock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.min_stock ? '· bajo' : ''}</span></td>
-        <td data-label="Prep"><span>${p.prepMin} min</span></td>
-        <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
-        <td data-label="Acciones">
-            <div style="position:relative; overflow: visible">
+    grid.innerHTML = list.map((p) => `
+      <div class="prod-card">
+        <div class="prod-card-media">
+          ${p.image ? `<img loading="lazy" src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="prod-card-media-fallback" style="${p.image ? 'display:none' : 'display:flex'}">${productIcon(p)}</div>
+        </div>
+        <div class="prod-card-body">
+          <div class="prod-card-head">
+            <div class="prod-card-title" title="${esc(p.name)}">${esc(p.name)}</div>
+            <div style="position:relative">
               <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
               <div class="dropdown-menu product-actions-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:1000">
                 <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
                 <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
               </div>
             </div>
-          </td>
-      </tr>
+          </div>
+          <div class="prod-card-cat">${esc(p.category || 'Sin categoría')}</div>
+          <div class="prod-card-price">${money(p.price)}</div>
+          <div class="prod-card-meta">
+            <span class="prod-meta-chip"><i class="bx bx-package"></i> <span>Stock ${p.stock}</span></span>
+            <span class="prod-meta-chip"><i class="bx bx-time"></i> <span>${p.prepMin} min</span></span>
+          </div>
+          <div class="prod-card-status">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</div>
+        </div>
+      </div>
     `).join('');
-    $$('[data-edit]', tbody).forEach((b) => b.onclick = (e) => {
+    $$('[data-edit]', grid).forEach((b) => b.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit)));
     });
-    $$('[data-toggle]', tbody).forEach((b) => {
+    $$('[data-toggle]', grid).forEach((b) => {
       b.onclick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1481,7 +1483,7 @@ async function barProducts(el) {
         if (contentEl) barProducts(contentEl);
       };
     });
-    $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
+    $$('[data-menu]', grid).forEach((btn) => btn.onclick = (e) => {
       e.stopPropagation();
       const menu = document.getElementById('prodMenu-' + btn.dataset.menu);
       if (!menu) return;

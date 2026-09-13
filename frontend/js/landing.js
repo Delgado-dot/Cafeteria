@@ -72,6 +72,7 @@ function renderLanding() {
       espacio: cfg.espacio_disfrutar_image_url || cfg.espacio_disfrutar_image || assetUrl('images/galeria-2'),
       snacks: cfg.cafe_snacks_image_url || cfg.cafe_snacks_image || assetUrl('images/galeria-3'),
     };
+    const logoUrl = cfg.system_logo_url || assetUrl('bar-intesud-logo');
     
     // Usar 4 productos al azar como menú preview
     const menuItems = products.slice(0, 4);
@@ -105,14 +106,14 @@ function renderLanding() {
   <div class="landing">
 
     <!-- ======= CAPA DE FONDO FIJA (siempre visible, nunca cambia) ======= -->
-    <div class="lp-bg" aria-hidden="true" style="background-image:url('${heroBg}')">
+    <div class="lp-bg" aria-hidden="true" style="--hero-image:url('${heroBg}')">
       <div class="lp-bg-overlay"></div>
     </div>
 
     <!-- ======= IDENTIDAD Y ACCESO ======= -->
     <div class="lp-topbar">
       <a class="lp-brand" href="#" data-lp-scroll="home">
-        <span class="lp-brand-mark"><img class="lp-brand-img" src="${assetUrl('bar-intesud-logo')}" alt="Logo INTESUD"></span>
+        <span class="lp-brand-mark"><img class="lp-brand-img" src="${logoUrl}" alt="Logo INTESUD"></span>
         <span class="lp-brand-name">Bar INTESUD<small>Pedidos en línea</small></span>
       </a>
       <button class="lp-btn-acceder" data-lp-login>ACCEDER</button>
@@ -244,7 +245,7 @@ function renderLanding() {
       <div class="lp-footer-strip">
         <div class="lp-f-brand">
 <a class="lp-brand" href="#" data-lp-scroll="home">
-            <span class="lp-brand-mark"><img class="lp-brand-img" src="${assetUrl('bar-intesud-logo')}" alt="Logo INTESUD"></span>
+            <span class="lp-brand-mark"><img class="lp-brand-img" src="${logoUrl}" alt="Logo INTESUD"></span>
             <span class="lp-brand-name">Bar INTESUD</span>
           </a>
         </div>

@@ -763,6 +763,122 @@ body.is-admin .table-wrap table { background: transparent; }
 body.is-admin .table-wrap thead th { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.88); border-bottom-color: var(--glass-border); }
 body.is-admin .table-wrap tbody td { border-bottom-color: var(--glass-border); color: rgba(255,255,255,0.92); }
 body.is-admin .table-wrap tbody tr:hover { background: rgba(255,255,255,0.06); }
+
+/* ----- PRODUCTOS: grid de tarjetas (adminbar/products) ----- */
+body.is-admin .prod-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+body.is-admin .prod-card {
+  background: var(--glass-surface-2);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--glass-radius);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+body.is-admin .prod-card:hover {
+  border-color: var(--glass-border-strong);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  transform: translateY(-2px);
+}
+body.is-admin .prod-card-media {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border-radius: calc(var(--glass-radius) - 2px) calc(var(--glass-radius) - 2px) 0 0;
+  background: var(--glass-inner);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.is-admin .prod-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+body.is-admin .prod-card-media-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  color: var(--glass-text-soft);
+  background: var(--glass-inner);
+}
+body.is-admin .prod-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+body.is-admin .prod-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+body.is-admin .prod-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--glass-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.is-admin .prod-card-cat {
+  color: var(--glass-text-soft);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+body.is-admin .prod-card-price {
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #eafff8;
+}
+body.is-admin .prod-card-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+body.is-admin .prod-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--glass-inner);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--glass-text-soft);
+}
+body.is-admin .prod-meta-chip i { font-size: 14px; color: var(--primary-strong); }
+body.is-admin .prod-card-status { margin-top: 2px; }
+body.is-admin .prod-card-status .badge { font-size: 11px; padding: 4px 10px; }
+body.is-admin .prod-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 16px;
+  color: rgba(255,255,255,0.92);
+}
+@media (max-width: 1023px) {
+  body.is-admin .prod-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 639px) {
+  body.is-admin .prod-grid { grid-template-columns: 1fr; }
+}
+
 body.is-admin .admin-content .card-header,
 body.is-admin .admin-content .card-footer { border-color: var(--glass-border); }
 /* Restaura tono semántico sobre vidrio (shorthand border pisa border-top) */

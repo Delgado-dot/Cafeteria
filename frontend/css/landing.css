@@ -19,14 +19,20 @@ body.is-landing { background: #ffffff; overflow: hidden; height: 100vh; }
 
 /* ----- CAPA DE FONDO FIJA (siempre visible, nunca cambia) ----- */
 .lp-bg {
+  --hero-image: none;
   position: fixed; inset: 0; z-index: 0; overflow: hidden;
   background-color: #0f2120;
+  background-image: var(--hero-image);
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
+  /* Desenfoque MUY suave solo del fondo para que el texto/botones resalten.
+     La escala mínima compensa los bordes translúcidos que deja el blur. */
+  filter: blur(2px);
+  transform: scale(1.01);
 }
 .lp-bg-overlay {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 2;
   background: rgba(8, 31, 36, 0.16);
 }
 

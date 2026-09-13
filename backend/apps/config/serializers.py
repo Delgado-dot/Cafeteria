@@ -7,6 +7,25 @@ from .models import CafeConfig, PaymentMethod
 QR_IMAGE_EXTENSIONS = ("png", "jpg", "jpeg", "webp")
 QR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
 
+SITE_IMAGE_EXTENSIONS = ("png", "jpg", "jpeg", "webp")
+SITE_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+
+def _validate_site_image(value):
+    """Política única para imágenes de la apariencia del sistema (<=5MB, PNG/JPG/WEBP)."""
+    if value is None:
+        return value
+    ext = (value.name.rsplit(".", 1)[-1] or "").lower()
+    if ext not in SITE_IMAGE_EXTENSIONS:
+        raise serializers.ValidationError(
+            "Solo se aceptan imágenes PNG, JPG, JPEG o WEBP."
+        )
+    if value.size > SITE_IMAGE_MAX_BYTES:
+        raise serializers.ValidationError(
+            "La imagen no puede superar los 5 MB."
+        )
+    return value
+
 
 def _qr_image_url(obj, request):
     if not obj.qr_image:
@@ -22,6 +41,9 @@ class CafeConfigSerializer(serializers.ModelSerializer):
     barra_atencion_image_url = serializers.SerializerMethodField(read_only=True)
     espacio_disfrutar_image_url = serializers.SerializerMethodField(read_only=True)
     cafe_snacks_image_url = serializers.SerializerMethodField(read_only=True)
+    login_background_url = serializers.SerializerMethodField(read_only=True)
+    login_mascot_url = serializers.SerializerMethodField(read_only=True)
+    system_logo_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CafeConfig
@@ -44,6 +66,12 @@ class CafeConfigSerializer(serializers.ModelSerializer):
             "espacio_disfrutar_image_url",
             "cafe_snacks_image",
             "cafe_snacks_image_url",
+            "login_background",
+            "login_background_url",
+            "login_mascot",
+            "login_mascot_url",
+            "system_logo",
+            "system_logo_url",
             "updated_at",
         ]
         read_only_fields = [
@@ -53,6 +81,9 @@ class CafeConfigSerializer(serializers.ModelSerializer):
             "barra_atencion_image_url",
             "espacio_disfrutar_image_url",
             "cafe_snacks_image_url",
+            "login_background_url",
+            "login_mascot_url",
+            "system_logo_url",
         ]
 
     def _absolute_image_url(self, image):
@@ -75,6 +106,27 @@ class CafeConfigSerializer(serializers.ModelSerializer):
 
     def get_cafe_snacks_image_url(self, obj):
         return self._absolute_image_url(obj.cafe_snacks_image)
+
+    def get_login_background_url(self, obj):
+        return self._absolute_image_url(obj.login_background)
+
+    def get_login_mascot_url(self, obj):
+        return self._absolute_image_url(obj.login_mascot)
+
+    def get_system_logo_url(self, obj):
+        return self._absolute_image_url(obj.system_logo)
+
+    def validate_hero_background(self, value):
+        return _validate_site_image(value)
+
+    def validate_login_background(self, value):
+        return _validate_site_image(value)
+
+    def validate_login_mascot(self, value):
+        return _validate_site_image(value)
+
+    def validate_system_logo(self, value):
+        return _validate_site_image(value)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)

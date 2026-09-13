@@ -40,6 +40,24 @@ class CafeConfig(models.Model):
         blank=True,
         null=True,
     )
+    login_background = models.ImageField(
+        "fondo de pantalla de login",
+        upload_to="site/login/",
+        blank=True,
+        null=True,
+    )
+    login_mascot = models.ImageField(
+        "mascota/panda de login",
+        upload_to="site/login/",
+        blank=True,
+        null=True,
+    )
+    system_logo = models.ImageField(
+        "logo del sistema",
+        upload_to="site/logo/",
+        blank=True,
+        null=True,
+    )
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 
     class Meta:

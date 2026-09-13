@@ -108,20 +108,23 @@ function assetUrl(key) {
 }
 
 // Reapunta las variables CSS de fondos a /api/assets/ para que el navegador
-// deje de pedir los archivos locales y use la copia centralizada.
-function bindAssetCssVars() {
+// deje de pedir los archivos locales y use la copia centralizada. Si la
+// configuración guardó imágenes propias (apariencia del sistema), se aplican.
+function bindAssetCssVars(config) {
+  const cfg = config || {};
+  const loginBg = cfg.login_background_url || assetUrl('bar-intesud-login');
   const map = {
-    '--intesud-white-mark': assetUrl('intesud-white-mark'),
-    '--login-background': assetUrl('bar-intesud-login'),
-    '--auth-background': assetUrl('images/image'),
-    '--dashboard-background': assetUrl('images/Como-decorar-una-cafeteria-pequena-con-poco-dinero'),
+    '--intesud-white-mark': `url('${assetUrl('intesud-white-mark')}')`,
+    '--login-background': `url('${loginBg}')`,
+    '--auth-background': `url('${cfg.login_background_url || assetUrl('images/image')}')`,
+    '--dashboard-background': `url('${assetUrl('images/Como-decorar-una-cafeteria-pequena-con-poco-dinero')}')`,
   };
   const root = document.documentElement;
   for (const [prop, url] of Object.entries(map)) {
-    root.style.setProperty(prop, `url('${url}')`);
+    root.style.setProperty(prop, url);
   }
   const icon = document.querySelector('link[rel="icon"]');
-  if (icon) icon.href = assetUrl('bar-intesud-logo');
+  if (icon) icon.href = cfg.system_logo_url || assetUrl('bar-intesud-logo');
 }
 
 /* ---------- Sesión por pestaña (OBS-001) ----------

@@ -216,6 +216,8 @@ async function loadInitialData() {
 
     if (configRes.ok && configRes.data) {
       Store.config = configRes.data;
+      // Aplicar la apariencia guardada (fondo login, logo, favicon).
+      bindAssetCssVars(Store.config);
     }
   } catch (error) {
     console.error('Error cargando datos iniciales:', error);

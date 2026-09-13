@@ -118,17 +118,21 @@ window.AUTH_ICO = AUTH_ICO;
 
 /* ---------- Render login ---------- */
 function renderLogin() {
+  const cfg = Store.config || {};
+  const bg = cfg.login_background_url || assetUrl('images/image');
+  const mascot = cfg.login_mascot_url || assetUrl('images/panda-login');
+  const logo = cfg.system_logo_url || assetUrl('bar-intesud-logo');
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen login-screen--auth">
+  <div class="login-screen login-screen--auth" style="--auth-background:url('${bg}')">
     <div class="login-layout">
       <div class="login-mascot" aria-hidden="true">
-        <img src="${assetUrl('images/panda-login')}" alt="">
+        <img src="${mascot}" alt="">
       </div>
       <div class="login-section">
         <div class="login-card">
           <div class="login-head login-brand-head">
-            <img class="login-logo" src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD">
+            <img class="login-logo" src="${logo}" alt="Logo BAR INTESUD">
             <h2>Iniciar sesión</h2>
             <p>Ingresa con tu cuenta institucional</p>
           </div>
@@ -211,6 +215,26 @@ function renderLogin() {
       btn.disabled = false; btn.textContent = 'Iniciar sesión';
     }
   });
+
+  // Si aún no conocemos la configuración, la buscamos y aplicamos la
+  // apariencia guardada (fondo/mascota/logo) sin re-renderizar el formulario.
+  if (!cfg.login_background_url && !cfg.login_mascot_url && !cfg.system_logo_url) {
+    ApiClient.get(API_ENDPOINTS.config.get).then((res) => {
+      if (res.ok && res.data) {
+        Store.config = res.data;
+        bindAssetCssVars(Store.config);
+        const screen = document.querySelector('.login-screen.login-screen--auth');
+        if (screen) {
+          const nextBg = Store.config.login_background_url || assetUrl('images/image');
+          screen.style.setProperty('--auth-background', `url('${nextBg}')`);
+          const mascotImg = screen.querySelector('.login-mascot img');
+          if (mascotImg) mascotImg.src = Store.config.login_mascot_url || assetUrl('images/panda-login');
+          const logoImg = screen.querySelector('.login-logo');
+          if (logoImg) logoImg.src = Store.config.system_logo_url || assetUrl('bar-intesud-logo');
+        }
+      }
+    });
+  }
 }
 
 /* ============================================================
@@ -218,11 +242,14 @@ function renderLogin() {
    ============================================================ */
 
 function renderForgot() {
+  const cfg = Store.config || {};
+  const bg = cfg.login_background_url || assetUrl('bar-intesud-login');
+  const logo = cfg.system_logo_url || assetUrl('bar-intesud-logo');
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
+  <div class="login-screen" style="--login-background:url('${bg}')">
     <div class="login-brand">
-      <div class="brand-logo-badge"><img src="${assetUrl('bar-intesud-logo')}" alt="Logo BAR INTESUD"></div>
+      <div class="brand-logo-badge"><img src="${logo}" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Funcionalidad en desarrollo</p>
     </div>
