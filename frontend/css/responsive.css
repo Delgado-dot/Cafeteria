@@ -121,9 +121,13 @@
   body.is-admin .table-wrap { border: none; background: transparent; box-shadow: none; padding: 0; }
   body.is-admin .admin-table tr {
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-    padding: 12px 14px; margin-bottom: 12px; box-shadow: var(--shadow-xs);
+    background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--r-lg);
+    padding: 12px 14px; margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     position: relative; width: 100%; max-width: 100%;
+    color: #fff;
   }
   body.is-admin .admin-table td { display: contents; }
   body.is-admin .admin-table td[data-label="Pedido"] { order: 1; flex: 1 1 auto; font-weight: var(--fw-bold); font-size: var(--fs-md); }

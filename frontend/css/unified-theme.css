@@ -5,11 +5,14 @@
 
 :root {
   --app-photo: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg");
-  --glass-dark: rgba(8, 27, 26, 0.78);
+  --glass-dark: rgba(8, 27, 26, 0.82);
   --glass-dark-soft: rgba(10, 34, 32, 0.68);
-  --glass-light: rgba(255, 255, 255, 0.91);
+  --glass-light: rgba(255, 255, 255, 0.78);
+  --glass-light-strong: rgba(255, 255, 255, 0.92);
   --glass-line: rgba(255, 255, 255, 0.18);
-  --glass-shadow: 0 16px 42px rgba(5, 20, 19, 0.22);
+  --glass-shadow: 0 8px 32px rgba(5, 20, 19, 0.12);
+  --glass-blur: blur(18px) saturate(150%);
+  --glass-blur-strong: blur(24px) saturate(160%);
 }
 
 /* Acceso: el mismo fondo fotografico y cristal oscuro del landing. */
@@ -24,6 +27,8 @@ body.is-auth .login-card {
   background: var(--glass-dark);
   border-color: var(--glass-line);
   box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
 }
 
 body.is-auth .login-head h2,
@@ -51,69 +56,1005 @@ body.is-auth .login-card code { background: rgba(255, 255, 255, 0.14) !important
 body.is-auth .login-card a { color: #9ee2dc !important; }
 body.is-auth .login-logo { background: rgba(255, 255, 255, 0.96); }
 
-/* Paneles administrativos: foto compartida, navegacion oscura y
-   superficies claras translucidas para preservar lectura de datos. */
+/* ============================================================
+   Paneles administrativos: fondo fotografico + cristal oscuro
+   Estilo identico al panel del cliente: superficies oscuras
+   translucidas, texto blanco, bordes sutiles y blur.
+   ============================================================ */
 body.is-admin {
   min-height: 100vh;
   background:
-    linear-gradient(145deg, rgba(8, 30, 28, 0.72), rgba(10, 35, 33, 0.56)),
+    linear-gradient(160deg, rgba(8, 29, 27, 0.74), rgba(5, 20, 19, 0.88)),
     var(--app-photo) center / cover fixed no-repeat;
 }
 
 body.is-admin .admin-layout,
 body.is-admin .admin-main { background: transparent; }
 
+/* --- Sidebar: cristal oscuro profundo --- */
 body.is-admin .admin-sidebar {
-  background: rgba(10, 31, 30, 0.94);
-  border-right-color: var(--glass-line);
-  box-shadow: 8px 0 28px rgba(4, 18, 17, 0.24);
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* --- Topbar: cristal oscuro semitransparente --- */
 body.is-admin .admin-topbar {
-  background: rgba(255, 255, 255, 0.88);
-  border-bottom-color: rgba(255, 255, 255, 0.52);
-  box-shadow: 0 8px 24px rgba(5, 20, 19, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* --- Sidebar brand --- */
+body.is-admin .sb-brand {
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Sidebar links: texto blanco legible --- */
+body.is-admin .sb-link { color: rgba(255, 255, 255, 0.85); }
+body.is-admin .sb-link:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+body.is-admin .sb-link.active {
+  background: rgba(64, 128, 126, 0.9);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(64, 128, 126, 0.35);
+}
+body.is-admin .sb-group,
+body.is-admin .sb-footer .tiny.muted { color: rgba(255, 255, 255, 0.6) !important; }
+
+/* --- Sidebar footer --- */
+body.is-admin .sb-footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* --- Sidebar scrollbar --- */
+body.is-admin .sb-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+body.is-admin .sb-nav::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.35); }
+
+/* --- Topbar: texto y elementos blancos --- */
+body.is-admin .admin-topbar .tb-title { color: #fff; }
+body.is-admin .admin-topbar .page-name { color: #fff; }
+
+/* --- Hamburger --- */
+body.is-admin .hamburger {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.is-admin .hamburger:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* --- Profile chip / user menu en topbar --- */
+body.is-admin .profile-chip { color: #fff; }
+body.is-admin .profile-chip .pname { color: #fff; }
+body.is-admin .profile-chip:hover { background: rgba(255, 255, 255, 0.1); }
+body.is-admin .user-chip { color: #fff; }
+body.is-admin .user-chip:hover { background: rgba(255, 255, 255, 0.1); }
+body.is-admin .avatar { background: rgba(64, 128, 126, 0.85); }
+
+/* --- Search input en topbar --- */
+body.is-admin .header-search .input {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.is-admin .header-search .input::placeholder { color: rgba(255, 255, 255, 0.5); }
+body.is-admin .header-search .ico { color: rgba(255, 255, 255, 0.5); }
+body.is-admin .header-search .input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(64, 128, 126, 0.6);
+}
+
+/* ============================================================
+   TITULOS Y TEXTOS DEL CONTENIDO — blanco legible
+   ============================================================ */
 body.is-admin .admin-content > .page-title h1,
 body.is-admin .admin-content > .page-title .page-sub,
 body.is-admin .admin-content > h1,
 body.is-admin .admin-content > h2 {
   color: #fff;
-  text-shadow: 0 2px 14px rgba(3, 18, 17, 0.34);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+body.is-admin .admin-content .page-sub { color: rgba(255, 255, 255, 0.75); }
+body.is-admin .admin-content .section-title {
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
 }
 
+/* ============================================================
+   SUPERFICIES DE CONTENIDO — cristal oscuro transparente
+   Mismo estilo que el panel del cliente
+   ============================================================ */
 body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
-  .capacity-panel, .chart-card, .settings-card, .audit-card) {
-  background: var(--glass-light);
-  border-color: rgba(255, 255, 255, 0.62);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  .capacity-panel, .capacity-card, .chart-card, .settings-card, .audit-card) {
+  background: rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  color: #fff;
 }
 
-/* Contraste explicito: textos de datos oscuros dentro de cristal claro. */
-body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
-  .capacity-panel, .chart-card, .settings-card, .audit-card) {
-  color: var(--text);
+/* Hover sutil en tarjetas */
+body.is-admin .admin-content :is(.stat-card, .queue-order, .quick-action):hover {
+  background: rgba(0, 0, 0, 0.32) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
 }
-body.is-admin .admin-content .muted { color: #556563; }
+
+/* --- Forzar background oscuro en divs con inline style var(--surface) --- */
+body.is-admin .admin-content div[style*="var(--surface)"],
+body.is-admin .admin-content div[style*="var(--border)"] {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+
+/* --- Product cards inline en dashboard (Productos más vendidos) --- */
+body.is-admin .admin-content .card div[style*="background:var(--surface-2)"] {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: var(--r-md) !important;
+  color: #fff !important;
+}
+
+/* --- Forzar colores de texto en inline styles --- */
+body.is-admin .admin-content div[style*="color:var(--text-2)"] { color: rgba(255, 255, 255, 0.65) !important; }
+body.is-admin .admin-content div[style*="color:var(--text-3)"] { color: rgba(255, 255, 255, 0.5) !important; }
+body.is-admin .admin-content div[style*="color:var(--primary)"] { color: #8fe0d8 !important; }
+body.is-admin .admin-content div[style*="color:var(--muted)"] { color: rgba(255, 255, 255, 0.5) !important; }
+body.is-admin .admin-content td[style*="color:var(--text-2)"] { color: rgba(255, 255, 255, 0.65) !important; }
+body.is-admin .admin-content td[style*="color:var(--text-3)"] { color: rgba(255, 255, 255, 0.5) !important; }
+body.is-admin .admin-content td[style*="color:var(--primary)"] { color: #8fe0d8 !important; }
+body.is-admin .admin-content span[style*="color:var(--text"] { color: rgba(255, 255, 255, 0.6) !important; }
+
+/* --- Forzar background var(--primary-soft) en cards admin --- */
+body.is-admin .admin-content div[style*="background:var(--primary-soft)"] {
+  background: rgba(64, 128, 126, 0.2) !important;
+}
+body.is-admin .admin-content div[style*="background:var(--surface-3)"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- Forzar border var(--border-strong) --- */
+body.is-admin .admin-content div[style*="var(--border-strong)"] {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* --- Forzar border var(--primary-glass) --- */
+body.is-admin .admin-content div[style*="var(--primary-glass)"] {
+  border-color: rgba(64, 128, 126, 0.3) !important;
+  background: rgba(64, 128, 126, 0.15) !important;
+}
+
+/* --- Forzar background var(--surface) (no solo surface-2) --- */
+body.is-admin .admin-content div[style*="background:var(--surface)"] {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* --- Stat cards inline con st-value --- */
+body.is-admin .admin-content .stat-card .st-value {
+  color: #fff !important;
+}
+body.is-admin .admin-content .stat-card .st-value.primary { color: #8fe0d8 !important; }
+body.is-admin .admin-content .stat-card .st-value.success { color: #6ee7a8 !important; }
+body.is-admin .admin-content .stat-card .st-value.warning { color: #f0c860 !important; }
+body.is-admin .admin-content .stat-card .st-value.danger { color: #f08080 !important; }
+
+/* --- Bold text inside admin cards --- */
+body.is-admin .admin-content .card .bold,
+body.is-admin .admin-content .card strong,
+body.is-admin .admin-content .card b { color: #fff !important; }
+
+/* --- Muted text inside admin cards --- */
+body.is-admin .admin-content .card .muted,
+body.is-admin .admin-content .card .tiny.muted,
+body.is-admin .admin-content .card .tiny { color: rgba(255, 255, 255, 0.6) !important; }
+
+/* --- Links inside admin cards --- */
+body.is-admin .admin-content .card a { color: #8fe0d8 !important; }
+body.is-admin .admin-content .card a:hover { text-decoration: underline; }
+
+/* --- Dividers inside admin cards --- */
+body.is-admin .admin-content .card hr,
+body.is-admin .admin-content .card .divider {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* --- Badges inside admin cards --- */
+body.is-admin .admin-content .card .badge-primary { background: rgba(64, 128, 126, 0.25) !important; color: #8fe0d8 !important; border-color: rgba(64, 128, 126, 0.3) !important; }
+body.is-admin .admin-content .card .badge-info { background: rgba(59, 124, 195, 0.2) !important; color: #80b8e8 !important; border-color: rgba(59, 124, 195, 0.25) !important; }
+body.is-admin .admin-content .card .badge-success { background: rgba(34, 160, 107, 0.2) !important; color: #6ee7a8 !important; border-color: rgba(34, 160, 107, 0.25) !important; }
+
+/* ============================================================
+   REGLA FINAL: catch-all para cualquier div con inline style
+   que use variables CSS del tema claro dentro del admin.
+   Asegura que TODO sea oscuro y legible.
+   ============================================================ */
+body.is-admin .admin-content *:not(.btn):not(.badge):not(.switch):not(input):not(select):not(textarea) {
+  --_admin-override: 1;
+}
+body.is-admin .admin-content div[style] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body.is-admin .admin-content td[style] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body.is-admin .admin-content span[style*="background:var(--surface"],
+body.is-admin .admin-content div[style*="background:var(--surface"] {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+body.is-admin .admin-content div[style*="border:2px dashed"] {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+body.is-admin .admin-content div[style*="box-shadow:var(--shadow"] {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ============================================================
+   DESARROLLADOR ADMIN — elementos específicos del devadmin
+   ============================================================ */
+
+/* --- Tabla genérica (sin admin-table) dentro del devadmin --- */
+body.is-admin .admin-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+body.is-admin .admin-content thead th {
+  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+body.is-admin .admin-content tbody td {
+  color: #fff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body.is-admin .admin-content tbody tr:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+body.is-admin .admin-content tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* --- perm-table --- */
+body.is-admin .admin-content .perm-table td {
+  color: #fff !important;
+}
+body.is-admin .admin-content .perm-table th {
+  color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* --- kv pairs (dt/dd) --- */
+body.is-admin .admin-content .kv dt {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+body.is-admin .admin-content .kv dd {
+  color: #fff !important;
+}
+
+/* --- card-title, card-sub, h3, h4 dentro de cards --- */
+body.is-admin .admin-content .card-title,
+body.is-admin .admin-content .card > h3,
+body.is-admin .admin-content .card-body > h3 {
+  color: #fff !important;
+}
+body.is-admin .admin-content .card-sub {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* --- Párrafos dentro de cards --- */
+body.is-admin .admin-content .card p {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* --- Span con tiny muted inline --- */
+body.is-admin .admin-content span.tiny.muted,
+body.is-admin .admin-content div.tiny.muted {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* --- Bold dentro de cards --- */
+body.is-admin .admin-content .card .bold,
+body.is-admin .admin-content .card b,
+body.is-admin .admin-content .card strong {
+  color: #fff !important;
+}
+
+/* --- Badges dentro de tablas --- */
+body.is-admin .admin-content table .badge-primary {
+  background: rgba(64, 128, 126, 0.25) !important;
+  color: #8fe0d8 !important;
+  border-color: rgba(64, 128, 126, 0.3) !important;
+}
+body.is-admin .admin-content table .badge-success {
+  background: rgba(34, 160, 107, 0.2) !important;
+  color: #6ee7a8 !important;
+  border-color: rgba(34, 160, 107, 0.25) !important;
+}
+body.is-admin .admin-content table .badge-neutral {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --- Botones btn-outline y btn-neutral dentro del admin --- */
+body.is-admin .admin-content .btn-outline {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+body.is-admin .admin-content .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+body.is-admin .admin-content .btn-neutral {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+body.is-admin .admin-content .btn-neutral:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+}
+
+/* --- Page sub dentro del devadmin --- */
+body.is-admin .admin-content .page-sub {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Empty state --- */
+body.is-admin .admin-content .empty-state {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+body.is-admin .admin-content .empty-state h3 {
+  color: #fff !important;
+}
+body.is-admin .admin-content .empty-state p {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* --- Timeline dentro del devadmin --- */
+body.is-admin .admin-content .tl-label {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body.is-admin .admin-content .tl-label b {
+  color: #fff !important;
+}
+body.is-admin .admin-content .tl-time {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* --- Select dentro de modales admin --- */
+body.is-admin .modal select.input {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+body.is-admin .modal select.input option {
+  background: #0f1e1d;
+  color: #fff;
+}
+
+/* --- Checkbox labels en admin --- */
+body.is-admin .admin-content .checkbox-row {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body.is-admin .admin-content .checkbox-row b {
+  color: #fff !important;
+}
+
+/* --- Textos dentro de tarjetas: blanco con jerarquía --- */
+body.is-admin .admin-content :is(.card, .stat-card, .queue-order, .table-wrap, .quick-action,
+  .capacity-panel, .capacity-card, .chart-card, .settings-card, .audit-card) {
+  color: #fff;
+}
+body.is-admin .admin-content .muted { color: rgba(255, 255, 255, 0.65); }
 body.is-admin .admin-content .muted-3,
-body.is-admin .admin-content .tiny.muted { color: #667572; }
-body.is-admin .admin-content thead th { color: #52615f; background: rgba(235, 243, 241, 0.9); }
-body.is-admin .admin-content tbody td { color: var(--text); }
+body.is-admin .admin-content .tiny.muted { color: rgba(255, 255, 255, 0.5); }
 
-body.is-admin .sb-link { color: rgba(255, 255, 255, 0.88); }
-body.is-admin .sb-link.active { background: #fff; color: var(--primary-strong); }
-body.is-admin .sb-group,
-body.is-admin .sb-footer .tiny.muted { color: rgba(255, 255, 255, 0.7) !important; }
+/* --- Stat cards: valores grandes blancos --- */
+body.is-admin .stat-label,
+body.is-admin .stat-card .st-label { color: rgba(255, 255, 255, 0.7); }
+body.is-admin .stat-value,
+body.is-admin .stat-card .st-value { color: #fff; }
+body.is-admin .stat-value.primary { color: #8fe0d8; }
+body.is-admin .stat-value.success { color: #6ee7a8; }
+body.is-admin .stat-value.warning { color: #f0c860; }
+body.is-admin .stat-value.danger { color: #f08080; }
+body.is-admin .stat-sub,
+body.is-admin .stat-card .st-sub { color: rgba(255, 255, 255, 0.55); }
+body.is-admin .stat-card .st-sub a { color: #8fe0d8; }
+body.is-admin .stat-card .st-sub a:hover { text-decoration: underline; }
 
-/* Cliente: controles claros siempre conservan texto oscuro, aunque vivan
-   dentro de una tarjeta de cristal oscura. */
+/* --- Stat card top border accent --- */
+body.is-admin .stat-card.tone-primary { border-top: 4px solid #40807E; }
+body.is-admin .stat-card.tone-success { border-top: 4px solid #22a06b; }
+body.is-admin .stat-card.tone-warning { border-top: 4px solid #e09a16; }
+body.is-admin .stat-card.tone-danger { border-top: 4px solid #d94b4b; }
+body.is-admin .stat-card { border-color: rgba(255, 255, 255, 0.15); }
+
+/* --- Tabla: cristal oscuro --- */
+body.is-admin .table-wrap {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+body.is-admin thead th {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+body.is-admin tbody td { color: #fff; border-bottom-color: rgba(255, 255, 255, 0.08); }
+body.is-admin tbody tr:hover { background: rgba(255, 255, 255, 0.06); }
+body.is-admin tbody tr:last-child td { border-bottom: none; }
+
+/* --- Status banners: cristal oscuro con color --- */
+body.is-admin .status-banner {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  color: #fff;
+}
+body.is-admin .status-banner.success {
+  border-left: 4px solid #22a06b;
+  background: rgba(34, 160, 107, 0.15);
+}
+body.is-admin .status-banner.warning {
+  border-left: 4px solid #e09a16;
+  background: rgba(224, 154, 22, 0.15);
+}
+body.is-admin .status-banner.danger {
+  border-left: 4px solid #d94b4b;
+  background: rgba(217, 75, 75, 0.15);
+}
+
+/* --- Alert items del dashboard --- */
+body.is-admin .alert-item {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* --- Capacity panel / progress bars --- */
+body.is-admin .capacity-panel,
+body.is-admin .capacity-card {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+body.is-admin .capacity-header h3,
+body.is-admin .capacity-head h3 { color: rgba(255, 255, 255, 0.8); }
+body.is-admin .capacity-figure { color: #8fe0d8; }
+body.is-admin .capacity-num { color: rgba(255, 255, 255, 0.7); }
+body.is-admin .capacity-num b { color: #fff; }
+body.is-admin .bar-track {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* --- Chart cards --- */
+body.is-admin .chart-card {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+}
+
+/* --- Queue orders: cristal oscuro --- */
+body.is-admin .queue-order {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #fff;
+}
+body.is-admin .queue-order:hover {
+  background: rgba(0, 0, 0, 0.32);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+body.is-admin .queue-head { color: #fff; }
+body.is-admin .queue-items { color: rgba(255, 255, 255, 0.85); }
+
+/* --- Quick actions --- */
+body.is-admin .quick-action {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #fff;
+}
+body.is-admin .quick-action .qa-label { color: rgba(255, 255, 255, 0.8); }
+body.is-admin .quick-action .qa-ico {
+  background: rgba(64, 128, 126, 0.25);
+  color: #8fe0d8;
+}
+
+/* ============================================================
+   BOTONES — efecto glass oscuro
+   ============================================================ */
+body.is-admin .btn-primary {
+  background: rgba(64, 128, 126, 0.9);
+  color: #fff;
+  border-color: rgba(64, 128, 126, 0.6);
+  box-shadow: 0 6px 16px rgba(64, 128, 126, 0.3);
+}
+body.is-admin .btn-primary:hover { background: rgba(47, 99, 97, 0.95); }
+body.is-admin .btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.is-admin .btn-secondary:hover { background: rgba(255, 255, 255, 0.18); }
+body.is-admin .btn-outline {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.is-admin .btn-outline:hover { background: rgba(255, 255, 255, 0.15); }
+body.is-admin .btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+body.is-admin .btn-ghost:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+body.is-admin .btn-danger {
+  background: rgba(217, 75, 75, 0.85);
+  color: #fff;
+}
+body.is-admin .btn-danger:hover { background: rgba(189, 50, 50, 0.9); }
+body.is-admin .btn-success {
+  background: rgba(34, 160, 107, 0.85);
+  color: #fff;
+}
+body.is-admin .btn-success:hover { background: rgba(23, 138, 90, 0.9); }
+body.is-admin .btn-warning {
+  background: rgba(224, 154, 22, 0.85);
+  color: #fff;
+}
+body.is-admin .btn-neutral {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.is-admin .btn-neutral:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+/* ============================================================
+   INPUTS — cristal oscuro
+   ============================================================ */
+body.is-admin .input,
+body.is-admin textarea.input,
+body.is-admin select.input {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.is-admin .input::placeholder { color: rgba(255, 255, 255, 0.45); }
+body.is-admin .input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(64, 128, 126, 0.6);
+  box-shadow: 0 0 0 3px rgba(64, 128, 126, 0.15);
+}
+body.is-admin .input:disabled {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.4);
+}
+body.is-admin .label { color: rgba(255, 255, 255, 0.8); }
+body.is-admin .input-group .ig-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+body.is-admin .input-group .ig-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+/* ============================================================
+   BADGES — cristal sutil con color
+   ============================================================ */
+body.is-admin .badge {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.is-admin .badge-primary { background: rgba(64, 128, 126, 0.25); color: #8fe0d8; border: 1px solid rgba(64, 128, 126, 0.3); }
+body.is-admin .badge-success { background: rgba(34, 160, 107, 0.2); color: #6ee7a8; border: 1px solid rgba(34, 160, 107, 0.25); }
+body.is-admin .badge-warning { background: rgba(224, 154, 22, 0.2); color: #f0c860; border: 1px solid rgba(224, 154, 22, 0.25); }
+body.is-admin .badge-danger { background: rgba(217, 75, 75, 0.2); color: #f08080; border: 1px solid rgba(217, 75, 75, 0.25); }
+body.is-admin .badge-info { background: rgba(59, 124, 195, 0.2); color: #80b8e8; border: 1px solid rgba(59, 124, 195, 0.25); }
+body.is-admin .badge-neutral { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); }
+body.is-admin .badge-outline { background: transparent; border-color: rgba(255, 255, 255, 0.25); color: rgba(255, 255, 255, 0.7); }
+
+/* ============================================================
+   MODALES — cristal oscuro profundo
+   ============================================================ */
+body.is-admin .modal-overlay {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.is-admin .modal {
+  background: rgba(15, 30, 29, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+body.is-admin .modal-header { border-bottom-color: rgba(255, 255, 255, 0.1); }
+body.is-admin .modal-title { color: #fff; }
+body.is-admin .modal-sub { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .modal-close { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .modal-close:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+body.is-admin .modal-footer {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   DRAWER — cristal oscuro lateral
+   ============================================================ */
+body.is-admin .drawer {
+  background: rgba(15, 30, 29, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+body.is-admin .drawer-header { border-bottom-color: rgba(255, 255, 255, 0.1); }
+body.is-admin .drawer-title { color: #fff; }
+body.is-admin .drawer-footer {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   TOASTS — cristal oscuro
+   ============================================================ */
+body.is-admin .toast {
+  background: rgba(15, 30, 29, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left-width: 4px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  color: #fff;
+}
+body.is-admin .toast .t-ico,
+body.is-admin .toast > span:not(.t-ico) { color: #fff; }
+
+/* ============================================================
+   DROPDOWN MENUS — cristal oscuro
+   ============================================================ */
+body.is-admin .dropdown-menu {
+  background: rgba(15, 30, 29, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+body.is-admin .dropdown-item { color: rgba(255, 255, 255, 0.85); }
+body.is-admin .dropdown-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+body.is-admin .dropdown-item .dm-ico { color: rgba(255, 255, 255, 0.5); }
+body.is-admin .dropdown-sep { background: rgba(255, 255, 255, 0.1); }
+body.is-admin .dropdown-head { border-bottom-color: rgba(255, 255, 255, 0.1); }
+
+/* ============================================================
+   TABS / CHIPS — cristal oscuro
+   ============================================================ */
+body.is-admin .adv-tabs {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+body.is-admin .category-chip,
+body.is-admin .cat-chip {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+}
+body.is-admin .category-chip:hover,
+body.is-admin .cat-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+body.is-admin .category-chip.active,
+body.is-admin .cat-chip.active {
+  background: rgba(64, 128, 126, 0.85);
+  border-color: rgba(64, 128, 126, 0.5);
+  color: #fff;
+}
+
+/* Segmented tabs */
+body.is-admin .seg-tabs {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+body.is-admin .seg-tab { color: rgba(255, 255, 255, 0.7); }
+body.is-admin .seg-tab:hover { color: #fff; }
+body.is-admin .seg-tab.active {
+  background: rgba(64, 128, 126, 0.8);
+  color: #fff;
+}
+
+/* ============================================================
+   FORMULARIOS ESPECIALES ADMIN
+   ============================================================ */
+body.is-admin .pf-header {
+  background: rgba(64, 128, 126, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+}
+body.is-admin .pf-header-title { color: #fff; }
+
+body.is-admin .file-upload,
+body.is-admin .file-drop {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+body.is-admin .file-upload:hover,
+body.is-admin .file-drop:hover {
+  border-color: rgba(64, 128, 126, 0.5);
+  background: rgba(64, 128, 126, 0.1);
+  color: #fff;
+}
+
+/* Pay options / select cards */
+body.is-admin .pay-option,
+body.is-admin .select-card {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  color: #fff;
+}
+body.is-admin .pay-option:hover,
+body.is-admin .select-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+body.is-admin .pay-option.active,
+body.is-admin .select-card.active {
+  border-color: rgba(64, 128, 126, 0.6);
+  background: rgba(64, 128, 126, 0.15);
+}
+body.is-admin .pay-option .po-name,
+body.is-admin .select-card .sc-name { color: #fff; }
+body.is-admin .pay-option .po-desc,
+body.is-admin .select-card .sc-desc { color: rgba(255, 255, 255, 0.6); }
+
+/* Summary card */
+body.is-admin .summary-card {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #fff;
+}
+
+/* Stock bars */
+body.is-admin .stock-bar {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Order cards */
+body.is-admin .order-card {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #fff;
+}
+
+/* Card headers y footers */
+body.is-admin .card-header {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+body.is-admin .card-title { color: #fff; }
+body.is-admin .card-sub { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .card-footer {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Grid stat card accent borders */
+body.is-admin .grid-3 .stat-card:nth-child(1) { border-top: 4px solid #40807E; }
+body.is-admin .grid-3 .stat-card:nth-child(2) { border-top: 4px solid #e09a16; }
+body.is-admin .grid-3 .stat-card:nth-child(3) { border-top: 4px solid #22a06b; }
+
+/* Priority tags */
+body.is-admin .priority-tag.normal { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
+body.is-admin .priority-tag.priority { background: rgba(224, 154, 22, 0.2); color: #f0c860; }
+body.is-admin .priority-tag.urgent { background: rgba(217, 75, 75, 0.2); color: #f08080; }
+
+/* Status chips */
+body.is-admin .status-chip { color: #fff; }
+
+/* Timeline dots */
+body.is-admin .tl-step .tl-dot,
+body.is-admin .timeline-step .t-dot { color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.1); }
+body.is-admin .tl-step.done .tl-dot,
+body.is-admin .timeline-step.done .t-dot { background: #22a06b; color: #fff; }
+body.is-admin .tl-step.current .tl-dot,
+body.is-admin .timeline-step.current .t-dot { background: #40807E; color: #fff; }
+body.is-admin .tl-step .tl-label,
+body.is-admin .timeline-step .t-label { color: rgba(255, 255, 255, 0.85); }
+body.is-admin .tl-step .tl-time,
+body.is-admin .timeline-step .t-time { color: rgba(255, 255, 255, 0.5); }
+
+/* Mini chart bars */
+body.is-admin .mini-chart .mc-bar,
+body.is-admin .bc-bar {
+  background: linear-gradient(180deg, #40807E, #2f6361);
+}
+body.is-admin .mini-chart .mc-bar.hl,
+body.is-admin .bc-bar.hl {
+  background: linear-gradient(180deg, #e09a16, #c07d08);
+}
+body.is-admin .mini-chart .mc-label,
+body.is-admin .bc-label { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .bc-label.bold { color: #fff; }
+
+/* Qty stepper admin */
+body.is-admin .qty-stepper {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+body.is-admin .qty-stepper button { color: #8fe0d8; }
+body.is-admin .qty-stepper button:hover:not(:disabled) { background: rgba(64, 128, 126, 0.3); }
+body.is-admin .qty-stepper .qty-val { color: #fff; }
+
+/* Switch */
+body.is-admin .switch .track { background: rgba(255, 255, 255, 0.15); }
+body.is-admin .switch input:checked + .track { background: #22a06b; }
+
+/* Checkbox / radio */
+body.is-admin .checkbox-row,
+body.is-admin .radio-row { color: rgba(255, 255, 255, 0.85); }
+
+/* KV pairs */
+body.is-admin .kv dt { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .kv dd { color: #fff; }
+
+/* Detail sections */
+body.is-admin .detail-section h4 { color: rgba(255, 255, 255, 0.6); }
+body.is-admin .detail-item { color: rgba(255, 255, 255, 0.85); }
+body.is-admin .detail-total { color: #fff; border-top-color: rgba(255, 255, 255, 0.1); }
+body.is-admin .detail-total b { color: #8fe0d8; }
+body.is-admin .detail-eta { background: rgba(64, 128, 126, 0.2); color: #8fe0d8; }
+
+/* Admin more sheet */
+body.is-admin .admin-more-sheet {
+  background: rgba(15, 30, 29, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.3);
+}
+body.is-admin .admin-more-header { color: #fff; border-bottom-color: rgba(255, 255, 255, 0.1); }
+body.is-admin .admin-more-item { color: rgba(255, 255, 255, 0.8); }
+body.is-admin .admin-more-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+body.is-admin .admin-more-item.active { color: #8fe0d8; background: rgba(64, 128, 126, 0.15); }
+
+/* Progress steps */
+body.is-admin .ps-step .ps-circle { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.5); }
+body.is-admin .ps-step.done .ps-circle { background: #22a06b; color: #fff; }
+body.is-admin .ps-step.current .ps-circle { background: #40807E; color: #fff; box-shadow: 0 0 0 6px rgba(64, 128, 126, 0.2); }
+body.is-admin .ps-step .ps-label { color: rgba(255, 255, 255, 0.5); }
+body.is-admin .ps-step.done .ps-label { color: #6ee7a8; }
+body.is-admin .ps-step.current .ps-label { color: #8fe0d8; }
+body.is-admin .ps-step::before { background: rgba(255, 255, 255, 0.1); }
+
+/* Dividers */
+body.is-admin .divider { background: rgba(255, 255, 255, 0.1); }
+body.is-admin .divider-v { background: rgba(255, 255, 255, 0.1); }
+
+/* Perm matrix */
+body.is-admin .perm-yes { color: #6ee7a8; }
+body.is-admin .perm-no { color: rgba(255, 255, 255, 0.35); }
+
+/* ============================================================
+   BOTTOM NAV MÓVIL — cristal oscuro
+   ============================================================ */
+@media (max-width: 900px) {
+  body.is-admin .admin-bottom-nav {
+    background: rgba(15, 30, 29, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25);
+  }
+  body.is-admin .admin-content { padding-bottom: 88px; }
+  body.is-admin .admin-bottom-nav .abn-item { color: rgba(255, 255, 255, 0.5); }
+  body.is-admin .admin-bottom-nav .abn-item.active { color: #8fe0d8; background: rgba(64, 128, 126, 0.2); }
+  body.is-admin .admin-bottom-nav .abn-item .abn-label { color: rgba(255, 255, 255, 0.6); }
+  body.is-admin .admin-bottom-nav .abn-item.center.active .abn-label { color: #8fe0d8; }
+  body.is-admin .admin-more-sheet {
+    background: rgba(15, 30, 29, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.3);
+  }
+  body.is-admin .admin-bottom-nav .abn-item.center .abn-circle {
+    background: rgba(64, 128, 126, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* ============================================================
+   TABLAS MÓVIL (cards) — cristal oscuro
+   ============================================================ */
+@media (max-width: 560px) {
+  body.is-admin .admin-table tr {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* ============================================================
+   ACCESIBILIDAD
+   ============================================================ */
+body.is-admin .checkbox-row input[type=checkbox],
+body.is-admin .radio-row input[type=radio] { accent-color: #40807E; }
+
+/* ============================================================
+   TOGGLE SCROLLBAR (admin content)
+   ============================================================ */
+body.is-admin .admin-content *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
+body.is-admin .admin-content *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.35); }
+
+/* Cliente: controles claros siempre conservan texto oscuro */
 body.has-bottom-nav :is(.input, select.input, textarea.input, .dropdown-menu, .modal, .drawer,
   .qty-stepper .qty-val, .floor-tab, .aula-cell) { color: var(--text); }
 body.has-bottom-nav :is(.input, select.input, textarea.input)::placeholder { color: #6f7f7d; opacity: 1; }
@@ -125,17 +1066,4 @@ body.has-bottom-nav .drawer :is(.label, .drawer-title) { color: var(--text); }
 :is(.landing, .login-screen, body.is-admin, body.has-bottom-nav) :focus-visible {
   outline: 3px solid #9ee2dc;
   outline-offset: 3px;
-}
-
-@media (max-width: 900px) {
-  body.is-admin .admin-bottom-nav {
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-  body.is-admin .admin-content { padding-bottom: 88px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; }
 }
