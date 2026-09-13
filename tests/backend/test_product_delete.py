@@ -165,9 +165,27 @@ class ProductDeleteApiTests(TestCase):
         self.assertEqual(res.status_code, 409, res.data)
 
     def test_admindev_without_product_delete_permission_returns_403_not_500(self):
-        # admindev no tiene products.delete en la semilla: no debe romper la API
+        # Verificar que sin permiso se deniega con 403 y no rompe la API (no 500)
+        # Deshabilitar temporalmente para probar el caso sin permiso
+        perm, _ = RolePermission.objects.get_or_create(role="admindev", code="products.delete", defaults={"enabled": True})
+        original = perm.enabled
+        perm.enabled = False
+        perm.save(update_fields=["enabled"])
+        _clear_permissions_cache()
+        try:
+            client = self.client_for(self.admindev)
+            res = self.delete_product(client, self.product.pk)
+            self.assertNotEqual(res.status_code, 500, res.data)
+            self.assertEqual(res.status_code, 403, res.data)
+            self.assertTrue(Product.objects.filter(pk=self.product.pk).exists())
+        finally:
+            perm.enabled = original
+            perm.save(update_fields=["enabled"])
+            _clear_permissions_cache()
+
+    def test_admindev_con_acceso_total_puede_borrar_producto_no_protegido(self):
+        # Con el acceso total (nueva semilla 0007), admindev sí puede borrar
         client = self.client_for(self.admindev)
         res = self.delete_product(client, self.product.pk)
-        self.assertNotEqual(res.status_code, 500, res.data)
-        self.assertEqual(res.status_code, 403, res.data)
-        self.assertTrue(Product.objects.filter(pk=self.product.pk).exists())
+        self.assertEqual(res.status_code, 204, res.data)
+        self.assertFalse(Product.objects.filter(pk=self.product.pk).exists())

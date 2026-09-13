@@ -56,6 +56,43 @@ function apiDateToLocalKey(apiStr) {
   return localDateKey(dt);
 }
 
+// Sistema uniforme de mensajes para Administrador del Bar — usa nombre real del usuario autenticado
+function getBarAdminName() {
+  try {
+    const u = currentUser();
+    if (u && u.name) {
+      const first = u.name.trim().split(/\s+/)[0];
+      if (first) return first;
+    }
+    if (u && u.username) {
+      const first = u.username.trim().split(/[\s._-]+/)[0];
+      if (first) return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+  } catch(e) { /* La notificación puede mostrarse sin personalización. */ }
+  return null;
+}
+function barNotify(message, type='info') {
+  const name = getBarAdminName();
+  let msg = String(message || '').trim();
+  if (!msg || /undefined/i.test(msg)) {
+    msg = name ? `${name}, ocurrió un problema al procesar la solicitud.` : 'Ocurrió un problema al procesar la solicitud.';
+    toast(msg, type);
+    return;
+  }
+  if (name) {
+    if (msg.toLowerCase().startsWith(name.toLowerCase() + ',')) {
+      toast(msg, type);
+      return;
+    }
+    const lower = msg.charAt(0).toLowerCase() + msg.slice(1);
+    const finalMsg = /^[A-ZÁÉÍÓÚ]/.test(message) ? `${name}, ${lower}` : `${name}, ${msg}`;
+    toast(finalMsg, type);
+  } else {
+    const neutral = msg.charAt(0).toUpperCase() + msg.slice(1);
+    toast(neutral, type);
+  }
+}
+
 // Track last visited payment order ID for highlight-on-return
 let lastVisitedPaymentId = null;
 
@@ -359,7 +396,18 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { setRoute('adminbar/profile'); ud.style.display = 'none'; } else setRoute(t); });
-  $('#btnBarLogout').onclick = async (e) => { e.preventDefault(); await Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
+  $('#btnBarLogout').onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    ud.style.display = 'none';
+    const logoutRequest = Auth.logout();
+    // Desmontar inmediatamente el layout admin para evitar que quede visible si hay un render pendiente con guard.
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    barNotify('has cerrado sesión correctamente.', 'info');
+    setRoute('login');
+    await logoutRequest;
+  };
 
   const content = $('#barContent');
 const renderers = {
@@ -587,8 +635,8 @@ async function barSuppliers(el) {
       confirmDialog('Eliminar proveedor', `¿Eliminar proveedor?`, 'Eliminar', true).then(async ok => {
         if (!ok) return;
         const res = await ApiClient.delete(API_ENDPOINTS.suppliers.detail(b.dataset.delSupplier));
-        if (!res.ok) { toast(res.data?.detail || 'No se pudo eliminar', 'error'); return; }
-        toast('Proveedor eliminado', 'success');
+        if (!res.ok) { console.error('[Proveedor] error al eliminar', res.status, res.data); barNotify('no pudimos eliminar el proveedor. Inténtalo nuevamente.', 'error'); return; }
+        barNotify('el proveedor fue eliminado correctamente.', 'success');
         renderSuppliersPage();
       });
     });
@@ -756,7 +804,7 @@ async function barReports(el) {
     orders.forEach(o => rows.push([o.date, o.time, o.total.toFixed(2), o.payment, o.paymentStatus, (o.items||[]).map(i=>`${i.productName||i.name} x${i.quantity||i.qty}`).join('; ')]));
     if (rows.length===1) rows.push(['Sin datos','','0.00','','','']);
     downloadCSV(`reporte_ventas_${today}.csv`, rows);
-    toast('Reporte de Ventas descargado', 'success');
+    barNotify('el reporte de ventas se descargó correctamente.', 'success');
   });
   $('#btnDownloadStock', el)?.addEventListener('click', async () => {
     console.log('[reports] Descargar Stock');
@@ -774,7 +822,7 @@ async function barReports(el) {
     }
     if (rows.length===1) rows.push(['Sin datos','','','','','']);
     downloadCSV(`reporte_stock_${today}.csv`, rows);
-    toast('Reporte de Stock descargado', 'success');
+    barNotify('el reporte de stock se descargó correctamente.', 'success');
   });
   $('#btnDownloadPagos', el)?.addEventListener('click', () => {
     console.log('[reports] Descargar Pagos', {count: (paymentsRes.ok ? (paymentsRes.data.results||paymentsRes.data||[]).length : 0)});
@@ -788,7 +836,7 @@ async function barReports(el) {
     }
     if (rows.length===1) rows.push(['Sin datos','','','','']);
     downloadCSV(`reporte_pagos_${today}.csv`, rows);
-    toast('Reporte de Pagos descargado', 'success');
+    barNotify('el reporte de pagos se descargó correctamente.', 'success');
   });
 }
 
@@ -811,7 +859,7 @@ function supplierFormModal(supplier, onSave) {
     const contact_name = $('#supContact', ov).value.trim();
     const phone = $('#supPhone', ov).value.trim();
     const email = $('#supEmail', ov).value.trim();
-    if (!name) { toast('El nombre es obligatorio', 'warning'); return; }
+    if (!name) { barNotify('el nombre del proveedor es obligatorio.', 'warning'); return; }
     const payload = { name, contact_name, phone, email, active: true };
     let res;
     if (isEdit) {
@@ -820,10 +868,11 @@ function supplierFormModal(supplier, onSave) {
       res = await ApiClient.post(API_ENDPOINTS.suppliers.list, payload);
     }
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.name?.[0] || 'Error al guardar proveedor', 'error');
+      console.error('[Proveedor] error al guardar', res.status, res.data);
+      barNotify('no pudimos guardar el proveedor. Inténtalo nuevamente.', 'error');
       return;
     }
-    toast(isEdit ? 'Proveedor actualizado' : 'Proveedor agregado', 'success');
+    barNotify(isEdit ? 'la información del proveedor se actualizó correctamente.' : 'el proveedor fue agregado correctamente.', 'success');
     ov.remove();
     if (onSave) onSave();
   };
@@ -1181,10 +1230,11 @@ async function barOrders(el) {
     
     if (successCount > 0) {
       logAudit('Entrega en lote', `${successCount} pedidos marcados como entregados`);
-      toast(`${successCount} pedidos marcados como entregados`, 'success');
+      barNotify(successCount === 1 ? 'el pedido fue marcado como entregado correctamente.' : `${successCount} pedidos fueron marcados como entregados correctamente.`, 'success');
       renderBarAdmin('orders');
     } else {
-      toast('Error al confirmar entregas', 'error');
+      console.error('[Pedidos] error al confirmar entregas en lote');
+      barNotify('no pudimos confirmar las entregas. Inténtalo nuevamente.', 'error');
     }
   });
 
@@ -1274,10 +1324,11 @@ function bindQueueActions(area) {
         
         const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: 'cancelled' });
         if (!res.ok) {
-          toast(res.data?.detail || 'No se pudo cancelar el pedido.', 'error');
+          console.error('[Pedidos] error al cancelar', res.status, res.data);
+          barNotify('no pudimos cancelar el pedido. Inténtalo nuevamente.', 'error');
           return;
         }
-        toast('Pedido cancelado.', 'success');
+        barNotify('el pedido fue cancelado correctamente.', 'success');
         logAudit('Canceló pedido', orderId);
         renderBarAdmin('orders');
         return;
@@ -1286,12 +1337,19 @@ function bindQueueActions(area) {
       const nextStatus = { queue: 'queue', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
       const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: nextStatus });
       if (!res.ok) {
-        toast(res.data?.detail || 'Error al cambiar estado', 'error');
+        console.error('[Pedidos] error al cambiar estado', res.status, res.data);
+        barNotify('no pudimos cambiar el estado del pedido. Inténtalo nuevamente.', 'error');
         return;
       }
       
+      const successMsg = {
+        queue: 'el pedido fue confirmado correctamente.',
+        prep: 'el pedido pasó a preparación.',
+        ready: 'el pedido está listo para entregar.',
+        delivered: 'el pedido fue marcado como entregado.'
+      }[act] || 'el pedido se actualizó correctamente.';
+      barNotify(successMsg, 'success');
       const label = { queue: 'Puesto en cola', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
-      toast('#' + orderId + ' ' + label + '.', 'success');
       logAudit('Cambió estado de pedido', `${orderId} <i class="bx bx-right-arrow-alt"></i> ${label}`);
       renderBarAdmin('orders');
     };
@@ -1409,19 +1467,18 @@ async function barProducts(el) {
           res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
         } catch (err) {
           console.error('[toggle] fetch exception', err);
-          toast('Error de conexión al cambiar estado', 'error');
+          barNotify('no pudimos cambiar el estado del producto. Inténtalo nuevamente.', 'error');
           return;
         }
-        console.log('[toggle] response', res.status, res.data, res.error);
         if (!res.ok) {
-          const detail = res.data?.detail || (res.data ? JSON.stringify(res.data) : null) || res.error || 'Error desconocido';
-          console.error('[toggle] PATCH failed', res.status, detail);
-          toast('Error al cambiar estado: ' + detail, 'error');
+          console.error('[toggle] error', res.status, res.data, res.error);
+          barNotify('no pudimos guardar los cambios. Inténtalo nuevamente.', 'error');
           return;
         }
-        toast(product.name + (newAvailable ? ' activado.' : ' desactivado.'), 'success');
+        barNotify(newAvailable ? 'el producto fue activado correctamente.' : 'el producto fue desactivado correctamente.', 'success');
         logAudit(newAvailable ? 'Activó producto' : 'Desactivó producto', product.name);
-        renderBarAdmin('products');
+        const contentEl = document.getElementById('barContent');
+        if (contentEl) barProducts(contentEl);
       };
     });
     $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
@@ -1458,7 +1515,7 @@ async function productFormModal(p) {
   try {
     const apiCats = await fetchCategories();
     if (Array.isArray(apiCats) && apiCats.length) cats = apiCats.map(c => c.name);
-  } catch(e) {}
+  } catch(e) { /* Se usan las categorías locales si falla la API. */ }
   if (!cats.length) cats = CATEGORIES;
   const originalValues = isEdit ? {
     name: p.name,
@@ -1560,7 +1617,7 @@ async function productFormModal(p) {
             <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
               <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
               <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
-              <div class="tiny muted" style="margin-top:4px">PNG, JPG, WEBP — máximo 2 MB, se sube a PostgreSQL</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG, WEBP — máximo 2 MB</div>
             </div>
             <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
             <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
@@ -1635,7 +1692,7 @@ async function productFormModal(p) {
   };
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return;
-    if (file.size > 2 * 1024 * 1024) { toast('La imagen no puede superar los 2 MB.', 'warning'); return; }
+    if (file.size > 2 * 1024 * 1024) { barNotify('la imagen no puede superar los 2 MB.', 'warning'); return; }
     imageReplaced = true;
     imageRemoved = false;
     const reader = new FileReader();
@@ -1657,6 +1714,9 @@ async function productFormModal(p) {
     if (field) {
       field.addEventListener('input', () => clearFieldError(id));
       field.addEventListener('change', () => clearFieldError(id));
+      if (field.type === 'number') {
+        field.addEventListener('wheel', (e) => { if (document.activeElement === field) { e.preventDefault(); field.blur(); } }, { passive: false });
+      }
     }
   });
 
@@ -1679,11 +1739,12 @@ async function productFormModal(p) {
     if (!ok) return;
 
     const originalText = btnSave.innerHTML;
+    if (btnSave.dataset.saving === '1') return;
+    btnSave.dataset.saving = '1';
     btnSave.disabled = true;
     btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
 
-    // Small delay for UI feedback, then process
-    setTimeout(async () => {
+    try {
       const allowExtras = $('#pfExtras', ov).checked;
       const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
       const catName = $('#pfCat', ov).value;
@@ -1713,9 +1774,7 @@ async function productFormModal(p) {
         available,
       };
       if (!productData.category) {
-        toast('Categoría no válida', 'error');
-        btnSave.disabled = false;
-        btnSave.innerHTML = originalText;
+        barNotify('la categoría seleccionada no es válida.', 'error');
         return;
       }
       const newFile = imageReplaced ? (pfImage?.files?.[0] || null) : null;
@@ -1728,68 +1787,52 @@ async function productFormModal(p) {
       const sendData = shouldSendMultipart ? payload : productData;
 
       let res;
+      let successMsg = null;
+      let successType = 'success';
       if (isEdit) {
+        console.log('[Producto] PATCH', API_ENDPOINTS.products.detail(p.id), shouldSendMultipart ? 'multipart' : 'json', productData);
         res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), sendData);
+        console.log('[Producto] PATCH response', res.status, res.data, res.error);
         if (!res.ok) {
-          console.error(res.status, res.data, res.error);
-          let msg = res.data?.detail;
-          if (!msg && res.data && typeof res.data === 'object') {
-            const firstKey = Object.keys(res.data)[0];
-            if (firstKey) {
-              const firstVal = res.data[firstKey];
-              const text = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
-              msg = `${firstKey}: ${text}`;
-            }
-          }
-          if (!msg || msg === 'null') {
-            try { msg = res.data ? JSON.stringify(res.data) : null; } catch(e) { msg = null; }
-          }
-          msg = msg || res.error || `Error ${res.status || ''}`.trim() || 'Error al actualizar';
-          if (msg === 'null' || msg === '{}' || msg === 'undefined') msg = `Error ${res.status}: no se pudo procesar la imagen. Verifica formato (JPG/PNG/WEBP/AVIF) y tamaño <2 MB.`;
-          toast('Error: ' + msg, 'error');
-          btnSave.disabled = false;
-          btnSave.innerHTML = originalText;
+          console.error('[Producto] error al actualizar', res.status, res.data, res.error);
+          barNotify('no pudimos actualizar el producto.', 'error');
           return;
         }
         logAudit('Editó producto', name);
         if (shouldSendMultipart) logAudit('Cambió imagen de producto', name);
-        toast('Producto actualizado en PostgreSQL.', 'success');
+        successMsg = 'producto actualizado correctamente.';
       } else {
+        console.log('[Producto] POST', API_ENDPOINTS.products.list, shouldSendMultipart ? 'multipart' : 'json', productData);
         res = await ApiClient.post(API_ENDPOINTS.products.list, sendData);
+        console.log('[Producto] POST response', res.status, res.data, res.error);
         if (!res.ok) {
-          console.error(res.status, res.data, res.error);
-          let msg = res.data?.detail;
-          if (!msg && res.data && typeof res.data === 'object') {
-            const firstKey = Object.keys(res.data)[0];
-            if (firstKey) {
-              const firstVal = res.data[firstKey];
-              const text = Array.isArray(firstVal) ? firstVal[0] : String(firstVal);
-              msg = `${firstKey}: ${text}`;
-            }
-          }
-          if (!msg || msg === 'null') {
-            try { msg = res.data ? JSON.stringify(res.data) : null; } catch(e) { msg = null; }
-          }
-          msg = msg || res.error || `Error ${res.status || ''}`.trim() || 'Error al crear';
-          if (msg === 'null' || msg === '{}' || msg === 'undefined') msg = `Error ${res.status}: no se pudo procesar la imagen. Verifica formato (JPG/PNG/WEBP/AVIF) y tamaño <2 MB.`;
-          toast('Error: ' + msg, 'error');
-          btnSave.disabled = false;
-          btnSave.innerHTML = originalText;
+          console.error('[Producto] error al crear', res.status, res.data, res.error);
+          barNotify('no pudimos guardar el nuevo producto. Inténtalo nuevamente.', 'error');
           return;
         }
         logAudit('Creó producto', name);
-        toast('Producto creado en PostgreSQL.', 'success');
+        successMsg = 'el nuevo producto fue agregado correctamente.';
       }
 
-      btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
-      btnSave.classList.add('btn-success');
-      btnSave.classList.remove('btn-primary');
-
-      setTimeout(() => {
-        ov.remove();
-        renderBarAdmin('products');
-      }, 600);
-    }, 500);
+      ov.remove();
+      const contentEl = document.getElementById('barContent');
+      if (contentEl) {
+        try {
+          await barProducts(contentEl);
+        } catch (refreshError) {
+          console.error('[Producto] no se pudo refrescar la lista', refreshError);
+        }
+      }
+      // El toast vive en document.body y se crea después de actualizar la lista.
+      if (successMsg) barNotify(successMsg, successType);
+    } catch (err) {
+      console.error('[Producto] excepción no controlada', err);
+      barNotify('ocurrió un problema al procesar la solicitud.', 'error');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = originalText;
+      delete btnSave.dataset.saving;
+    }
   };
 }
 
@@ -1883,7 +1926,7 @@ async function barStock(el) {
               <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--success);border-color:var(--success)">
                 <span class="ico bx bx-plus" style="font-size:18px;color:#fff;line-height:1"></span>
               </button>
-              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" ${p.stock === 0 ? 'disabled' : ''} style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;${p.stock === 0 ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : ''}">
                 <span class="ico bx bx-minus" style="font-size:18px;color:var(--danger);line-height:1"></span>
               </button>
             </div>
@@ -1891,8 +1934,8 @@ async function barStock(el) {
         </td>
       </tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
   };
   $$('[data-stock-cat]', el).forEach((btn) => btn.onclick = () => {
     $$('[data-stock-cat]', el).forEach((x) => x.classList.remove('active'));
@@ -1914,13 +1957,13 @@ async function barStock(el) {
         const fillCls = 'background:var(--warning)';
         return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado"><span class="badge badge-warning">Bajo</span></td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
       }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin bajo stock</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
     } else if (tab === 'agotados') {
       const out = products.filter((p) => p.stock === 0);
       const tbody = $('#stockRows', el);
       tbody.innerHTML = out.map((p) => `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><b>0</b></td><td data-label="Estado"><span class="badge badge-danger">Agotado</span></td><td data-label="Acciones"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin agotados</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1, b, null); });
     } else {
       renderRows();
     }
@@ -1934,10 +1977,10 @@ async function barStock(el) {
       const h = history.find((x) => x.productId === p.id);
       const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
       const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
-      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}" ${p.stock === 0 ? 'disabled' : ''} style="${p.stock === 0 ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : ''}"><i class="bx bx-minus"></i></button></div></td></tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
   });
   $$('[data-low]', el).forEach((item) => item.onclick = () => {
     const p = products.find((x) => x.id === item.dataset.low);
@@ -1947,14 +1990,52 @@ async function barStock(el) {
   const histWrap = $('#stockHist');
   if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
 
-  const adjust = async (p, delta) => {
+  const adjust = async (p, delta, btnInc = null, btnDec = null) => {
+    if (!p) { console.error('[Stock] producto no encontrado'); return; }
     const newVal = p.stock + delta;
-    if (newVal < 0) { toast('El stock no puede ser negativo.', 'warning'); return; }
-    const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
-    if (!res.ok) { toast(res.data?.detail || 'No se pudo ajustar stock', 'error'); return; }
-    logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
-    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades. (PostgreSQL)', 'success');
-    renderBarAdmin('stock');
+    if (newVal < 0) { barNotify('el stock no puede ser negativo.', 'warning'); return; }
+    const buttons = [btnInc, btnDec].filter(Boolean);
+    buttons.forEach(b => { if (b) { b.disabled = true; b.style.opacity = '0.6'; b.style.pointerEvents = 'none'; } });
+    try {
+      const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
+      if (!res.ok) { console.error('[Stock] error al ajustar', res.status, res.data); barNotify('no pudimos actualizar el stock. Inténtalo nuevamente.', 'error'); return; }
+      p.stock = newVal;
+      const row = document.querySelector(`#stockRows tr:has([data-inc="${p.id}"])`) || document.querySelector(`#stockRows tr:has([data-dec="${p.id}"])`);
+      if (row) {
+        const stockCell = row.querySelector('[data-label="Stock actual"] b');
+        if (stockCell) stockCell.textContent = newVal;
+        const badgeCell = row.querySelector('[data-label="Estado"]');
+        if (badgeCell) badgeCell.innerHTML = stockBadge({ ...p, stock: newVal });
+        const fill = row.querySelector('.stock-bar .fill');
+        if (fill) {
+          const pct = p.minStock ? Math.min(100, Math.round((newVal / (p.minStock * 3)) * 100)) : 100;
+          fill.style.width = pct + '%';
+          fill.style.background = newVal === 0 ? 'var(--danger)' : newVal <= p.minStock ? 'var(--warning)' : 'var(--success)';
+        }
+        const decBtn = row.querySelector(`[data-dec="${p.id}"]`);
+        if (decBtn) {
+          const shouldDisable = newVal === 0;
+          decBtn.disabled = shouldDisable;
+          decBtn.style.opacity = shouldDisable ? '0.5' : '';
+          decBtn.style.cursor = shouldDisable ? 'not-allowed' : '';
+          decBtn.style.pointerEvents = shouldDisable ? 'none' : '';
+        }
+      }
+      logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
+      barNotify('el stock fue actualizado correctamente.', 'success');
+    } finally {
+      buttons.forEach(b => { if (b) { b.disabled = false; b.style.opacity = ''; b.style.pointerEvents = ''; } });
+      const row2 = document.querySelector(`#stockRows tr:has([data-inc="${p.id}"])`);
+      if (row2) {
+        const decBtn2 = row2.querySelector(`[data-dec="${p.id}"]`);
+        if (decBtn2 && p.stock === 0) {
+          decBtn2.disabled = true;
+          decBtn2.style.opacity = '0.5';
+          decBtn2.style.cursor = 'not-allowed';
+          decBtn2.style.pointerEvents = 'none';
+        }
+      }
+    }
   };
 
   // Skeleton + render
@@ -2151,11 +2232,12 @@ async function barPayments(el) {
     const paymentId = target ? target.id : id;
     const res = await ApiClient.patch(API_ENDPOINTS.payments.review(paymentId), { status });
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.status?.[0] || 'No se pudo actualizar el pago', 'error');
+      console.error('[Pago] error al actualizar', res.status, res.data);
+      barNotify('no pudimos actualizar el pago. Inténtalo nuevamente.', 'error');
       return;
     }
     logAudit('Actualizó pago', `${paymentId} <i class="bx bx-right-arrow-alt"></i> ${status}`);
-    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status === 'paid' ? 'marcado como pagado.' : status), status === 'approved' ? 'success' : 'error');
+    barNotify('el pago fue actualizado correctamente.', 'success');
     renderBarAdmin('payments');
   };
 
@@ -2229,12 +2311,12 @@ async function barPayments(el) {
       selectedFilter = 'all';
       $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'all'));
       renderSkeletonRows(); setTimeout(renderRows, 350);
-      toast('Historial completo de pagos', 'info');
+      barNotify('aquí tienes el historial completo de pagos.', 'info');
     } else if (q === 'refunded') {
       selectedFilter = 'refunded';
       $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'refunded'));
       renderSkeletonRows(); setTimeout(renderRows, 350);
-      if (!orders.some((o) => o.paymentStatus === 'refunded')) toast('No hay reembolsos registrados', 'info');
+      if (!orders.some((o) => o.paymentStatus === 'refunded')) barNotify('no hay reembolsos registrados.', 'info');
     }
   });
   $$('[data-configure]', el).forEach(btn => btn.onclick = () => openPaymentMethodConfig(btn.dataset.configure));
@@ -2242,10 +2324,10 @@ async function barPayments(el) {
 
 async function openPaymentMethodConfig(code) {
   const listRes = await ApiClient.get(API_ENDPOINTS.payments.methodsAdmin);
-  if (!listRes.ok) { toast('No se pudo cargar métodos de pago', 'error'); return; }
+  if (!listRes.ok) { barNotify('no pudimos cargar los métodos de pago. Inténtalo nuevamente.', 'error'); return; }
   const methods = listRes.data.results || listRes.data || [];
   const m = methods.find(x => x.code === code);
-  if (!m) { toast('Método no encontrado', 'error'); return; }
+  if (!m) { barNotify('no pudimos encontrar el método de pago.', 'error'); return; }
   const isTransfer = code === 'transferencia';
   const isDeuna = code === 'deuna';
   const ov = modal(`
@@ -2295,7 +2377,7 @@ async function openPaymentMethodConfig(code) {
     if (file.size > 2 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
       qrImageInput.value = '';
       renderQrPreview();
-      toast('Selecciona una imagen PNG, JPG o WEBP de máximo 2 MB.', 'warning');
+      barNotify('selecciona una imagen PNG, JPG o WEBP de máximo 2 MB.', 'warning');
       return;
     }
     qrImagePreview.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Vista previa" style="max-width:200px;height:auto;border-radius:10px;border:1px solid var(--border)"><div class="tiny muted" style="margin-top:4px">Vista previa del nuevo QR · ${esc(file.name)}</div>`;
@@ -2328,8 +2410,8 @@ async function openPaymentMethodConfig(code) {
     } else {
       res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), payload);
     }
-    if (!res.ok) { toast(res.data?.detail || 'Error al guardar', 'error'); return; }
-    toast('Método actualizado en PostgreSQL', 'success');
+    if (!res.ok) { console.error('[Método pago] error al guardar', res.status, res.data); barNotify('no pudimos guardar el método de pago. Inténtalo nuevamente.', 'error'); return; }
+    barNotify('el método de pago se guardó correctamente.', 'success');
     ov.remove();
     renderBarAdmin('payments');
   };
@@ -2896,11 +2978,12 @@ async function barDelivery(el) {
     };
     const res = await ApiClient.patch(API_ENDPOINTS.delivery.config, payload);
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.end_time?.[0] || 'Error al guardar delivery', 'error');
+      console.error('[Delivery] error al guardar', res.status, res.data);
+      barNotify('no pudimos guardar la configuración de delivery. Inténtalo nuevamente.', 'error');
       return;
     }
     logAudit('Actualizó configuración de delivery', payload.enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
-    toast('Configuración de delivery guardada en PostgreSQL.', 'success');
+    barNotify('la configuración de delivery se guardó correctamente.', 'success');
     renderBarAdmin('delivery');
   };
 }
@@ -2926,13 +3009,14 @@ async function saveConfigHours(btn, indicator, originalValues) {
   Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
   const res = await ApiClient.patch(API_ENDPOINTS.config.update, payload);
   if (!res.ok) {
-    toast(res.data?.detail || res.data?.order_open_time?.[0] || 'Error al guardar configuración', 'error');
+    console.error('[Config] error al guardar horarios', res.status, res.data);
+    barNotify('no pudimos guardar la configuración. Inténtalo nuevamente.', 'error');
     btn.disabled = false;
     btn.innerHTML = originalText;
     return;
   }
   logAudit('Actualizó horarios', 'Horario de pedidos y receso');
-  toast('Horarios guardados en PostgreSQL.', 'success');
+  barNotify('la configuración se actualizó correctamente.', 'success');
   btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
   btn.classList.add('btn-success');
   btn.classList.remove('btn-primary');
@@ -3014,7 +3098,7 @@ function barAdminProfile(el) {
   photoInput.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes', 'warning'); return; }
+    if (!file.type.startsWith('image/')) { barNotify('solo se permiten imágenes.', 'warning'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       newPhotoBase64 = ev.target.result;
@@ -3033,11 +3117,11 @@ function barAdminProfile(el) {
 
   $('#btnSaveProfile', el).onclick = async () => {
     const newName = nameInput.value.trim();
-    if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    if (!newName) { barNotify('el nombre no puede estar vacío.', 'warning'); return; }
     const [first_name, ...rest] = newName.split(' ');
     const last_name = rest.join(' ');
     const res = await ApiClient.patch(API_ENDPOINTS.auth.me, { first_name, last_name });
-    if (!res.ok) { toast(res.data?.detail || 'No se pudo actualizar perfil', 'error'); return; }
+    if (!res.ok) { console.error('[Perfil] error al actualizar', res.status, res.data); barNotify('no pudimos actualizar el perfil. Inténtalo nuevamente.', 'error'); return; }
     const session = SessionStore.get('int_session', null);
     if (session) {
       session.name = newName;
@@ -3046,7 +3130,7 @@ function barAdminProfile(el) {
     }
     Store.save('int_admin_name_' + user.id, newName);
     Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
-    toast('Perfil actualizado en PostgreSQL', 'success');
+    barNotify('los cambios se guardaron correctamente.', 'success');
     renderBarAdmin('profile');
   };
 }
@@ -3065,13 +3149,14 @@ function confirmToggleState(toOpen, btn) {
     }
     const res = await ApiClient.patch(API_ENDPOINTS.config.update, { is_open: toOpen });
     if (!res.ok) {
-      toast(res.data?.detail || 'No se pudo cambiar el estado', 'error');
+      console.error('[Config] error al cambiar estado cafetería', res.status, res.data);
+      barNotify('no pudimos cambiar el estado de la cafetería. Inténtalo nuevamente.', 'error');
       btn.disabled = false;
       btn.innerHTML = originalText;
       return;
     }
     logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
-    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + ' (PostgreSQL).', toOpen ? 'success' : 'warning');
+    barNotify(toOpen ? 'la cafetería está abierta.' : 'la cafetería está cerrada.', toOpen ? 'success' : 'warning');
     btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
     btn.classList.add('btn-success');
     btn.classList.remove('btn-primary', 'btn-secondary');

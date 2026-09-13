@@ -197,7 +197,18 @@ function renderUserShell(page) {
   const ud = $('#userDropdown');
   $('#userMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
-  $('#btnUserLogout').onclick = async (e) => { e.preventDefault(); await Auth.logout(); toast('Sesión cerrada.', 'info'); syncBodyClass(); route('login'); };
+  $('#btnUserLogout').onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    ud.style.display = 'none';
+    const logoutRequest = Auth.logout();
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    toast('Sesión cerrada.', 'info');
+    syncBodyClass();
+    setRoute('login');
+    await logoutRequest;
+  };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'changepass') { changePasswordModal(); ud.style.display = 'none'; } else setRoute(t); });
 
   // header search <i class="bx bx-right-arrow-alt"></i> go to menu with query

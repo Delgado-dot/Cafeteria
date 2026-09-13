@@ -35,6 +35,7 @@ function mapApiOrder(order) {
     priority: order.priority,
     delivery: order.delivery_method,
     deliveryInfo: order.delivery_info,
+    payment: order.payment_method,
     paymentStatus: order.payment_status,
     prepMin: order.estimated_time,
     note: order.note || '',
@@ -233,7 +234,7 @@ function showOrderDetail(o) {
       const thumb = img ? `<img src="${esc(typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img)}" alt="${esc(i.name)}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:10px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${clientProductIcon(prod || { category: '' })}</span>`;
       return `<div class="detail-item" style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0">${thumb}</div><span style="flex:1">${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`;
     }).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
-    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
+    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${o.payment ? `${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}` : `Pago pendiente · ${paymentMeta(o.paymentStatus)}`}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
   `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
     const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
@@ -297,9 +298,12 @@ function renderProfile(el) {
     </div></div>`;
 
   $('#btnLogout').onclick = async () => {
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
     await Auth.logout();
     toast('Sesión cerrada.', 'info');
-    route('login');
+    window.location.hash = 'login';
+    handleRoute();
   };
 
   $('#btnEditProfile').onclick = () => {
@@ -395,7 +399,15 @@ function renderProfileModal() {
       <button class="btn btn-danger-outline" id="pmLogout">Cerrar sesión</button>
     </div>`, { title: 'Mi perfil' });
   $('#pmChangePass', ov).onclick = () => changePasswordModal();
-  $('#pmLogout', ov).onclick = async () => { await Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
+  $('#pmLogout', ov).onclick = async () => {
+    ov.remove();
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    await Auth.logout();
+    toast('Sesión cerrada.', 'info');
+    window.location.hash = 'login';
+    handleRoute();
+  };
 }
 window.renderProfileModal = renderProfileModal;
 

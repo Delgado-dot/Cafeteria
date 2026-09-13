@@ -163,6 +163,204 @@ async function main() {
   const repeated = await w.ApiClient.getAll(w.API_ENDPOINTS.orders.list);
   check('Paginación repetida termina con error', () => assert.equal(repeated.ok, false));
   check('Sin excepciones de JavaScript durante los flujos', () => assert.deepEqual(errors, []));
+
+  // Logout: la UI y sessionStorage deben cambiar antes de que responda el backend.
+  async function verifyAdminLogout({ role, page, renderName, menuId, dropdownId, logoutId }) {
+    const adminDom = new JSDOM(html, { url: `http://localhost/#${role}/${page}`, runScripts: 'outside-only', pretendToBeVisual: true });
+    const adminWindow = adminDom.window;
+    adminWindow.scrollTo = () => {};
+    adminWindow.HTMLElement.prototype.scrollTo = () => {};
+    adminWindow.HTMLElement.prototype.scrollIntoView = () => {};
+    const adminErrors = [];
+    adminWindow.addEventListener('error', event => adminErrors.push(event.message));
+    adminWindow.eval(code + '\n;window.adminQa={Auth, SessionStore, ApiClient, renderBarAdmin, renderDevAdmin};');
+    await new Promise(resolve => adminWindow.addEventListener('load', resolve, { once: true }));
+    const qa = adminWindow.adminQa;
+    qa.Auth.set({ id: 99, name: 'Gaby Test', username: 'gaby', email: 'gaby@intesud.edu.ec', role });
+    qa.SessionStore.set('access_token', 'fake-token');
+    qa.SessionStore.set('refresh_token', 'fake-refresh');
+    qa.ApiClient.get = async () => ({ ok: true, data: [] });
+    qa.ApiClient.getAll = async () => ({ ok: true, data: [] });
+
+    await qa[renderName](page);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const menu = adminWindow.document.querySelector(menuId);
+    const dropdown = adminWindow.document.querySelector(dropdownId);
+    const logout = adminWindow.document.querySelector(logoutId);
+    assert.ok(menu && dropdown && logout, `controles de logout ${role}`);
+    menu.click();
+    assert.equal(dropdown.style.display, 'block');
+
+    let finishRevocation;
+    let revocationRequests = 0;
+    const pendingRevocation = new Promise(resolve => { finishRevocation = resolve; });
+    qa.ApiClient.post = async url => {
+      if (String(url).includes('/logout/')) revocationRequests++;
+      return pendingRevocation;
+    };
+    logout.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    check(`Regresión logout ${role}: limpia sessionStorage antes de la respuesta`, () => {
+      assert.equal(qa.SessionStore.get('int_session'), null);
+      assert.equal(qa.SessionStore.get('access_token'), null);
+      assert.equal(qa.SessionStore.get('refresh_token'), null);
+    });
+    check(`Regresión logout ${role}: cierra dropdown y desmonta admin-layout`, () => {
+      assert.equal(dropdown.style.display, 'none');
+      assert.equal(adminWindow.document.querySelector('.admin-layout'), null);
+    });
+    check(`Regresión logout ${role}: Login visible sin F5 ni esperar al backend`, () => {
+      assert.equal(adminWindow.location.hash, '#login');
+      assert.ok(adminWindow.document.querySelector('.login-screen'));
+      assert.equal(revocationRequests, 1);
+    });
+    check(`Regresión logout ${role}: 0 errores JS`, () => assert.deepEqual(adminErrors, []));
+    finishRevocation({ ok: true });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    adminDom.window.close();
+  }
+
+  await verifyAdminLogout({ role: 'adminbar', page: 'products', renderName: 'renderBarAdmin', menuId: '#barUserMenu', dropdownId: '#barUserDropdown', logoutId: '#btnBarLogout' });
+  await verifyAdminLogout({ role: 'admindev', page: 'dashboard', renderName: 'renderDevAdmin', menuId: '#devUserMenu', dropdownId: '#devUserDropdown', logoutId: '#btnDevLogout' });
+
+  // Guardar producto: un solo PATCH, refresco real de lista y toast posterior al refresco.
+  await (async () => {
+    const productDom = new JSDOM(html, { url: 'http://localhost/#adminbar/products', runScripts: 'outside-only', pretendToBeVisual: true });
+    const productWindow = productDom.window;
+    productWindow.scrollTo = () => {};
+    productWindow.HTMLElement.prototype.scrollTo = () => {};
+    productWindow.HTMLElement.prototype.scrollIntoView = () => {};
+    const productErrors = [];
+    productWindow.addEventListener('error', event => productErrors.push(event.message));
+    productWindow.eval(code + '\n;window.productQa={Auth, SessionStore, ApiClient, productFormModal};');
+    await new Promise(resolve => productWindow.addEventListener('load', resolve, { once: true }));
+    const qa = productWindow.productQa;
+    qa.Auth.set({ id: 100, name: 'Gaby Test', username: 'gaby', email: 'gaby@intesud.edu.ec', role: 'adminbar' });
+    qa.SessionStore.set('access_token', 'fake');
+    productWindow.document.querySelector('#app').innerHTML = '<div class="admin-layout"><div id="barContent"></div></div>';
+
+    const cat = { id: 1, name: 'Snacks' };
+    const product = { id: 99, name: 'Test Product', price: 1, stock: 5, minStock: 2, prepMin: 5, available: true, category: 'Snacks', image: '/media/original.webp', desc: 'Original' };
+    const updatedProduct = { id: 99, name: 'Test Product Edit', price: '1.50', stock: 8, min_stock: 3, prep_time: 7, available: false, category: 1, category_name: 'Snacks', image: '/media/original.webp', description: 'Actualizado' };
+    let patchCount = 0;
+    let patchPayload = null;
+    let productListReads = 0;
+    let finishPatch;
+    const pendingPatch = new Promise(resolve => { finishPatch = resolve; });
+    qa.ApiClient.get = async url => String(url).includes('/categories') ? { ok: true, data: [cat] } : { ok: true, data: {} };
+    qa.ApiClient.post = async () => ({ ok: true, data: { id: 1 } });
+    qa.ApiClient.getAll = async () => {
+      productListReads++;
+      return { ok: true, data: [updatedProduct] };
+    };
+    qa.ApiClient.patch = async (url, data) => {
+      patchCount++;
+      patchPayload = data;
+      return pendingPatch;
+    };
+
+    await qa.productFormModal(product);
+    const modal = productWindow.document.querySelector('.modal-overlay');
+    assert.ok(modal, 'modal existe');
+    const btnSave = productWindow.document.querySelector('#btnSaveProduct');
+    assert.ok(btnSave, 'botón Guardar existe');
+    const changes = { pfName: 'Test Product Edit', pfPrice: '1.50', pfStock: '8', pfPrep: '7', pfMin: '3', pfDesc: 'Actualizado' };
+    Object.entries(changes).forEach(([id, value]) => {
+      const field = productWindow.document.querySelector(`#${id}`);
+      field.value = value;
+      field.dispatchEvent(new productWindow.Event('input', { bubbles: true }));
+    });
+    const active = productWindow.document.querySelector('#pfActive');
+    active.checked = false;
+    active.dispatchEvent(new productWindow.Event('change', { bubbles: true }));
+    assert.equal(btnSave.disabled, false);
+
+    btnSave.click();
+    btnSave.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    check('Regresión guardar: botón muestra Guardando y deshabilitado', () => {
+      assert.match(btnSave.textContent, /Guardando/);
+      assert.equal(btnSave.disabled, true);
+      assert.equal(btnSave.dataset.saving, '1');
+      assert.equal(patchCount, 1);
+    });
+    finishPatch({ ok: true, status: 200, data: updatedProduct });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    check('Regresión guardar: exactamente 1 PATCH', () => assert.equal(patchCount, 1));
+    check('Regresión guardar: PATCH contiene nombre, precio, stock y estado', () => {
+      assert.equal(patchPayload.name, 'Test Product Edit');
+      assert.equal(patchPayload.price, 1.5);
+      assert.equal(patchPayload.stock, 8);
+      assert.equal(patchPayload.available, false);
+      assert.equal(patchPayload.image, undefined, 'conserva la imagen existente sin reenviarla');
+    });
+    check('Regresión guardar: modal desaparece', () => assert.equal(productWindow.document.querySelector('.modal-overlay'), null));
+    check('Regresión guardar: lista actualizada', () => {
+      assert.equal(productListReads, 1);
+      assert.match(productWindow.document.querySelector('#prodRows').textContent, /Test Product Edit/);
+      assert.match(productWindow.document.querySelector('#prodRows').textContent, /Inactivo/);
+    });
+    check('Regresión guardar: mensaje de éxito visible', () => {
+      const successToast = productWindow.document.querySelector('.toast.success');
+      assert.ok(successToast);
+      assert.match(successToast.textContent, /producto actualizado correctamente/i);
+    });
+    check('Regresión guardar: botón restaurado', () => {
+      assert.equal(btnSave.disabled, false);
+      assert.equal(btnSave.textContent, 'Guardar cambios');
+      assert.equal(btnSave.dataset.saving, undefined);
+    });
+
+    const replacementProduct = { ...product, name: updatedProduct.name, price: 1.5, stock: 8, minStock: 3, prepMin: 7, available: false, desc: 'Actualizado' };
+    let multipartPayload = null;
+    qa.ApiClient.patch = async (url, data) => {
+      multipartPayload = data;
+      return { ok: true, status: 200, data: { ...updatedProduct, image: '/media/reemplazo.webp' } };
+    };
+    await qa.productFormModal(replacementProduct);
+    const imageInput = productWindow.document.querySelector('#pfImage');
+    const replacementFile = new productWindow.File(['imagen'], 'reemplazo.webp', { type: 'image/webp' });
+    Object.defineProperty(imageInput, 'files', { configurable: true, value: [replacementFile] });
+    imageInput.dispatchEvent(new productWindow.Event('change', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const imageSave = productWindow.document.querySelector('#btnSaveProduct');
+    imageSave.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    check('Regresión guardar: reemplazo de imagen usa multipart y cierra modal', () => {
+      assert.ok(multipartPayload instanceof productWindow.FormData);
+      assert.equal(multipartPayload.get('image').name, 'reemplazo.webp');
+      assert.equal(productWindow.document.querySelector('.modal-overlay'), null);
+    });
+
+    for (const status of [400, 403, 409, 500]) {
+      qa.ApiClient.patch = async () => ({ ok: false, status, data: { detail: `Error ${status}` } });
+      await qa.productFormModal(replacementProduct);
+      const stockField = productWindow.document.querySelector('#pfStock');
+      stockField.value = String(status);
+      stockField.dispatchEvent(new productWindow.Event('input', { bubbles: true }));
+      const errorSave = productWindow.document.querySelector('#btnSaveProduct');
+      errorSave.click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 0));
+      check(`Regresión guardar: error ${status} conserva modal y restaura botón`, () => {
+        assert.ok(productWindow.document.querySelector('.modal-overlay'));
+        assert.equal(errorSave.disabled, false);
+        assert.equal(errorSave.textContent, 'Guardar cambios');
+        assert.equal(errorSave.dataset.saving, undefined);
+        assert.ok(productWindow.document.querySelector('.toast.error'));
+      });
+      productWindow.document.querySelector('.modal-overlay').remove();
+    }
+    check('Regresión guardar: 0 errores JS', () => assert.deepEqual(productErrors, []));
+    productDom.window.close();
+  })();
+
+  check('Regresiones: no se usa location.reload', () => assert.doesNotMatch(code, /location\.reload\s*\(/));
+
   console.log(`Resultado: ${checks} comprobaciones QA aprobadas`);
   dom.window.close();
 }

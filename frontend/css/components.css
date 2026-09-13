@@ -899,6 +899,18 @@ body.is-admin .admin-content { position: relative; }
 .field-has-error .input-err-msg { color: var(--danger); font-size: var(--fs-xs); margin-top: 5px; display: block; }
 .pf-switch-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
 .pf-switch-label .switch { flex-shrink: 0; }
+/* Fix: labels en modal verde glass — contraste claro */
+.modal .pf-cols .label,
+.modal .pf-left .label,
+.modal .pf-right .label {
+  color: var(--text-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+.modal .pf-cols .tiny.muted,
+.modal .pf-left .tiny.muted,
+.modal .pf-right .tiny.muted {
+  color: var(--text-secondary-on-glass) !important;
+}
 
 /* Supplier icon-only circular buttons */
 .btn-icon-supplier {

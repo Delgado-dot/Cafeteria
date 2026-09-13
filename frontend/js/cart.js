@@ -365,10 +365,10 @@ async function renderCheckout(el) {
     const pisos = cfg.delivery_days && cfg.delivery_days.length ? [1, 2, 3] : [1, 2, 3];
     let state = { piso: '1', aula: '' };
     detail.innerHTML = `
-      <div class="alert info"><span class="a-ico">${clientIcon('delivery')}</span><div><div class="a-title">Delivery interno.</div>Selecciona el piso y el aula dentro del edificio. Cobertura: Piso 1 - 3.</div></div>
-      <div class="floor-selector" id="floorTabs"></div>
-      <div class="aula-grid" id="aulaGrid"></div>
-      <div id="aulaConfirm" style="margin-top:14px;display:none" class="alert success"></div>`;
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:16px;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow)"><span style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);display:grid;place-items:center;flex-shrink:0;color:#fff;font-size:1.35rem">${clientIcon('delivery')}</span><div style="min-width:0"><div style="font-weight:800;color:#fff;letter-spacing:-0.01em;margin-bottom:4px">Delivery interno</div><div style="color:rgba(255,255,255,0.88);font-size:0.88rem;line-height:1.5">Selecciona el piso y el aula dentro del edificio.<span style="display:inline-flex;align-items:center;margin-left:8px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);font-size:0.78rem;font-weight:700;color:#fff;white-space:nowrap">Cobertura: Piso 1 - 3</span></div></div></div>
+      <div class="floor-selector" id="floorTabs" style="margin-bottom:8px;gap:8px;background:transparent;border:none;box-shadow:none;padding:0"></div>
+      <div class="aula-grid" id="aulaGrid" style="gap:8px;background:transparent;border:none;box-shadow:none;padding:0"></div>
+      <div id="aulaConfirm" style="margin-top:6px;display:none;padding:4px 0;background:transparent;border:none;box-shadow:none;border-radius:0"></div>`;
     const floorTabs = $('#floorTabs');
     pisos.forEach((p) => {
       const b = document.createElement('button');
@@ -404,8 +404,10 @@ async function renderCheckout(el) {
     function updateConfirm() {
       const box = $('#aulaConfirm');
       if (state.aula) {
-        box.style.display = 'block';
-        box.innerHTML = `<span class="a-ico">${clientIcon('location')}</span><div><div class="a-title">Delivery interno.</div>Piso: <b>${state.piso}</b> · Aula: <b>${state.aula}</b></div>`;
+        box.style.display = 'flex';
+        box.style.alignItems = 'center';
+        box.style.gap = '10px';
+        box.innerHTML = `<span style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);display:grid;place-items:center;flex-shrink:0;color:#fff;font-size:1.1rem">${clientIcon('location')}</span><div style="min-width:0"><div style="font-weight:700;color:#fff;font-size:0.88rem">Delivery interno</div><div style="color:rgba(255,255,255,0.88);font-size:0.84rem">Piso: <b style="color:#fff">${state.piso}</b> · Aula: <b style="color:#fff">${state.aula}</b></div></div>`;
         window._deliveryInfo = { piso: state.piso, aula: state.aula };
       } else { box.style.display = 'none'; delete window._deliveryInfo; }
     }
@@ -463,8 +465,8 @@ async function renderCheckout(el) {
         `;
     } else if (method === 'efectivo') {
       detail.innerHTML = `
-        <div class="alert warning" style="margin-bottom:16px"><span class="a-ico">${clientIcon('cash')}</span><div><div class="a-title">Pago en cafetería durante el receso.</div>Horario: <b>10:00 - 10:15</b>${payOpt.instructions ? '<br><span class="tiny">' + esc(payOpt.instructions) + '</span>' : ''}</div></div>
-        <div class="capacity-card"><div style="text-align:center"><span class="badge badge-warning">Pendiente de pago</span></div><div class="muted small" style="text-align:center;margin-top:8px">Abona tu pedido al retirarlo en la cafetería. Total: <b>${money(Cart.total())}</b>${payOpt.instructions ? '<br>' + esc(payOpt.instructions) : ''}</div></div>`;
+        <div style="margin-bottom:8px;padding:0;background:transparent;border:none;box-shadow:none;border-radius:0;display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.12);display:grid;place-items:center;flex-shrink:0;color:#fff;font-size:1.1rem">${clientIcon('cash')}</span><div style="min-width:0"><div style="font-weight:700;color:#fff;font-size:0.88rem">Pago en cafetería durante el receso.</div><div style="color:rgba(255,255,255,0.88);font-size:0.84rem">Horario: <b style="color:#fff">10:00 - 10:15</b>${payOpt.instructions ? '<br><span style="color:rgba(255,255,255,0.78);font-size:0.78rem">' + esc(payOpt.instructions) + '</span>' : ''}</div></div></div>
+        <div style="margin-top:8px;padding:0;background:transparent;border:none;box-shadow:none;border-radius:0;text-align:center"><span class="badge badge-warning" style="background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.18);color:#fff">Pendiente de pago</span><div style="color:rgba(255,255,255,0.88);font-size:0.84rem;text-align:center;margin-top:6px">Abona tu pedido al retirarlo en la cafetería. Total: <b style="color:#fff">${money(Cart.total())}</b>${payOpt.instructions ? '<br><span style="color:rgba(255,255,255,0.78)">'+ esc(payOpt.instructions) + '</span>' : ''}</div></div>`;
     } else {
       detail.innerHTML = `<div class="alert info"><div><b>${esc(payOpt.name)}</b><p>${esc(payOpt.instructions || 'Sigue las indicaciones de la cafetería para realizar el pago.')}</p><p>Total: ${money(Cart.total())}</p></div></div>`;
     }

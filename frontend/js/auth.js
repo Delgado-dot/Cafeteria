@@ -85,15 +85,21 @@ const Auth = {
   
   // Logout: invalida el refresh token en el backend y limpia la sesión local
   async logout() {
+    let revokeRequest = null;
     try {
       const refresh = ApiClient.getRefreshToken();
       if (refresh) {
-        await ApiClient.post(API_ENDPOINTS.auth.logout, { refresh });
+        revokeRequest = ApiClient.post(API_ENDPOINTS.auth.logout, { refresh });
       }
     } catch (e) {
-      // Si el servidor no responde, igual se limpia la sesión local.
+      // La sesión local se limpia aunque no se pueda iniciar la revocación.
     }
     this.clear();
+    try {
+      if (revokeRequest) await revokeRequest;
+    } catch (e) {
+      // Si el servidor no responde, la sesión local ya quedó cerrada.
+    }
   },
 };
 
