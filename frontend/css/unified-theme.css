@@ -593,6 +593,14 @@ body.is-admin .quick-action .qa-ico {
 /* ============================================================
    BOTONES — efecto glass oscuro
    ============================================================ */
+body.is-admin .admin-content .btn {
+  background: rgba(64, 128, 126, 0.85) !important;
+  color: #fff !important;
+  border-color: rgba(64, 128, 126, 0.5) !important;
+}
+body.is-admin .admin-content .btn:hover {
+  background: rgba(47, 99, 97, 0.95) !important;
+}
 body.is-admin .btn-primary {
   background: rgba(64, 128, 126, 0.9);
   color: #fff;
