@@ -916,3 +916,44 @@ body.is-adminbar .bb + .card a.tiny {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
+/* ============================================================
+   Configuración — /adminbar/config-hours (solo esta pantalla)
+   Solo color de texto para legibilidad sobre glass oscuro.
+   No se tocan fondos, tarjetas, botones, campos ni tamaños.
+   Fondo glass oscuro → texto claro con alta opacidad.
+   Tarjeta Nota (fondo claro primary-soft) → texto oscuro.
+   ============================================================ */
+body.is-adminbar .config-hours-view div[style*="color:var(--primary)"] {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+body.is-adminbar .config-hours-view .tiny {
+  color: rgba(255, 255, 255, 0.94) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+body.is-adminbar .config-hours-view .tiny.muted {
+  color: rgba(255, 255, 255, 0.90) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+body.is-adminbar .config-hours-view .label {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32) !important;
+}
+body.is-adminbar .config-hours-view .checkbox-row {
+  color: rgba(255, 255, 255, 0.94) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+body.is-adminbar .config-hours-view .checkbox-row .tiny.muted {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+/* Tarjeta Nota: fondo claro primary-soft → texto oscuro para contraste */
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--primary-strong)"] {
+  color: var(--teal-800) !important;
+  text-shadow: none !important;
+}
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] .tiny,
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--text-2)"] {
+  color: var(--ink) !important;
+  text-shadow: none !important;
+}
+

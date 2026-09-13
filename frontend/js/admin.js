@@ -42,6 +42,20 @@ function getPendingPayments(orders = []) {
   return orders.filter(isPendingPayment);
 }
 
+// Helpers fecha local Ecuador (no UTC) — evita que toISOString adelante el día
+function localDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+function apiDateToLocalKey(apiStr) {
+  if (!apiStr) return "";
+  const dt = new Date(apiStr);
+  if (isNaN(dt.getTime())) return apiStr.slice(0, 10);
+  return localDateKey(dt);
+}
+
 // Track last visited payment order ID for highlight-on-return
 let lastVisitedPaymentId = null;
 
@@ -452,7 +466,7 @@ async function barConfigTabs(el, initialTab) {
 
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
-    <div class="grid grid-2" style="align-items:start;gap:16px">
+    <div class="grid grid-2 config-hours-view" style="align-items:start;gap:16px">
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="card" style="width:100%;max-width:none;margin:0">
           <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">General — Horarios y Estado</div></div>
@@ -979,14 +993,28 @@ async function barOrders(el) {
     if (qa) qa.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', 'Cuando entren pedidos aparecerán aquí organizados por estado.')}</div>`;
     return;
   }
-  const today = new Date().toISOString().slice(0, 10);
-  
+  const today = localDateKey();
+  const yesterdayKey = localDateKey(new Date(Date.now() - 86400000));
+  const weekStartKey = localDateKey(new Date(Date.now() - 6 * 86400000));
+  const monthPrefix = today.slice(0, 7);
+  const toLocalKey = (o) => apiDateToLocalKey(o.created_at);
+
   const confirmed = orders.filter((o) => o.status === 'confirmed');
   const queue = orders.filter((o) => o.status === 'queue');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
-  const delivered = orders.filter((o) => o.status === 'delivered');
-  const todayOrders = orders.filter((o) => o.created_at && o.created_at.slice(0, 10) === today);
+  const deliveredAll = orders.filter((o) => o.status === 'delivered');
+  let deliveredFilter = 'hoy';
+  const getDeliveredFiltered = () => {
+    if (deliveredFilter === 'todos') return deliveredAll;
+    if (deliveredFilter === 'hoy') return deliveredAll.filter((o) => toLocalKey(o) === today);
+    if (deliveredFilter === 'ayer') return deliveredAll.filter((o) => toLocalKey(o) === yesterdayKey);
+    if (deliveredFilter === 'semana') return deliveredAll.filter((o) => { const k = toLocalKey(o); return k >= weekStartKey && k <= today; });
+    if (deliveredFilter === 'mes') return deliveredAll.filter((o) => toLocalKey(o).slice(0, 7) === monthPrefix);
+    return deliveredAll.filter((o) => toLocalKey(o) === today);
+  };
+  let delivered = getDeliveredFiltered();
+  const todayOrders = orders.filter((o) => toLocalKey(o) === today);
   const confirmedToday = todayOrders.filter((o) => o.status === 'confirmed').length;
   const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
   const prepToday = todayOrders.filter((o) => o.status === 'prep').length;
@@ -1036,8 +1064,46 @@ async function barOrders(el) {
   let tab = 'confirmed';
   const queueArea = $('#queueArea');
 
+  const updateDeliveredTabCount = () => {
+    if (tabButtons[4]) tabButtons[4].textContent = `Entregados (${getDeliveredFiltered().length})`;
+  };
+
+  const renderDeliveredFilter = () => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;align-items:center';
+    wrap.innerHTML = `<span class="tiny muted" style="margin-right:4px">Historial:</span>` + ['hoy','ayer','semana','mes','todos'].map(f => {
+      const label = {hoy:'Hoy', ayer:'Ayer', semana:'Semana', mes:'Mes', todos:'Todos'}[f];
+      return `<button class="category-chip ${deliveredFilter===f?'active':''}" data-delivered-filter="${f}" style="padding:6px 12px;font-size:12px">${label}</button>`;
+    }).join('');
+    $$('[data-delivered-filter]', wrap).forEach(btn => {
+      btn.onclick = () => {
+        deliveredFilter = btn.dataset.deliveredFilter;
+        delivered = getDeliveredFiltered();
+        updateDeliveredTabCount();
+        render();
+      };
+    });
+    return wrap;
+  };
+
   const render = () => {
+    if (tab === 'delivered') delivered = getDeliveredFiltered();
     const list = tab === 'confirmed' ? confirmed : tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
+    if (tab === 'delivered') {
+      queueArea.innerHTML = '';
+      const filterEl = renderDeliveredFilter();
+      queueArea.appendChild(filterEl);
+      const listWrap = document.createElement('div');
+      if (!list.length) {
+        const msg = deliveredFilter==='hoy' ? 'No hay entregados hoy. Prueba con otro filtro.' : 'No hay pedidos en esta sección.';
+        listWrap.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', msg)}</div>`;
+      } else {
+        listWrap.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
+        bindQueueActions(listWrap);
+      }
+      queueArea.appendChild(listWrap);
+      return;
+    }
     if (!list.length) { queueArea.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', 'No hay pedidos en esta sección.')}</div>`; return; }
     queueArea.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
     bindQueueActions(queueArea);
