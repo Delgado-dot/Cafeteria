@@ -275,7 +275,7 @@ class RolePermissionListView(APIView):
         updated = []
         # validar rol
         role = data.get("role")
-        if role and role not in VALID_ROLES:
+        if role not in VALID_ROLES:
             return Response({"detail": "Rol no válido."}, status=status.HTTP_400_BAD_REQUEST)
         if "permissions" in data and "role" in data:
             perms = data["permissions"]

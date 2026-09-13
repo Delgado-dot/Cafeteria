@@ -339,8 +339,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(source="order_items", many=True, read_only=True)
-    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
-    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     delivery_info = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
@@ -367,6 +367,16 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_user_name(self, obj):
+        if obj.user is None:
+            return ""
+        return obj.user.get_full_name()
+
+    def get_user_email(self, obj):
+        if obj.user is None:
+            return ""
+        return obj.user.email
 
     def get_delivery_info(self, obj):
         delivery = getattr(obj, "delivery_request", None)
