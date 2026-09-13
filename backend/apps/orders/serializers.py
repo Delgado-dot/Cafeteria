@@ -32,6 +32,36 @@ DELIVERY_RULES_MESSAGES = {
 CAPACITY_FULL_CAFE = "La capacidad de preparación está completa. Intenta más tarde."
 CAPACITY_FULL_DELIVERY = "La capacidad de delivery está completa. Intenta más tarde."
 
+VOUCHER_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
+VOUCHER_ALLOWED_MAGIC = (
+    b"\x89PNG\r\n\x1a\n",  # PNG
+    b"\xff\xd8\xff",  # JPEG / JPG
+    b"%PDF-",  # PDF
+)
+VOUCHER_ALLOWED_MIMES = {
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "application/pdf",
+}
+VOUCHER_SIZE_ERROR = "El comprobante no puede superar los 2 MB."
+VOUCHER_FORMAT_ERROR = "Formato de comprobante no permitido. Use PNG, JPG, JPEG o PDF."
+
+
+def _voucher_has_allowed_format(voucher):
+    """Valida por contenido real (mágico al inicio del archivo) y/o MIME,
+    nunca solo por la extensión del nombre."""
+    content_type = (getattr(voucher, "content_type", "") or "").lower()
+    head = b""
+    try:
+        head = voucher.read(12)
+        voucher.seek(0)
+    except Exception:
+        head = b""
+    return content_type in VOUCHER_ALLOWED_MIMES or any(
+        head.startswith(magic) for magic in VOUCHER_ALLOWED_MAGIC
+    )
+
 
 class OrderItemAddonSerializer(serializers.ModelSerializer):
     addon_id = serializers.IntegerField(read_only=True)
@@ -141,6 +171,15 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 "El pedido debe incluir al menos un producto."
             )
         return value
+
+    def validate_voucher(self, voucher):
+        if voucher is None:
+            return voucher
+        if voucher.size > VOUCHER_MAX_SIZE:
+            raise serializers.ValidationError(VOUCHER_SIZE_ERROR)
+        if not _voucher_has_allowed_format(voucher):
+            raise serializers.ValidationError(VOUCHER_FORMAT_ERROR)
+        return voucher
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -305,6 +344,7 @@ class OrderSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     delivery_info = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -319,6 +359,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_method",
             "delivery_info",
             "payment_status",
+            "payment_method",
             "total",
             "estimated_time",
             "note",
@@ -336,6 +377,11 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_payment_status(self, obj):
         payment = getattr(obj, "payment", None)
         return payment.status if payment else None
+
+    def get_payment_method(self, obj):
+        payment = getattr(obj, "payment", None)
+        payment_method = getattr(payment, "payment_method", None)
+        return payment_method.code if payment_method else None
 
 
 class OrderStatusUpdateSerializer(serializers.Serializer):

@@ -286,6 +286,7 @@ async function renderCheckout(el) {
         holder_id: pm.holder_id || '',
         phone: pm.phone || '',
         qr_info: pm.qr_info || '',
+        qr_image: pm.qr_image_url || '',
       }));
     }
   }
@@ -437,9 +438,14 @@ async function renderCheckout(el) {
     if (!payOpt) { detail.innerHTML = ''; return; }
     if (method === 'deuna') {
       detail.innerHTML = `
-        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con ${esc(payOpt.name)}.</div>${payOpt.instructions ? esc(payOpt.instructions) + '<br>' : ''}Usa los datos de pago indicados por la cafetería para abonar <b>${money(Cart.total())}</b>.</div></div>
-        ${payOpt.account_holder ? `<div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)"><div class="muted small">Titular</div><div class="bold">${esc(payOpt.account_holder)}</div>${payOpt.phone ? `<div class="muted small">Celular: ${esc(payOpt.phone)}</div>` : ''}</div>` : ''}
-        ${payOpt.qr_info ? `<div class="card" style="margin-top:12px;background:var(--surface-2)"><div class="muted small">QR / Código</div><div class="bold" style="word-break:break-all">${esc(payOpt.qr_info)}</div></div>` : '<div class="alert warning">La cafetería no ha configurado un código QR. Solicita los datos de pago antes de transferir.</div>'}
+        <div class="alert info" style="margin-bottom:16px"><span class="a-ico">${clientIcon('mobile')}</span><div><div class="a-title">Pago con ${esc(payOpt.name)}.</div>${payOpt.instructions ? esc(payOpt.instructions) + '<br>' : ''}<div class="tiny muted" style="margin-top:4px">${esc(payOpt.desc || '')}</div>Usa los datos de pago indicados por la cafetería para abonar <b>${money(Cart.total())}</b>.</div></div>
+        ${payOpt.qr_image ? `
+          <div class="card" style="margin-top:12px;text-align:center;background:var(--surface-2)">
+            <div class="muted small" style="margin-bottom:10px">Escanea el QR ${esc(payOpt.name)}</div>
+            <img src="${esc(payOpt.qr_image)}" alt="QR ${esc(payOpt.name)}" style="max-width:280px;width:100%;height:auto;display:block;margin:0 auto;border-radius:12px">
+          </div>` : '<div class="alert warning" style="margin-top:12px">QR no configurado. Solicita los datos de pago antes de transferir.</div>'}
+        ${payOpt.account_holder ? `<div class="card" style="background:var(--primary-soft);border-color:var(--primary-soft)"><div class="muted small">Titular</div><div class="bold">${esc(payOpt.account_holder)}</div>${payOpt.phone ? `<div class="muted small">Celular / Identificador: ${esc(payOpt.phone)}</div>` : ''}</div>` : ''}
+        ${payOpt.qr_info ? `<div class="card" style="margin-top:12px;background:var(--surface-2)"><div class="muted small">QR / Código</div><div class="bold" style="word-break:break-all">${esc(payOpt.qr_info)}</div></div>` : ''}
         ${payOpt.phone && !payOpt.account_holder ? `<div class="muted small" style="text-align:center;margin-top:10px">Identificador: <b>${esc(payOpt.phone)}</b> — Total: <b>${money(Cart.total())}</b></div>` : `<div style="text-align:center" class="muted small" style="margin-top:10px">Total: <b>${money(Cart.total())}</b></div>`}
         `;
     } else if (method === 'transferencia') {

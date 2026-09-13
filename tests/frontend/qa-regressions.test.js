@@ -51,6 +51,25 @@ async function main() {
   w.document.querySelector('#li_pass').value = 'clave';
   w.document.querySelector('#li_pass').dispatchEvent(new w.Event('input'));
   check('QA-06: escribir elimina la validación', () => assert.equal(w.document.querySelector('#li_passErr').textContent, ''));
+
+  const originalPost = w.ApiClient.post;
+  w.ApiClient.post = async () => ({ ok: false, status: 401, data: { detail: 'Credenciales incorrectas' } });
+  const loginRes = await Auth.login('qa@intesud.edu.ec', 'clave-mala', false);
+  check('QA-06: credenciales incorrectas mapean al campo de contraseña', () => {
+    assert.equal(loginRes.ok, false);
+    assert.equal(loginRes.field, 'password');
+  });
+  w.document.querySelector('#li_email').value = 'qa@intesud.edu.ec';
+  w.document.querySelector('#li_pass').value = 'clave-mala';
+  w.document.querySelector('#loginForm').dispatchEvent(new w.Event('submit', { cancelable: true }));
+  await new Promise(resolve => setTimeout(resolve, 30));
+  check('QA-06: 401 del backend muestra error en el campo de contraseña, no en usuario/correo', () => {
+    assert.match(w.document.querySelector('#li_passErr').textContent, /Credenciales incorrectas/);
+    assert.equal(w.document.querySelector('#li_emailErr').textContent, '');
+  });
+  w.ApiClient.post = originalPost;
+  w.document.querySelector('#li_email').value = '';
+  w.document.querySelector('#li_pass').value = '';
   const originalRoute = w.handleRoute;
   let renders = 0;
   w.handleRoute = () => { renders++; };

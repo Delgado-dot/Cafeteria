@@ -74,6 +74,12 @@ class PaymentMethod(models.Model):
     holder_id = models.CharField("identificacion", max_length=30, blank=True)
     phone = models.CharField("telefono/celular", max_length=25, blank=True)
     qr_info = models.TextField("info QR/codigo", blank=True)
+    qr_image = models.ImageField(
+        "imagen QR",
+        upload_to="payment_qr/",
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField("creado", auto_now_add=True)
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 

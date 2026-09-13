@@ -2,8 +2,8 @@
    orders.js — Pedidos del usuario, seguimiento, cancelación
    ============================================================ */
 
-const ORDER_FLOW = ['queue', 'confirmed', 'prep', 'ready', 'delivered'];
-const ORDER_FLOW_LABEL = { queue: 'En cola', confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
+const ORDER_FLOW = ['confirmed', 'queue', 'prep', 'ready', 'delivered'];
+const ORDER_FLOW_LABEL = { confirmed: 'Confirmado', queue: 'En cola', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
 
 function myOrders() {
   const u = currentUser();

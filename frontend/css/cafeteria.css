@@ -774,3 +774,118 @@ img, .product-media, .cat-pill-card .cp-ico { max-width: 100%; object-fit: conta
   box-shadow: var(--glass-shadow) !important;
 }
 
+/* ============================================================
+   CHECKOUT — contraste de textos e iconos (SOLO esta pantalla)
+   Únicamente color/sombra de texto; no se cambian fondos,
+   estructura, tamaños ni el estilo glass. Se acota con la clase
+   .checkout-view que app.js añade al <main> del checkout.
+   Misma paleta del diseño (blanco glass y verde oscuro #14464b).
+   ============================================================ */
+body.has-bottom-nav .checkout-view .card > .card-header .card-title,
+body.has-bottom-nav .checkout-view .alert .a-title,
+body.has-bottom-nav .checkout-view .select-card .sc-name {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+body.has-bottom-nav .checkout-view .muted,
+body.has-bottom-nav .checkout-view .card-sub,
+body.has-bottom-nav .checkout-view .sc-desc,
+body.has-bottom-nav .checkout-view .summary-row,
+body.has-bottom-nav .checkout-view .capacity-num,
+body.has-bottom-nav .checkout-view .tiny,
+body.has-bottom-nav .checkout-view .small,
+body.has-bottom-nav .checkout-view .alert,
+body.has-bottom-nav .checkout-view .alert div,
+body.has-bottom-nav .checkout-view .alert p,
+body.has-bottom-nav .checkout-view .alert span:not(.a-ico) {
+  color: rgba(255, 255, 255, 0.97) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+}
+/* Texto plano dentro de las tarjetas: deja de heredar el gris oscuro
+   del cuerpo y queda blanco legible sobre el cristal (misma paleta). */
+body.has-bottom-nav .checkout-view .card {
+  color: rgba(255, 255, 255, 0.97) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+}
+/* Iconos de los métodos de entrega/pago dentro de su cajón claro:
+   se pinchan sobre el <i> el verde oscuro del diseño (#14464b) que
+   antes quedaba anulado por .card .bx blanco → iconos invisibles. */
+body.has-bottom-nav .checkout-view .select-card .sc-ico .bx,
+body.has-bottom-nav .checkout-view .select-card .sc-ico i {
+  color: #14464b !important;
+  font-weight: 700;
+}
+/* Iconos de avisos/instrucciones sobre glass: blancos con sombra
+   para separarlos del fondo difuminado, mismo tamaño de glyph. */
+body.has-bottom-nav .checkout-view .alert .a-ico .bx,
+body.has-bottom-nav .checkout-view .alert .a-ico i {
+  font-weight: 700;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+/* ============================================================
+   CHECKOUT · Aviso del método de pago seleccionado (#payDetail)
+   Causa real (DevTools): la regla genérica de checkout fuerza
+   texto blanco con !important (cafeteria.css:784-809) y main.css
+   fuerza .muted/.a-title/iconos blancos sobre glass (main.css:
+   460-463). El aviso DEUNA/Transferencia está sobre fondo claro
+   (--info-soft / --surface-2), así que ese detalle vuelve a su
+   tono oscuro del diseño — usando !important ACOTADO a #payDetail
+   (que permite ganar la cascada). Nada más cambia: el resto del
+   checkout (glass-X) conserva su vidrio y su texto blanco.
+   ============================================================ */
+body.has-bottom-nav .checkout-view #payDetail .alert.info,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-title,
+body.has-bottom-nav .checkout-view #payDetail .alert.info div,
+body.has-bottom-nav .checkout-view #payDetail .alert.info p,
+body.has-bottom-nav .checkout-view #payDetail .alert.info span:not(.a-ico),
+body.has-bottom-nav .checkout-view #payDetail .alert.info .muted,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .tiny,
+body.has-bottom-nav .checkout-view #payDetail .alert.info small,
+body.has-bottom-nav .checkout-view #payDetail .alert.info b {
+  color: var(--info) !important;
+  text-shadow: none !important;
+}
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico .bx,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico i {
+  color: var(--info) !important;
+  font-weight: 700;
+  filter: none !important;
+}
+/* Tarjetas (QR, Titular, QR/Código) dentro del detalle:
+   NADA de fondo aquí: el glass verde institucional (cafeteria.css
+   722-740, var(--glass-bg) + blur) vuelve a ganar intacto.
+   Solo se mantiene el texto legible (paleta glass del proyecto). */
+body.has-bottom-nav .checkout-view #payDetail .card {
+  color: var(--text-on-glass) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+body.has-bottom-nav .checkout-view #payDetail .card .muted,
+body.has-bottom-nav .checkout-view #payDetail .card .small,
+body.has-bottom-nav .checkout-view #payDetail .card .tiny,
+body.has-bottom-nav .checkout-view #payDetail .card .muted.small,
+body.has-bottom-nav .checkout-view #payDetail .card b,
+body.has-bottom-nav .checkout-view #payDetail .card .bold {
+  color: var(--text-secondary-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+body.has-bottom-nav .checkout-view #payDetail > .muted.small,
+body.has-bottom-nav .checkout-view #payDetail > .muted.small b {
+  color: var(--text-secondary-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ============================================================
+   Etiquetas del gráfico "Ventas por hora (hoy)" (adminbar)
+   El área de ese gráfico es --surface-2 (claro) con barras
+   verdes; las etiquetas $0.00 / horas quedaban blancas por
+   body.is-admin .card .tiny y no se leían sobre ese fondo.
+   Solo color de esas etiquetas sobre el área clara de la gráfica.
+   ============================================================ */
+body.is-adminbar .sales-hour-chart .tiny {
+  color: var(--text-2) !important;
+  text-shadow: none !important;
+}
+body.is-adminbar .sales-hour-chart {
+  color: var(--text) !important;
+}
+

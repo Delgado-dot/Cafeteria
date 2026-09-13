@@ -79,8 +79,8 @@ class OrderModelTests(TestCase):
         self.assertEqual(total, 3.00)
 
     def test_default_status(self):
-        """Prueba del estado por defecto."""
-        self.assertEqual(self.order.status, OrderStatus.QUEUE)
+        """Prueba del estado por defecto: un pedido nuevo queda CONFIRMADO."""
+        self.assertEqual(self.order.status, OrderStatus.CONFIRMED)
         self.assertEqual(self.order.status_history.count(), 1)
 
     def test_order_str(self):
@@ -88,12 +88,14 @@ class OrderModelTests(TestCase):
         self.assertEqual(str(self.order), self.order.order_number)
 
     def test_repeated_status_does_not_duplicate_history(self):
-        self.assertFalse(
+        # CONFIRMADO -> EN COLA es la primera transición del flujo.
+        self.assertTrue(
             self.order.transition_to(OrderStatus.QUEUE, changed_by=self.user)
         )
-        self.assertEqual(self.order.status_history.count(), 1)
-        self.assertTrue(
-            self.order.transition_to(OrderStatus.CONFIRMED, changed_by=self.user)
+        self.assertEqual(self.order.status_history.count(), 2)
+        # Repetir el mismo estado no escribe historial duplicado.
+        self.assertFalse(
+            self.order.transition_to(OrderStatus.QUEUE, changed_by=self.user)
         )
         self.assertEqual(self.order.status_history.count(), 2)
 
@@ -267,7 +269,7 @@ class OrderPaymentDeliveryTests(TestCase):
 
     def deliver(self, order):
         """Recorre la maquina de estados valida hasta DELIVERED."""
-        for s in ["confirmed", "prep", "ready", "delivered"]:
+        for s in ["queue", "prep", "ready", "delivered"]:
             res = self.admin_client.patch(
                 f"/api/orders/{order.pk}/", {"status": s}, format="json"
             )
@@ -406,16 +408,18 @@ class OrderStateMachineConstraintTests(TestCase):
 
     def deliver(self, order):
         """Recorre la ruta válida completa hasta DELIVERED."""
-        for s in ("confirmed", "prep", "ready", "delivered"):
+        for s in ("queue", "prep", "ready", "delivered"):
             self.patch_status(self.admin_client, order, s, 200)
 
-    # 3-6: cadena válida completa
+    # 3-6: cadena válida completa (un pedido nuevo nace CONFIRMADO y avanza
+    # CONFIRMADO -> EN COLA -> EN PREPARACION -> LISTO -> ENTREGADO).
     def test_valid_chain_queue_to_delivered(self):
         order = self.create_order(qty=2)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 8)
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
         steps = [
-            ("confirmed", OrderStatus.CONFIRMED),
+            ("queue", OrderStatus.QUEUE),
             ("prep", OrderStatus.PREPARATION),
             ("ready", OrderStatus.READY),
             ("delivered", OrderStatus.DELIVERED),
@@ -429,7 +433,7 @@ class OrderStateMachineConstraintTests(TestCase):
         self.assertEqual(self.product.stock, 8)
         self.assertEqual(order.status_history.count(), 5)
 
-    # 7: transición inválida (salto) devuelve error.
+    # 7: transición inválida (salto a ENTREGADO) devuelve error.
     def test_invalid_jump_queue_to_delivered_rejected(self):
         order = self.create_order(qty=3)
         self.product.refresh_from_db()
@@ -438,7 +442,7 @@ class OrderStateMachineConstraintTests(TestCase):
         res = self.patch_status(self.admin_client, order, "delivered", 400)
         self.assertIn("no permitida", str(res.data))
         order.refresh_from_db()
-        self.assertEqual(order.status, OrderStatus.QUEUE)
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, stock_before)
         self.assertEqual(StockMovement.objects.count(), moves_before)
@@ -494,7 +498,7 @@ class OrderStateMachineConstraintTests(TestCase):
     # 10: cancelar desde PREPARATION también restaura una sola vez.
     def test_cancel_from_prep_restores_stock_once(self):
         order = self.create_order(qty=2)
-        self.patch_status(self.admin_client, order, "confirmed", 200)
+        self.patch_status(self.admin_client, order, "queue", 200)
         self.patch_status(self.admin_client, order, "prep", 200)
         self.patch_status(self.admin_client, order, "cancelled", 200)
         self.product.refresh_from_db()
@@ -535,7 +539,7 @@ class OrderStateMachineConstraintTests(TestCase):
             res = self.patch_status(self.admin_client, order, bad, 400)
             self.assertIn("no permitida", str(res.data))
             order.refresh_from_db()
-            self.assertEqual(order.status, OrderStatus.QUEUE)
+            self.assertEqual(order.status, OrderStatus.CONFIRMED)
             self.product.refresh_from_db()
             self.assertEqual(self.product.stock, 6)
             self.assertEqual(StockMovement.objects.count(), moves_before)
@@ -612,4 +616,4 @@ class OrderStateMachineConstraintTests(TestCase):
         )
         self.assertEqual(res.status_code, 403)
         order.refresh_from_db()
-        self.assertEqual(order.status, OrderStatus.QUEUE)
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)

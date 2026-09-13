@@ -8,6 +8,8 @@ Evita duplicar lógica de captura de IP/usuario en cada vista.
 from datetime import date, datetime, time
 from decimal import Decimal
 
+from django.core.files import File
+
 from .models import AuditLog
 
 
@@ -19,6 +21,8 @@ def _json_safe(value):
         return str(value)
     if isinstance(value, (datetime, date, time)):
         return value.isoformat()
+    if isinstance(value, File):
+        return str(value.name)
     if isinstance(value, dict):
         return {key: _json_safe(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):

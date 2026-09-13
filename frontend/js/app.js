@@ -181,7 +181,7 @@ function renderUserShell(page) {
           </div>
         </div>
       </header>
-      <main class="page${page === 'product' ? ' page-wide' : page === 'cart' ? ' page-narrow' : page === 'checkout' ? ' page-narrow' : ''}" id="mainContent"></main>
+      <main class="page${page === 'product' ? ' page-wide' : (page === 'cart' || page === 'checkout') ? ' page-narrow' : ''}${page === 'checkout' ? ' checkout-view' : ''}" id="mainContent"></main>
       <nav class="mobile-nav" id="mobileNav"></nav>
     </div>`;
 

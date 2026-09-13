@@ -327,7 +327,7 @@ class CapacityReleaseTests(OrderRuleTestCase):
         self.assertEqual(res.status_code, 201, res.data)
         self.assertEqual(CafeConfig.get_solo().current_capacity, 1)
         order_id = res.data["id"]
-        for s in ("confirmed", "prep", "ready", "delivered"):
+        for s in ("queue", "prep", "ready", "delivered"):
             r = self.admin_client.patch(
                 f"/api/orders/{order_id}/", {"status": s}, format="json"
             )

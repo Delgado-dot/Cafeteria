@@ -4,6 +4,18 @@ from rest_framework import serializers
 
 from .models import CafeConfig, PaymentMethod
 
+QR_IMAGE_EXTENSIONS = ("png", "jpg", "jpeg", "webp")
+QR_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+
+
+def _qr_image_url(obj, request):
+    if not obj.qr_image:
+        return None
+    url = obj.qr_image.url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
 
 class CafeConfigSerializer(serializers.ModelSerializer):
     hero_background_url = serializers.SerializerMethodField(read_only=True)
@@ -50,6 +62,8 @@ class CafeConfigSerializer(serializers.ModelSerializer):
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
+    qr_image_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = PaymentMethod
         fields = [
@@ -68,11 +82,18 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
             "holder_id",
             "phone",
             "qr_info",
+            "qr_image",
+            "qr_image_url",
         ]
         read_only_fields = fields
 
+    def get_qr_image_url(self, obj):
+        return _qr_image_url(obj, self.context.get("request"))
+
 
 class PaymentMethodAdminSerializer(serializers.ModelSerializer):
+    qr_image_url = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = PaymentMethod
         fields = [
@@ -91,5 +112,24 @@ class PaymentMethodAdminSerializer(serializers.ModelSerializer):
             "holder_id",
             "phone",
             "qr_info",
+            "qr_image",
+            "qr_image_url",
         ]
         read_only_fields = ["id", "code", "created_at", "updated_at"]
+
+    def get_qr_image_url(self, obj):
+        return _qr_image_url(obj, self.context.get("request"))
+
+    def validate_qr_image(self, value):
+        if value is None:
+            return value
+        ext = (value.name.rsplit(".", 1)[-1] or "").lower()
+        if ext not in QR_IMAGE_EXTENSIONS:
+            raise serializers.ValidationError(
+                "Solo se aceptan imágenes PNG, JPG, JPEG o WEBP."
+            )
+        if value.size > QR_IMAGE_MAX_BYTES:
+            raise serializers.ValidationError(
+                "La imagen no puede superar los 2 MB."
+            )
+        return value

@@ -156,12 +156,12 @@ class AuditIntegrationTests(TestCase):
         order = self.create_order()
         c = auth_client(self.bar)
         res = c.patch(
-            f"/api/orders/{order.pk}/", {"status": "confirmed"}, format="json"
+            f"/api/orders/{order.pk}/", {"status": "queue"}, format="json"
         )
         self.assertEqual(res.status_code, 200, res.data)
         audit = AuditLog.objects.filter(action="order.status_change").first()
         self.assertIsNotNone(audit)
-        self.assertEqual(audit.details.get("to"), "confirmed")
+        self.assertEqual(audit.details.get("to"), "queue")
         self.assertEqual(audit.target, f"order:{order.order_number}")
 
     def test_config_update_is_audited(self):

@@ -29,9 +29,27 @@ const Auth = {
       }, false); // No incluir autorización en login
       
       if (!response.ok) {
-        // Manejar errores del servidor
-        const errorMsg = response.data?.detail || response.data?.password?.[0] || response.data?.username?.[0] || response.error || 'Error al iniciar sesión';
-        return { ok: false, field: 'email', msg: errorMsg };
+        // Manejar errores del servidor sin culpar al campo de email cuando el
+        // problema son las credenciales (401 / detail / non_field_errors).
+        const passwordErr = response.data?.password?.[0];
+        const usernameErr = response.data?.username?.[0];
+        const detail = response.data?.detail || response.data?.non_field_errors?.[0];
+        let field = 'email';
+        let errorMsg;
+        if (passwordErr) {
+          field = 'password';
+          errorMsg = passwordErr;
+        } else if (usernameErr) {
+          field = 'email';
+          errorMsg = usernameErr;
+        } else if (detail || response.status === 401) {
+          field = 'password';
+          errorMsg = detail;
+        } else {
+          field = 'email';
+          errorMsg = response.error || 'Error al iniciar sesión';
+        }
+        return { ok: false, field, msg: errorMsg };
       }
       
       // Guardar tokens JWT
