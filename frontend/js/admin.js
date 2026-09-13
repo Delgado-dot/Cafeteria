@@ -599,7 +599,7 @@ async function barSuppliers(el) {
 
 async function barReports(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.payments.all), ApiClient.getAll(API_ENDPOINTS.products.list) ]);
+  const [ordersRes, paymentsRes, productsRes, stockRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.payments.all), ApiClient.getAll(API_ENDPOINTS.products.list), ApiClient.getAll(API_ENDPOINTS.stock.movements).catch(() => ({ ok: false, data: [] })) ]);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
   const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || []}));
   const orders = ordersNorm.filter(isValidSale);
@@ -638,19 +638,19 @@ async function barReports(el) {
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
         <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
         <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
         <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
     </div>
   `;
@@ -739,6 +739,57 @@ async function barReports(el) {
     renderTab(btn.dataset.rpt);
   });
   renderTab('ventas');
+
+  // ——— Descargas reales (frontend, datos ya cargados) ———
+  const downloadCSV = (filename, rows) => {
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  $('#btnDownloadVentas', el)?.addEventListener('click', () => {
+    console.log('[reports] Descargar Ventas', {count: orders.length});
+    const rows = [['Fecha','Hora','Total','Metodo','Estado','Productos']];
+    orders.forEach(o => rows.push([o.date, o.time, o.total.toFixed(2), o.payment, o.paymentStatus, (o.items||[]).map(i=>`${i.productName||i.name} x${i.quantity||i.qty}`).join('; ')]));
+    if (rows.length===1) rows.push(['Sin datos','','0.00','','','']);
+    downloadCSV(`reporte_ventas_${today}.csv`, rows);
+    toast('Reporte de Ventas descargado', 'success');
+  });
+  $('#btnDownloadStock', el)?.addEventListener('click', async () => {
+    console.log('[reports] Descargar Stock');
+    const stockData = stockRes.ok ? (stockRes.data.results || stockRes.data || []) : [];
+    let rows;
+    if (Array.isArray(stockData) && stockData.length && stockData[0].product !== undefined) {
+      rows = [['Producto','Movimiento','Cantidad','Stock previo','Stock nuevo','Fecha']];
+      stockData.forEach(m => rows.push([m.product_name||m.product, m.movement_type||m.type, m.quantity||'', m.previous_stock||'', m.new_stock||'', (m.created_at||'').slice(0,16)]));
+    } else {
+      rows = [['Producto','Categoria','Stock','Minimo','Estado']];
+      productsList.forEach(p => {
+        const estado = p.stock===0 ? 'Agotado' : p.stock<=p.min_stock ? 'Bajo' : 'OK';
+        rows.push([p.name, p.category||'', p.stock, p.min_stock||'', estado]);
+      });
+    }
+    if (rows.length===1) rows.push(['Sin datos','','','','','']);
+    downloadCSV(`reporte_stock_${today}.csv`, rows);
+    toast('Reporte de Stock descargado', 'success');
+  });
+  $('#btnDownloadPagos', el)?.addEventListener('click', () => {
+    console.log('[reports] Descargar Pagos', {count: (paymentsRes.ok ? (paymentsRes.data.results||paymentsRes.data||[]).length : 0)});
+    const pays = paymentsRes.ok ? (paymentsRes.data.results || paymentsRes.data || []) : [];
+    const rows = [['Pedido','Metodo','Estado','Monto','Fecha']];
+    const list = Array.isArray(pays) ? pays : [];
+    if (list.length) {
+      list.forEach(p => rows.push([p.order_number||p.order||'', p.payment_method||p.method||'', p.status||'', p.amount||p.total||'', (p.created_at||'').slice(0,16)]));
+    } else {
+      Object.entries(byMethod).forEach(([k,v]) => rows.push([k, '', '', v.toFixed(2), '']));
+    }
+    if (rows.length===1) rows.push(['Sin datos','','','','']);
+    downloadCSV(`reporte_pagos_${today}.csv`, rows);
+    toast('Reporte de Pagos descargado', 'success');
+  });
 }
 
 function supplierFormModal(supplier, onSave) {

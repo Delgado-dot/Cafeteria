@@ -106,7 +106,7 @@ function statusMeta(status) {
     refunded: { label: 'Reembolsado', cls: 'badge badge-info' },
   };
   const m = map[status] || map.queue;
-  return `<span class="${m.cls}"><span class="dot"></span>${m.label}</span>`;
+  return `<span class="${m.cls} status-${status}"><span class="dot"></span>${m.label}</span>`;
 }
 window.statusMeta = statusMeta;
 

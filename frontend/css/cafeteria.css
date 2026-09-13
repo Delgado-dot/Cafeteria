@@ -569,6 +569,11 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   body.has-bottom-nav .badge-info,
   body.has-bottom-nav .badge-neutral,
   body.has-bottom-nav .badge-outline { color: #ffffff; }
+  /* Historial — badges de estado solo aquí con fondo sólido para contraste sobre glass */
+  body.has-bottom-nav #historyOrders .order-card-history .badge-success { background: var(--success) !important; color: #ffffff !important; border-color: var(--success-strong) !important; }
+  body.has-bottom-nav #historyOrders .order-card-history .badge-danger { background: var(--danger) !important; color: #ffffff !important; border-color: var(--danger-strong) !important; }
+  body.has-bottom-nav #historyOrders .order-card-history .badge-warning { background: var(--warning-soft) !important; color: var(--warning-strong) !important; border-color: var(--warning-strong) !important; }
+  body.has-bottom-nav #historyOrders .order-card-history .badge-info { background: var(--info-soft) !important; color: var(--info) !important; border-color: var(--info) !important; }
   body.has-bottom-nav .alert.success,
   body.has-bottom-nav .alert.warning,
   body.has-bottom-nav .alert.danger,
@@ -753,6 +758,60 @@ body.has-bottom-nav .page-sub { color: var(--text-secondary-on-glass) !important
 /* Campos, tablas, modales ya cubiertos por main.css; refuerza drawer cliente */
 body.has-bottom-nav .modal,
 body.has-bottom-nav .drawer { background: var(--glass-bg) !important; backdrop-filter: var(--glass-blur) !important; border: 1px solid var(--glass-border) !important; box-shadow: var(--glass-shadow) !important; }
+/* ── Detalle pedido: drawer sobre glass oscuro — solo texto/iconos, mismo fondo ── */
+body.has-bottom-nav .drawer .detail-status .tiny,
+body.is-adminbar .drawer .detail-status .tiny,
+body.is-admin .drawer .detail-status .tiny { color: var(--text-secondary-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+body.has-bottom-nav .drawer .detail-number,
+body.is-adminbar .drawer .detail-number,
+body.is-admin .drawer .detail-number { color: var(--text-on-glass) !important; text-shadow: 0 1px 3px rgba(0,0,0,0.35) !important; }
+body.has-bottom-nav .drawer .detail-eta,
+body.is-adminbar .drawer .detail-eta,
+body.is-admin .drawer .detail-eta { color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+body.has-bottom-nav .drawer .detail-eta .bx,
+body.is-adminbar .drawer .detail-eta .bx,
+body.is-admin .drawer .detail-eta .bx { color: var(--text-on-glass) !important; }
+body.has-bottom-nav .drawer .detail-section h4,
+body.is-adminbar .drawer .detail-section h4,
+body.is-admin .drawer .detail-section h4 { color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.32) !important; }
+body.has-bottom-nav .drawer .detail-item,
+body.is-adminbar .drawer .detail-item,
+body.is-admin .drawer .detail-item,
+body.has-bottom-nav .drawer .detail-item span,
+body.is-adminbar .drawer .detail-item span,
+body.is-admin .drawer .detail-item span { color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.28) !important; }
+body.has-bottom-nav .drawer .detail-item .muted,
+body.is-adminbar .drawer .detail-item .muted,
+body.is-admin .drawer .detail-item .muted { color: var(--text-secondary-on-glass) !important; }
+body.has-bottom-nav .drawer .detail-total,
+body.is-adminbar .drawer .detail-total,
+body.is-admin .drawer .detail-total { color: var(--text-on-glass) !important; border-color: rgba(255,255,255,0.22) !important; }
+body.has-bottom-nav .drawer .detail-total b,
+body.is-adminbar .drawer .detail-total b,
+body.is-admin .drawer .detail-total b { color: #d4fff0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }
+body.has-bottom-nav .drawer .detail-facts > div > span,
+body.is-adminbar .drawer .detail-facts > div > span,
+body.is-admin .drawer .detail-facts > div > span { color: var(--text-secondary-on-glass) !important; }
+body.has-bottom-nav .drawer .detail-facts > div > b,
+body.is-adminbar .drawer .detail-facts > div > b,
+body.is-admin .drawer .detail-facts > div > b { color: var(--text-on-glass) !important; }
+body.has-bottom-nav .drawer .timeline .tl-label,
+body.is-adminbar .drawer .timeline .tl-label,
+body.is-admin .drawer .timeline .tl-label { color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+body.has-bottom-nav .drawer .timeline .tl-time,
+body.is-adminbar .drawer .timeline .tl-time,
+body.is-admin .drawer .timeline .tl-time { color: var(--text-secondary-on-glass) !important; }
+body.has-bottom-nav .drawer .timeline .tl-dot,
+body.is-adminbar .drawer .timeline .tl-dot,
+body.is-admin .drawer .timeline .tl-dot { color: var(--text-on-glass) !important; }
+body.has-bottom-nav .drawer .timeline .tl-dot .bx,
+body.is-adminbar .drawer .timeline .tl-dot .bx,
+body.is-admin .drawer .timeline .tl-dot .bx { color: var(--text-on-glass) !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+body.has-bottom-nav .drawer [data-dclose],
+body.is-adminbar .drawer [data-dclose],
+body.is-admin .drawer [data-dclose],
+body.has-bottom-nav .drawer .drawer-header .modal-close,
+body.is-adminbar .drawer .drawer-header .modal-close { color: var(--text-on-glass) !important; background: rgba(255,255,255,0.10) !important; border-color: rgba(255,255,255,0.18) !important; }
 /* Elimina barras blancas vacías */
 body.has-bottom-nav .app .page { background: transparent; }
 body.has-bottom-nav .table-wrap { background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important; }
@@ -955,5 +1014,66 @@ body.is-adminbar .config-hours-view .card[style*="primary-soft"] .tiny,
 body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--text-2)"] {
   color: var(--ink) !important;
   text-shadow: none !important;
+}
+
+/* ============================================================
+   Informes — botones Descargar (solo /adminbar/reports)
+   Solo texto/borde/contraste del botón, sin tocar fondo glass
+   ni tamaño de tarjetas. Usa selector específico para no afectar
+   otros btn-outline del sistema.
+   ============================================================ */
+body.is-adminbar .reports-download-btn {
+  background: #ffffff !important;
+  color: var(--teal-700) !important;
+  border-color: var(--teal-700) !important;
+  opacity: 1 !important;
+}
+body.is-adminbar .reports-download-btn i {
+  color: var(--teal-700) !important;
+  fill: var(--teal-700) !important;
+  stroke: var(--teal-700) !important;
+}
+body.is-adminbar .reports-download-btn:hover:not(:disabled) {
+  background: var(--teal-50) !important;
+  color: var(--teal-700) !important;
+  border-color: var(--teal-700) !important;
+}
+body.is-adminbar .reports-download-btn:focus-visible {
+  outline: 2px solid var(--teal-700) !important;
+  outline-offset: 2px !important;
+}
+body.is-adminbar .reports-download-btn:disabled {
+  background: var(--surface-3) !important;
+  color: var(--text-3) !important;
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+/* ============================================================
+   Pedidos — badges Listo/Entregado/Cancelado (solo /orders)
+   Sobrios para glass verde/azulado, no neón. Solo badges de
+   estado, no tarjetas/fondos/botones. Usa status-* añadido en ui.js
+   ============================================================ */
+body.has-bottom-nav #currentOrders .badge.status-ready,
+body.has-bottom-nav #historyOrders .badge.status-ready,
+body.has-bottom-nav .drawer .badge.status-ready {
+  background: rgba(46, 155, 160, .28) !important;
+  border-color: rgba(130, 230, 230, .45) !important;
+  color: #d8ffff !important;
+}
+body.has-bottom-nav #currentOrders .badge.status-delivered,
+body.has-bottom-nav #historyOrders .badge.status-delivered,
+body.has-bottom-nav .drawer .badge.status-delivered {
+  background: rgba(38, 150, 110, .30) !important;
+  border-color: rgba(120, 220, 180, .45) !important;
+  color: #e4fff5 !important;
+}
+body.has-bottom-nav #currentOrders .badge.status-cancelled,
+body.has-bottom-nav #historyOrders .badge.status-cancelled,
+body.has-bottom-nav .drawer .badge.status-cancelled {
+  background: rgba(190, 75, 75, .28) !important;
+  border-color: rgba(255, 150, 150, .45) !important;
+  color: #ffeaea !important;
 }
 
