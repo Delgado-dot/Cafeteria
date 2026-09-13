@@ -44,7 +44,13 @@ const mockProducts = [
   { id: 3, name: 'Jugo', price: '1.80', category_name: 'Bebidas', description: 'Jugo natural', prep_time: 2, stock: 15, min_stock: 5, available: true, addons: [] },
   { id: 4, name: 'Galleta', price: '0.80', category_name: 'Snacks', description: 'Galleta artesanal', prep_time: 1, stock: 20, min_stock: 5, available: true, addons: [] },
 ];
-const mockConfig = { orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15', hero_background_url: 'http://127.0.0.1:8000/media/home/fododeledificio.png' };
+const mockConfig = {
+  orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15',
+  hero_background_url: 'http://127.0.0.1:8000/media/home/fododeledificio.png',
+  barra_atencion_image_url: 'http://127.0.0.1:8000/media/home/barra_atencion.webp',
+  espacio_disfrutar_image_url: 'http://127.0.0.1:8000/media/home/espacio_disfrutar.webp',
+  cafe_snacks_image_url: 'http://127.0.0.1:8000/media/home/cafe_snacks.webp',
+};
 // Mock temprano para que el primer renderLanding() ya reciba datos sin backend
 window.eval(js);
 // Sobrescribir ApiClient antes de que las promesas de renderLanding se resuelvan
@@ -101,6 +107,11 @@ async function main() {
   ok(document.querySelector('link[href*="family=Playfair"]'), 'Playfair Display importada');
   ok(!!document.querySelector('.lp-footer-strip'), 'Footer presente en Landing');
   ok(!!document.getElementById('about'), 'Sección presentación presente');
+  const galleryCards = [...document.querySelectorAll('.lp-g-card')];
+  ok(galleryCards[0]?.querySelector('img')?.src.endsWith('/media/home/barra_atencion.webp'), 'Foto 1 desde CafeConfig en Barra de atención');
+  ok(galleryCards[1]?.querySelector('img')?.src.endsWith('/media/home/espacio_disfrutar.webp'), 'Foto 2 desde CafeConfig en Espacio para disfrutar');
+  ok(galleryCards[2]?.querySelector('img')?.src.endsWith('/media/home/cafe_snacks.webp'), 'Foto 3 desde CafeConfig en Café y snacks');
+  ok(galleryCards.map((card) => card.querySelector('figcaption')?.textContent).join('|') === 'Barra de atención|Espacio para disfrutar|Café y snacks', 'Títulos permanecen como texto HTML separado');
   ok(!!document.getElementById('how'), 'Sección cómo funciona presente');
   ok(!!document.getElementById('hours'), 'Sección horarios presente');
   ok(!!document.getElementById('menu'), 'Sección menú preview presente');

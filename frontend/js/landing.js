@@ -67,18 +67,28 @@ function renderLanding() {
     const heroBg = cfg.hero_background_url
       || cfg.heroBackgroundUrl
       || 'assets/fododeledificio.png';
+    const galleryImages = {
+      barra: cfg.barra_atencion_image_url || cfg.barra_atencion_image || assetUrl('images/galeria-1'),
+      espacio: cfg.espacio_disfrutar_image_url || cfg.espacio_disfrutar_image || assetUrl('images/galeria-2'),
+      snacks: cfg.cafe_snacks_image_url || cfg.cafe_snacks_image || assetUrl('images/galeria-3'),
+    };
     
     // Usar 4 productos al azar como menú preview
     const menuItems = products.slice(0, 4);
 
   const menuCards = menuItems.map((p) => {
     const soldOut = !p.available || p.stock === 0;
+    const imgUrl = p.image ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(p.image) : p.image) : '';
+    const mediaContent = imgUrl
+      ? `<img src="${esc(imgUrl)}" alt="${esc(p.name)}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"><span style="display:none;position:relative;z-index:1;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.6rem">${lpProductIcon(p.category)}</span>`
+      : `<span style="display:inline-flex;position:relative;z-index:1">${lpProductIcon(p.category)}</span>`;
+    const soldBadge = soldOut ? `<span style="position:absolute;top:8px;right:8px;z-index:3;background:#1a2423;color:#fff;font-weight:700;font-size:.62rem;letter-spacing:.06em;padding:4px 8px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.2)">AGOTADO</span>` : '';
     return `
       <div class="lp-product">
-        <div class="lp-p-media">
-          <span class="badge badge-primary lp-p-tag">${lpProductIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>
-          <span style="display:inline-flex">${lpProductIcon(p.category)}</span>
-          ${soldOut ? `<div class="sold-flag"><span>AGOTADO</span></div>` : ''}
+        <div class="lp-p-media" style="overflow:hidden">
+          <span class="badge badge-primary lp-p-tag" style="z-index:2">${lpProductIcon(p.category)} ${esc(p.category.split(' ')[0])}</span>
+          ${mediaContent}
+          ${soldBadge}
         </div>
         <div class="lp-p-body">
           <div class="lp-p-name">${esc(p.name)}</div>
@@ -143,9 +153,9 @@ function renderLanding() {
         <li><span class="pi">${lpIcon('zap')}</span><div><div class="pt">Rapidez y organización</div><div class="ps">Tu pedido listo para cuando empiece el receso.</div></div></li>
       </ul>
       <figure class="lp-gallery">
-        <div class="lp-g-card"><img src="${assetUrl('images/galeria-1')}" alt="Barra de atención de la cafetería"><figcaption>Barra de atención</figcaption></div>
-        <div class="lp-g-card"><img src="${assetUrl('images/galeria-2')}" alt="Espacio para disfrutar en la cafetería"><figcaption>Espacio para disfrutar</figcaption></div>
-        <div class="lp-g-card"><img src="${assetUrl('images/galeria-3')}" alt="Café y snacks de la cafetería"><figcaption>Café y snacks</figcaption></div>
+        <div class="lp-g-card"><img src="${esc(galleryImages.barra)}" alt="Barra de atención de la cafetería"><figcaption>Barra de atención</figcaption></div>
+        <div class="lp-g-card"><img src="${esc(galleryImages.espacio)}" alt="Espacio para disfrutar en la cafetería"><figcaption>Espacio para disfrutar</figcaption></div>
+        <div class="lp-g-card"><img src="${esc(galleryImages.snacks)}" alt="Café y snacks de la cafetería"><figcaption>Café y snacks</figcaption></div>
       </figure>
     `)}
 

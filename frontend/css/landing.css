@@ -248,7 +248,7 @@ body.is-landing { background: #ffffff; overflow: hidden; height: 100vh; }
 /* Galería (dentro de presentación) */
 .lp-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 56px; }
 .lp-g-card { margin: 0; position: relative; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
-.lp-g-card img { width: 100%; height: 200px; object-fit: cover; display: block; transition: transform var(--t-med); }
+.lp-g-card img { width: 100%; height: 200px; object-fit: cover; object-position: center; display: block; transition: transform var(--t-med); }
 .lp-g-card:hover img { transform: scale(1.04); }
 .lp-g-card figcaption {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px;

@@ -17,6 +17,9 @@ class CafeConfigAdmin(admin.ModelAdmin):
         "total_capacity",
         "current_capacity",
         "hero_background",
+        "barra_atencion_image",
+        "espacio_disfrutar_image",
+        "cafe_snacks_image",
     )
     fields = (
         "name",
@@ -29,6 +32,9 @@ class CafeConfigAdmin(admin.ModelAdmin):
         "current_capacity",
         "is_open",
         "hero_background",
+        "barra_atencion_image",
+        "espacio_disfrutar_image",
+        "cafe_snacks_image",
         "updated_at",
     )
     readonly_fields = ("updated_at",)

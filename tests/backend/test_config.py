@@ -13,8 +13,8 @@ from PIL import Image
 from apps.config.models import CafeConfig
 
 
-class CafeConfigHeroBackgroundTests(TestCase):
-    """El fondo de portada se guarda como referencia (ImageField) y se sirve por la API."""
+class CafeConfigHomeImageTests(TestCase):
+    """Las imagenes del home se guardan como referencias y se sirven por la API."""
 
     def setUp(self):
         self.media_root = tempfile.mkdtemp(prefix="cafeteria-test-config-media-")
@@ -63,3 +63,42 @@ class CafeConfigHeroBackgroundTests(TestCase):
         response = self.client.get("/api/config/current/")
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.data["hero_background_url"])
+
+    def test_home_card_images_are_stored_as_paths(self):
+        cfg = CafeConfig.get_solo()
+        field_names = (
+            "barra_atencion_image",
+            "espacio_disfrutar_image",
+            "cafe_snacks_image",
+        )
+
+        for field_name in field_names:
+            setattr(cfg, field_name, self.png_upload())
+        cfg.save()
+        cfg.refresh_from_db()
+
+        stored = CafeConfig.objects.values(*field_names).get(pk=1)
+        for field_name in field_names:
+            image = getattr(cfg, field_name)
+            self.assertTrue(image.name.startswith("home/"), field_name)
+            self.assertTrue(image.storage.exists(image.name), field_name)
+            self.assertEqual(stored[field_name], image.name)
+
+    def test_config_endpoint_exposes_home_card_image_urls(self):
+        cfg = CafeConfig.get_solo()
+        field_names = (
+            "barra_atencion_image",
+            "espacio_disfrutar_image",
+            "cafe_snacks_image",
+        )
+        for field_name in field_names:
+            setattr(cfg, field_name, self.png_upload())
+        cfg.save()
+
+        response = self.client.get("/api/config/current/")
+        self.assertEqual(response.status_code, 200)
+
+        for field_name in field_names:
+            url_field = f"{field_name}_url"
+            self.assertTrue(response.data[field_name].startswith("http://testserver/media/"))
+            self.assertTrue(response.data[url_field].startswith("http://testserver/media/"))

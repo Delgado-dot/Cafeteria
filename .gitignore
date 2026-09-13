@@ -30,6 +30,11 @@ db.sqlite3
 db.sqlite3-journal
 cafeteria.db
 backend/media/*
+!backend/media/home/
+backend/media/home/*
+!backend/media/home/barra_atencion.webp
+!backend/media/home/espacio_disfrutar.webp
+!backend/media/home/cafe_snacks.webp
 !backend/media/uploads/
 !backend/media/vouchers/
 !backend/media/product_images/

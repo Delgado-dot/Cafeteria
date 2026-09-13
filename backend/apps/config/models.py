@@ -22,6 +22,24 @@ class CafeConfig(models.Model):
         blank=True,
         null=True,
     )
+    barra_atencion_image = models.ImageField(
+        "imagen de barra de atencion",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    espacio_disfrutar_image = models.ImageField(
+        "imagen de espacio para disfrutar",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    cafe_snacks_image = models.ImageField(
+        "imagen de cafe y snacks",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 
     class Meta:

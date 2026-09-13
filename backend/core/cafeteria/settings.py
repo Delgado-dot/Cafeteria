@@ -2,6 +2,7 @@
 Proyecto Cafetería INTESUD — Configuración del servidor Django.
 """
 
+import mimetypes
 import os
 import secrets
 from pathlib import Path
@@ -179,6 +180,7 @@ STATICFILES_DIRS = [
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+mimetypes.add_type("image/webp", ".webp")
 
 # Whitenoise para servir estáticos en producción
 STORAGES = {

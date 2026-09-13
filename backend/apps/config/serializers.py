@@ -19,6 +19,9 @@ def _qr_image_url(obj, request):
 
 class CafeConfigSerializer(serializers.ModelSerializer):
     hero_background_url = serializers.SerializerMethodField(read_only=True)
+    barra_atencion_image_url = serializers.SerializerMethodField(read_only=True)
+    espacio_disfrutar_image_url = serializers.SerializerMethodField(read_only=True)
+    cafe_snacks_image_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CafeConfig
@@ -35,18 +38,43 @@ class CafeConfigSerializer(serializers.ModelSerializer):
             "is_open",
             "hero_background",
             "hero_background_url",
+            "barra_atencion_image",
+            "barra_atencion_image_url",
+            "espacio_disfrutar_image",
+            "espacio_disfrutar_image_url",
+            "cafe_snacks_image",
+            "cafe_snacks_image_url",
             "updated_at",
         ]
-        read_only_fields = ["id", "updated_at", "hero_background_url"]
+        read_only_fields = [
+            "id",
+            "updated_at",
+            "hero_background_url",
+            "barra_atencion_image_url",
+            "espacio_disfrutar_image_url",
+            "cafe_snacks_image_url",
+        ]
 
-    def get_hero_background_url(self, obj):
-        if not obj.hero_background:
+    def _absolute_image_url(self, image):
+        if not image:
             return None
-        url = obj.hero_background.url
+        url = image.url
         request = self.context.get("request")
         if request is not None:
             return request.build_absolute_uri(url)
         return url
+
+    def get_hero_background_url(self, obj):
+        return self._absolute_image_url(obj.hero_background)
+
+    def get_barra_atencion_image_url(self, obj):
+        return self._absolute_image_url(obj.barra_atencion_image)
+
+    def get_espacio_disfrutar_image_url(self, obj):
+        return self._absolute_image_url(obj.espacio_disfrutar_image)
+
+    def get_cafe_snacks_image_url(self, obj):
+        return self._absolute_image_url(obj.cafe_snacks_image)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
