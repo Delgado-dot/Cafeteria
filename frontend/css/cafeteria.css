@@ -4,6 +4,9 @@
    Minimal editorial, limpio y llamativo — no plantilla e-commerce
    ============================================================ */
 
+/* Guía: sesión del estudiante, encabezado, inicio, menú, carrito,
+   pedidos, perfil, ventanas emergentes y ajustes de pantallas pequeñas. */
+
 :root {
   --teal: #40807e;
   --teal-600: #2f6361;
@@ -20,7 +23,51 @@
   --bg: #f4f7f6;
   --surface: #ffffff;
   --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
-  --student-glass: rgba(10, 46, 48, 0.78);
+  /* Glass — tokens canónicos (misma escala que main.css, gana por cascada al ser último) */
+  --glass-surface: rgba(12, 32, 30, 0.82);
+  --glass-surface-2: rgba(12, 32, 30, 0.78);
+  --glass-surface-3: rgba(12, 32, 30, 0.74);
+  --glass-surface-strong: rgba(12, 32, 30, 0.88);
+  --glass-surface-stronger: rgba(12, 32, 30, 0.92);
+  --glass-inner: rgba(255, 255, 255, 0.10);
+  --glass-inner-less: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-2: rgba(255, 255, 255, 0.10);
+  --glass-border-strong: rgba(255, 255, 255, 0.28);
+  --glass-blur: blur(20px) saturate(140%);
+  --glass-blur-b: blur(18px) saturate(140%);
+  --glass-blur-inner: blur(14px) saturate(130%);
+  --glass-shadow: 0 8px 32px rgba(6, 14, 13, 0.42), 0 2px 10px rgba(12, 32, 30, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-radius: 16px;
+  --glass-text: #ffffff;
+  --glass-text-soft: rgba(255, 255, 255, 0.84);
+  --glass-text-dim: rgba(255, 255, 255, 0.72);
+  --glass-text-faint: rgba(255, 255, 255, 0.58);
+  /* Glass institucional unificado — sobrescribe tokens previos para unificar TODOS los paneles */
+  --glass-bg: rgba(32, 82, 79, 0.58);
+  --glass-bg-dark: rgba(18, 55, 53, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+  --glass-blur: blur(20px) saturate(130%);
+  --text-on-glass: #ffffff;
+  --text-secondary-on-glass: rgba(255, 255, 255, 0.78);
+  --institutional-green: #40807e;
+  /* Aliases para compatibilidad con código existente */
+  --glass-surface: var(--glass-bg);
+  --glass-surface-2: var(--glass-bg);
+  --glass-surface-3: var(--glass-bg-dark);
+  --glass-surface-strong: var(--glass-bg-dark);
+  --glass-surface-stronger: var(--glass-bg);
+  --glass-blur-b: var(--glass-blur);
+  --glass-blur-inner: var(--glass-blur);
+  --glass-text: var(--text-on-glass);
+  --glass-text-soft: var(--text-secondary-on-glass);
+  --glass-radius: 16px;
+  /* Admin chrome unificado — UNA sola variable para sidebar + topbar */
+  --admin-chrome-bg: var(--glass-bg);
+  --admin-chrome-blur: var(--glass-blur);
+  --admin-chrome-border: var(--glass-border);
+  --admin-chrome-shadow: var(--glass-shadow);
 }
 
 /* ---------- Base cliente — color que combina, ya no blanco plano ---------- */
@@ -35,37 +82,65 @@ body.has-bottom-nav .app::before {
   position: fixed;
   inset: -14px;
   z-index: -1;
-  background: url("../assets/images/Como-decorar-una-cafeteria-pequena-con-poco-dinero.jpg") center / cover no-repeat;
-  filter: blur(7px);
+  background: var(--dashboard-background) center / cover no-repeat;
+  filter: blur(7px) brightness(0.5);
   transform: scale(1.03);
 }
 body.has-bottom-nav .app > * { position: relative; }
-body.has-bottom-nav .app { font-family: "Arvo", serif; }
+
+/* Estilo Texto body.has-bottom-nav .app — Sesión estudiante */
+body.has-bottom-nav .app{ font-family: "Arvo", serif; }
+
+/* Estilo Texto body.has-bottom-nav .app h1, body.has-bottom-nav .app h2, body.has-bottom-nav .app h3, body.has-bottom-nav … — Sesión estudiante */
 body.has-bottom-nav .app h1,
 body.has-bottom-nav .app h2,
 body.has-bottom-nav .app h3,
-body.has-bottom-nav .app h4 { font-family: "Playfair Display", serif; }
+body.has-bottom-nav .app h4{ font-family: "Playfair Display", serif; }
 
-/* ---------- HEADER — oscuro refinado ---------- */
+/* ---------- HEADER — glassmorphism unificado (referencia visual Cliente) ---------- */
 .user-header {
-  background: #0f1e1d; border-bottom: 1px solid rgba(255,255,255,0.07);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border); border-radius: 0;
+  box-shadow: var(--glass-shadow);
   height: auto; min-height: var(--header-h); padding: 10px var(--sp-5); gap: 16px;
+  position: sticky; top: 0; z-index: 120;
 }
-.user-header .brand .brand-name { color: #fff; letter-spacing: -0.015em; }
-.user-header .brand .brand-sub { color: #9bb3b1; font-weight: 500; }
+
+/* Estilo Texto .user-header .brand .brand-name — Sesión estudiante */
+.user-header .brand .brand-name{ color: var(--text-on-glass); letter-spacing: -0.015em; }
+
+/* Estilo Texto .user-header .brand .brand-sub — Sesión estudiante */
+.user-header .brand .brand-sub{ color: var(--text-secondary-on-glass); font-weight: 500; }
 .user-header .brand-mark { background: transparent; border: 0; box-shadow: none; padding: 0; }
+
+/* Estilo Texto .user-header .header-icon-btn, .user-header .header-icon-btn:hover — Sesión estudiante */
 .user-header .header-icon-btn,
-.user-header .header-icon-btn:hover { background: transparent; border: 0; box-shadow: none; color: #d8e6e5; }
-.header-search .input { background: rgba(255,255,255,0.09); color: #fff; border-color: rgba(255,255,255,0.14); }
-.header-search .input::placeholder { color: #9bb3b1; }
-.header-search .ico { color: #9bb3b1; }
-.header-icon-btn { color: #d8e6e5; }
-.header-icon-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
-.header-icon-btn .bubble { background: var(--teal); border-color: #0f1e1d; font-weight: 800; }
-.user-chip .chip-info.bold { color: #fff; }
-.user-chip .chip-info { color: #9bb3b1; }
-.user-chip:hover { background: rgba(255,255,255,0.08); }
+.user-header .header-icon-btn:hover{ background: transparent; border: 0; box-shadow: none; color: var(--text-on-glass); }
+
+/* Estilo Texto .header-search .input — Sesión estudiante */
+.header-search .input{ background: rgba(255,255,255,0.14); color: var(--text-on-glass); border-color: var(--glass-border); }
+
+/* Estilo Texto .header-search .input::placeholder — Sesión estudiante */
+.header-search .input::placeholder{ color: var(--text-secondary-on-glass); }
+
+/* Estilo Texto .header-search .ico — Sesión estudiante */
+.header-search .ico{ color: var(--text-secondary-on-glass); }
+
+/* Estilo Texto .header-icon-btn — Sesión estudiante */
+.header-icon-btn{ color: var(--text-on-glass); }
+
+/* Estilo Texto .header-icon-btn:hover — Sesión estudiante */
+.header-icon-btn:hover{ background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Estilo Texto .header-icon-btn .bubble — Sesión estudiante */
+.header-icon-btn .bubble{ background: var(--institutional-green); border-color: transparent; font-weight: 800; color: #fff; }
+
+/* Estilo Texto .user-chip .chip-info.bold — Sesión estudiante */
+.user-chip .chip-info.bold{ color: var(--text-on-glass); }
+
+/* Estilo Texto .user-chip .chip-info — Sesión estudiante */
+.user-chip .chip-info{ color: var(--text-secondary-on-glass); }
+.user-chip:hover { background: rgba(255,255,255,0.10); }
 /* Avatar del cliente (los avatares de admin no deben verse afectados) */
 body.has-bottom-nav .avatar { background: var(--grad-teal); }
 /* Barra inferior — estética como 2da imagen pero mejorada, bien ubicada en móvil y desktop */
@@ -77,15 +152,23 @@ body.has-bottom-nav .mobile-nav {
   display: none;
 }
 body.has-bottom-nav .mobile-nav .mn-grid { display: flex; gap: 4px; max-width: 520px; margin: 0 auto; }
-body.has-bottom-nav .mobile-nav .mn-item {
+
+/* Estilo Texto body.has-bottom-nav .mobile-nav .mn-item — Sesión estudiante */
+body.has-bottom-nav .mobile-nav .mn-item{
   flex: 1; min-width: 0; padding: 7px 8px; border-radius: 14px;
   color: #8ea8a6; background: transparent; font-size: 0.66rem; font-weight: 700; gap: 3px;
   transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
-body.has-bottom-nav .mobile-nav .mn-item .mn-ico { font-size: 1.32rem; line-height: 1; transition: transform var(--t-fast); }
-body.has-bottom-nav .mobile-nav .mn-item.active { color: #fff; background: rgba(255,255,255,0.10); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+
+/* Estilo Texto body.has-bottom-nav .mobile-nav .mn-item .mn-ico — Sesión estudiante */
+body.has-bottom-nav .mobile-nav .mn-item .mn-ico{ font-size: 1.32rem; line-height: 1; transition: transform var(--t-fast); }
+
+/* Estilo Texto body.has-bottom-nav .mobile-nav .mn-item.active — Sesión estudiante */
+body.has-bottom-nav .mobile-nav .mn-item.active{ color: #fff; background: rgba(255,255,255,0.10); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
 body.has-bottom-nav .mobile-nav .mn-item.active .mn-ico { transform: scale(1.08); }
-body.has-bottom-nav .mobile-nav .mn-item .mn-badge {
+
+/* Estilo Texto body.has-bottom-nav .mobile-nav .mn-item .mn-badge — Sesión estudiante */
+body.has-bottom-nav .mobile-nav .mn-item .mn-badge{
   top: 2px; background: #ff5a3c; border: 2px solid #0f1e1d; font-size: 0.60rem; min-width: 17px; height: 17px;
 }
 body.has-bottom-nav .app { padding-bottom: 76px; }
@@ -94,13 +177,35 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 }
 @media (min-width: 901px) {
   body.has-bottom-nav .mobile-nav {
-    display: block; left: 50%; right: auto; bottom: 18px; transform: translateX(-50%);
+    display: block; left: 50%; right: auto; bottom: 18px; transform: translateX(-50%) translateY(82%);
     width: auto; max-width: 520px; border-radius: 20px;
     background: rgba(15,30,29,0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 12px 32px rgba(0,0,0,0.24), 0 4px 14px rgba(0,0,0,0.18);
     padding: 6px;
+    opacity: 0.94;
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease, box-shadow 0.32s ease;
+    will-change: transform;
   }
-  body.has-bottom-nav .mobile-nav .mn-item.active { background: var(--teal); color: #fff; box-shadow: 0 6px 16px rgba(64,128,126,0.38); transform: translateY(-1px); }
+  body.has-bottom-nav .mobile-nav:hover,
+  body.has-bottom-nav .mobile-nav:focus-within {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.28), 0 6px 18px rgba(0,0,0,0.20);
+  }
+  /* Zona invisible para detectar hover cerca del borde inferior sin exigir puntería exacta */
+  body.has-bottom-nav .mobile-nav::before {
+    content: '';
+    position: absolute;
+    left: -12px; right: -12px; top: -28px; bottom: -18px;
+    border-radius: 20px;
+    pointer-events: auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body.has-bottom-nav .mobile-nav { transition: none; }
+  }
+
+/* Estilo Texto body.has-bottom-nav .mobile-nav .mn-item.active — Sesión estudiante */
+body.has-bottom-nav .mobile-nav .mn-item.active{ background: var(--teal); color: #fff; box-shadow: 0 6px 16px rgba(64,128,126,0.38); transform: translateY(-1px); }
   body.has-bottom-nav .mobile-nav .mn-item .mn-badge { border-color: rgba(15,30,29,0.94); top: 4px; }
   body.has-bottom-nav .app { padding-bottom: 88px; }
 }
@@ -125,7 +230,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   min-height: 560px;
 }
 .home-hero .hh-copy { max-width: 560px; align-self: end; padding-bottom: 6px; }
-.home-hero .hh-eyebrow {
+
+/* Estilo Texto .home-hero .hh-eyebrow — Sesión estudiante */
+.home-hero .hh-eyebrow{
   display: inline-flex; align-items: center; gap: 8px;
   background: rgba(255,255,255,0.13); color: #d6ecea;
   border: 1px solid rgba(255,255,255,0.20);
@@ -133,22 +240,61 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   font-size: 0.66rem; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase;
   backdrop-filter: blur(6px);
 }
-.home-hero .hh-welcome {
+
+/* Estilo Texto .home-hero .hh-welcome — Sesión estudiante */
+.home-hero .hh-welcome{
   margin-top: 10px; color: rgba(255,255,255,0.92); font-size: clamp(0.72rem, 1.4vw, 0.84rem);
   font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; line-height: 1;
   opacity: 0.92;
 }
-.home-hero h1 {
+
+/* Estilo Texto .home-hero h1 — Sesión estudiante */
+.home-hero h1{
   color: #fff; font-size: clamp(1.9rem, 4.4vw, 3.2rem); font-weight: 900;
   line-height: 0.98; margin: 10px 0 12px; letter-spacing: -0.03em; text-shadow: 0 2px 18px rgba(0,0,0,0.28);
 }
-.home-hero h1 .hl { color: #8fe0d8; font-weight: 900; }
-.home-hero .hh-sub {
-  color: rgba(255,255,255,0.86); font-size: clamp(0.94rem, 1.7vw, 1.05rem);
-  line-height: 1.55; max-width: 500px;
+
+/* Estilo Texto .home-hero h1 .hl — Sesión estudiante */
+.home-hero h1 .hl{ color: #8fe0d8; font-weight: 900; }
+
+/* Estilo Texto .home-hero h1, .home-hero h1 .hl — Sesión estudiante */
+.home-hero h1,
+.home-hero h1 .hl{
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+  paint-order: stroke fill;
 }
+
+/* Formato título: conserva el tamaño propio de cada encabezado. */
+/* Estilo Texto body.has-bottom-nav .title-format — Sesión estudiante */
+body.has-bottom-nav .title-format{
+  color: #fff;
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+  paint-order: stroke fill;
+}
+
+/* Estilo Texto body.has-bottom-nav .title-format .title-format-color-2 — Sesión estudiante */
+body.has-bottom-nav .title-format .title-format-color-2{
+  color: #8fe0d8;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+}
+
+/* Estilo Texto .home-hero .hh-sub — Sesión estudiante */
+.home-hero .hh-sub{
+  color: rgba(255,255,255,0.86); font-size: clamp(0.9rem, 1.7vw, 0.9rem); font-family: "Sekuya", system-ui, sans-serif;
+  line-height: 1.55; max-width: 600px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+
+}
+.home-sub .hh-sub { text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82); }
 .home-hero .hh-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
-.home-hero .hh-btn {
+
+/* Estilo Texto .home-hero .hh-btn — Sesión estudiante */
+.home-hero .hh-btn{
   display: inline-flex; align-items: center; gap: 9px;
   background: var(--teal); color: #fff; border-radius: 999px;
   padding: 13px 26px; font-weight: 800; font-size: 0.98rem;
@@ -156,14 +302,17 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   transition: transform var(--t-fast), filter var(--t-fast), background var(--t-fast);
 }
 .home-hero .hh-btn:hover { transform: translateY(-2px); filter: brightness(1.07); }
-.home-hero .hh-btn.ghost {
+
+/* Estilo Texto .home-hero .hh-btn.ghost — Sesión estudiante */
+.home-hero .hh-btn.ghost{
   background: rgba(255,255,255,0.14); color: #fff;
   border: 1.5px solid rgba(255,255,255,0.62); box-shadow: none; backdrop-filter: blur(6px);
 }
 .home-hero .hh-btn.ghost:hover { background: rgba(255,255,255,0.22); }
 
 /* estado abierto/cerrado — pill sutil */
-.home-hero .hh-status {
+/* Estilo Texto .home-hero .hh-status — Sesión estudiante */
+.home-hero .hh-status{
   display: inline-flex; align-items: center; gap: 9px; margin-top: 22px;
   font-weight: 700; font-size: 0.84rem; color: #fff;
   background: rgba(255,255,255,0.13); padding: 8px 14px; border-radius: 999px;
@@ -195,7 +344,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   padding: 6px 8px 14px; z-index: 1;
 }
 .cat-banner-left { display: flex; align-items: center; gap: 18px; }
-.cat-s {
+
+/* Estilo Texto .cat-s — Sesión estudiante */
+.cat-s{
   width: 78px; height: 78px; flex-shrink: 0;
   background: transparent; color: #e0fffe;
   border: 0; border-radius: 0; display: grid; place-items: center;
@@ -205,11 +356,21 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 }
 .cat-s img { width: 64%; height: 64%; object-fit: contain; }
 .cat-titles { }
-.cat-title { line-height: 0.95; }
-.cat-title { font-family: "Playfair Display", serif; }
-.cat-t-white { color: #fff; font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; }
-.cat-t-teal { color: #2ec5b8; font-size: 1.85rem; font-weight: 900; letter-spacing: -0.02em; }
-.cat-sub { color: rgba(255,255,255,0.85); font-size: 0.78rem; margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+
+/* Estilo Texto .cat-title — Sesión estudiante */
+.cat-title{ line-height: 0.95; }
+
+/* Estilo Texto .cat-title — Sesión estudiante */
+.cat-title{ font-family: "Playfair Display", serif; }
+
+/* Estilo Texto .cat-t-white — Sesión estudiante */
+.cat-t-white{ color: #fff; font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; }
+
+/* Estilo Texto .cat-t-teal — Sesión estudiante */
+.cat-t-teal{ color: #2ec5b8; font-size: 1.85rem; font-weight: 900; letter-spacing: -0.02em; }
+
+/* Estilo Texto .cat-sub — Sesión estudiante */
+.cat-sub{ color: rgba(255,255,255,0.85); font-size: 0.78rem; margin-top: 6px; display: flex; align-items: center; gap: 8px; }
 .cat-sub-line { display: inline-block; width: 28px; height: 2px; background: #2ec5b8; border-radius: 2px; }
 .cat-banner-deco {
   display: none;
@@ -218,7 +379,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   position: relative; z-index: 1;
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 4px;
 }
-.cat-pill-card {
+
+/* Estilo Texto .cat-pill-card — Sesión estudiante */
+.cat-pill-card{
   display: flex; align-items: center; gap: 10px;
   background: #fff; border-radius: 12px; padding: 12px 12px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.12); text-decoration: none;
@@ -233,14 +396,22 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .cat-pill-card:nth-child(6) { animation-delay: 0.24s; }
 @keyframes catIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .cat-pill-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,0.16); }
-.cat-pill-card .cp-ico {
+
+/* Estilo Texto .cat-pill-card .cp-ico — Sesión estudiante */
+.cat-pill-card .cp-ico{
   width: 38px; height: 38px; flex-shrink: 0; border-radius: 9px;
   background: #f0fffe; border: 1px solid #c8ece9; color: var(--teal);
   display: grid; place-items: center; font-size: 1.2rem;
 }
-.cat-pill-card .cp-name { color: var(--ink); font-weight: 800; font-size: 0.84rem; line-height: 1.1; }
-.cat-pill-card .cp-count { color: var(--muted); font-size: 0.72rem; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
-.cat-pill-card .cp-badge {
+
+/* Estilo Texto .cat-pill-card .cp-name — Sesión estudiante */
+.cat-pill-card .cp-name{ color: var(--ink); font-weight: 800; font-size: 0.84rem; line-height: 1.1; }
+
+/* Estilo Texto .cat-pill-card .cp-count — Sesión estudiante */
+.cat-pill-card .cp-count{ color: var(--muted); font-size: 0.72rem; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+
+/* Estilo Texto .cat-pill-card .cp-badge — Sesión estudiante */
+.cat-pill-card .cp-badge{
   width: 18px; height: 18px; border-radius: 50%; background: #2ec5b8; color: #fff;
   display: inline-grid; place-items: center; font-size: 0.68rem; font-weight: 800; flex-shrink: 0;
 }
@@ -254,12 +425,16 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   margin: 28px 0 16px;
 }
-.reco-title {
+
+/* Estilo Texto .reco-title — Sesión estudiante */
+.reco-title{
   color: var(--ink); font-size: 1.05rem; font-weight: 900; letter-spacing: 0.02em; text-transform: uppercase;
   position: relative; padding-bottom: 6px;
 }
 .reco-title::after { content: ''; position: absolute; left: 0; bottom: 0; width: 36px; height: 3px; background: var(--teal); border-radius: 2px; }
-.reco-btn {
+
+/* Estilo Texto .reco-btn — Sesión estudiante */
+.reco-btn{
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--teal); color: #fff; font-size: 0.82rem; font-weight: 800;
   padding: 9px 18px; border-radius: 999px; box-shadow: 0 6px 14px rgba(64,128,126,0.28);
@@ -288,13 +463,17 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .product-card:nth-child(4) { animation-delay: 0.19s; }
 @keyframes prodIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
 .product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(17,28,27,0.14), 0 8px 16px rgba(17,28,27,0.08); border-color: #c8ece9; }
-.product-media {
+
+/* Estilo Texto .product-media — Sesión estudiante */
+.product-media{
   height: 190px; position: relative; overflow: hidden;
   background: #fff; display: flex; align-items: center; justify-content: center; color: var(--teal-700); font-size: 3.9rem;
   border-bottom: 1px solid #eef2f1;
 }
 .product-media::before, .product-media::after { display: none; } /* waves now via spans */
-.product-media .p-cat {
+
+/* Estilo Texto .product-media .p-cat — Sesión estudiante */
+.product-media .p-cat{
   position: absolute; top: 11px; left: 11px; z-index: 3;
   background: #fff; border: 1px solid #d0ece9; color: #0e7a6e;
   font-size: 0.62rem; font-weight: 800; letter-spacing: 0.05em; padding: 5px 11px; border-radius: 999px;
@@ -302,23 +481,41 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 }
 .product-media .p-emoji { position: relative; z-index: 2; filter: drop-shadow(0 12px 18px rgba(0,0,0,0.13)); transition: transform 0.36s cubic-bezier(0.34,1.56,0.64,1); }
 .product-card:hover .p-emoji { transform: scale(1.10) translateY(-2px); }
-.product-media .low-stock-tag {
+
+/* Estilo Texto .product-media .low-stock-tag — Sesión estudiante */
+.product-media .low-stock-tag{
   position: absolute; right: 10px; bottom: 10px; z-index: 2;
   background: #fff; border: 1px solid #f0d9a8; color: #8a6a1f; font-size: 0.60rem; font-weight: 800;
   padding: 4px 9px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
 .product-body { padding: 16px 16px 16px; }
-.product-name { color: var(--ink); font-weight: 900; font-size: 1.02rem; line-height: 1.2; letter-spacing: -0.01em; }
-.product-desc { color: #6e7d7b; font-size: 0.82rem; margin: 6px 0 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.45em; }
+
+/* Estilo Texto .product-name — Sesión estudiante */
+.product-name{ color: var(--ink); font-weight: 900; font-size: 1.02rem; line-height: 1.2; letter-spacing: -0.01em; }
+
+/* Estilo Texto .product-desc — Sesión estudiante */
+.product-desc{ color: #6e7d7b; font-size: 0.82rem; margin: 6px 0 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.45em; }
 .product-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.product-price { color: #0e7a6e; font-weight: 900; font-size: 1.18rem; letter-spacing: -0.015em; }
-.product-price small { color: #8a9a99; font-weight: 600; font-size: 0.72rem; margin-right: 2px; }
-.prep-tag { background: #f1f5f4; color: #5a6b69; border: 1px solid #e2e8e7; border-radius: 999px; padding: 5px 10px; font-size: 0.66rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
-.product-card .btn { border-radius: 11px; font-weight: 800; font-size: 0.84rem; padding: 9px 14px; }
+
+/* Estilo Texto .product-price — Sesión estudiante */
+.product-price{ color: #0e7a6e; font-weight: 900; font-size: 1.18rem; letter-spacing: -0.015em; }
+
+/* Estilo Texto .product-price small — Sesión estudiante */
+.product-price small{ color: #8a9a99; font-weight: 600; font-size: 0.72rem; margin-right: 2px; }
+
+/* Estilo Texto .prep-tag — Sesión estudiante */
+.prep-tag{ background: #f1f5f4; color: #5a6b69; border: 1px solid #e2e8e7; border-radius: 999px; padding: 5px 10px; font-size: 0.66rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+
+/* Estilo Texto .product-card .btn — Sesión estudiante */
+.product-card .btn{ border-radius: 11px; font-weight: 800; font-size: 0.84rem; padding: 9px 14px; }
 .product-card .btn-primary { background: var(--teal); border-color: var(--teal); box-shadow: 0 8px 18px rgba(64,128,126,0.26); }
 .product-card .btn-primary:hover:not(:disabled) { background: var(--teal-600); border-color: var(--teal-600); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(64,128,126,0.32); }
-.product-card .btn-outline { color: var(--teal-700); border-color: #c8ddd9; background: #fff; }
-.product-card .btn-outline:hover:not(:disabled) { background: #f0fffe; color: var(--teal-700); border-color: #7fcfc8; }
+
+/* Estilo Texto .product-card .btn-outline — Sesión estudiante */
+.product-card .btn-outline{ color: var(--teal-700); border-color: #c8ddd9; background: #fff; }
+
+/* Estilo Texto .product-card .btn-outline:hover:not(:disabled) — Sesión estudiante */
+.product-card .btn-outline:hover:not(:disabled){ background: #f0fffe; color: var(--teal-700); border-color: #7fcfc8; }
 .sold-flag span { background: #1a2423; }
 .product-card.disabled { opacity: 0.62; }
 
@@ -339,11 +536,10 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   .menu-page::before { background: rgba(255,255,255,0.16); }
 }
 
-/* Cristal compartido con Landing para las superficies del Panel Cliente. */
+/* Cristal cliente — STACK obligatorio: background + backdrop-filter + border + shadow + radius */
 body.has-bottom-nav .card,
 body.has-bottom-nav .product-card,
 body.has-bottom-nav .order-card,
-body.has-bottom-nav .cat-banner,
 body.has-bottom-nav .cat-pill-card,
 body.has-bottom-nav .menu-side,
 body.has-bottom-nav .menu-side-list .cat-pill,
@@ -352,41 +548,97 @@ body.has-bottom-nav .summary-card,
 body.has-bottom-nav .capacity-card,
 body.has-bottom-nav .select-card,
 body.has-bottom-nav .file-drop {
-  background: var(--student-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  background: var(--glass-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
 }
 body.has-bottom-nav .product-media,
 body.has-bottom-nav .cat-pill-card .cp-ico,
 body.has-bottom-nav .menu-side-list .cat-pill .cp-ico {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(255, 255, 255, 0.45);
 }
+
+/* Estilo Texto body.has-bottom-nav .product-card .product-name, body.has-bottom-nav .menu-side .menu-side-title, body.has-… — Sesión estudiante */
 body.has-bottom-nav .product-card .product-name,
-body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-title,
-body.has-bottom-nav .menu-side .menu-side-hint,
-body.has-bottom-nav .menu-lead .ml-title,
-body.has-bottom-nav .menu-lead .ml-sub,
-body.has-bottom-nav .reco-title,
-body.has-bottom-nav .reco-btn,
-body.has-bottom-nav .cat-pill-card .cp-name,
-body.has-bottom-nav .cat-pill-card .cp-count {
-  color: #fff;
+body.has-bottom-nav .cat-pill-card .cp-name{
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
 }
+
+/* Estilo Texto body.has-bottom-nav .product-card .product-desc, body.has-bottom-nav .menu-side .menu-side-hint, body.has-b… — Sesión estudiante */
+body.has-bottom-nav .product-card .product-desc,
+body.has-bottom-nav .menu-side .menu-side-hint,
+body.has-bottom-nav .cat-pill-card .cp-count{
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
+}
+
+/* Estilo Texto body.has-bottom-nav .product-card .product-price — Sesión estudiante */
+body.has-bottom-nav .product-card .product-price{ color: #d4fff0; text-shadow: 0 1px 2px rgba(0,0,0,0.24); }
+
+/* Estilo Texto body.has-bottom-nav .product-card .product-price small — Sesión estudiante */
+body.has-bottom-nav .product-card .product-price small{ color: rgba(255,255,255,0.82); }
+
+/* Estilo Texto body.has-bottom-nav .product-card .bx, body.has-bottom-nav .product-card .product-media .bx, body.has-botto… — Sesión estudiante */
+body.has-bottom-nav .product-card .bx,
+body.has-bottom-nav .product-card .product-media .bx,
+body.has-bottom-nav .capacity-card .bx,
+body.has-bottom-nav .order-card .bx{ color: rgba(255,255,255,0.94); }
 
 /* ============================================================
    MENÚ — NUEVO LAYOUT: sidebar de categorías siempre visible
    Todas las categorías a la vista, estética en cualquier tamaño
    ============================================================ */
 .menu-lead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.menu-lead .ml-title { font-size: clamp(1.65rem, 3.2vw, 2.15rem); font-weight: 900; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
-.menu-lead .ml-title span { color: var(--teal); }
-.menu-lead .ml-sub { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
-.ml-badge {
+
+/* Estilo Texto .menu-lead .ml-title — Sesión estudiante */
+.menu-lead .ml-title{ font-size: clamp(2.5rem, 3.2vw, 2.5rem); font-family: "Playfair Display", system-ui, sans-serif; font-weight: 900; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+
+/* Estilo Texto Mi perfil y Mis pedidos — Sesión estudiante */
+body.has-bottom-nav .menu-title-format {
+  font-size: clamp(2.5rem, 3.2vw, 2.5rem);
+  font-family: "Playfair Display", system-ui, sans-serif;
+}
+
+/* Estilo Texto .menu-lead .ml-title span — Sesión estudiante */
+.menu-lead .ml-title span{ color: var(--teal); }
+
+/* Estilo Texto .menu-lead .ml-sub — Sesión estudiante */
+.menu-lead .ml-sub{
+    font-family: "Sekuya", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    margin-top: 6px;
+
+}
+.menu-lead .ml-sub{ text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82); }
+
+/* Estilo Texto Subtítulos de perfil y pedidos — Sesión estudiante */
+body.has-bottom-nav .doodle-subtext{
+    font-family: "Sekuya", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82);
+}
+
+/* Estilo Texto Parte turquesa de subtítulos — Sesión estudiante */
+body.has-bottom-nav .doodle-subtext .doodle-teal{ color: #8fe0d8 !important; }
+
+/* Estilo Texto Parte blanca de subtítulos — Sesión estudiante */
+body.has-bottom-nav .doodle-subtext .doodle-white{ color: #fff !important; }
+
+/* Estilo Texto Todo rico y recién — Sesión estudiante */
+.menu-lead .ml-sub-white { color: #8fe0d8;; }
+
+/* Estilo Texto Preparado en la cafetería — Sesión estudiante */
+.menu-lead .ml-sub-teal { color: #fff; }
+/* Estilo Texto .ml-badge — Sesión estudiante */
+.ml-badge{
   background: var(--teal); color: #fff; font-weight: 850; font-size: 0.84rem;
   padding: 8px 16px; border-radius: 999px; box-shadow: 0 6px 14px rgba(64,128,126,0.24);
   white-space: nowrap; align-self: center;
@@ -398,74 +650,168 @@ body.has-bottom-nav .cat-pill-card .cp-count {
   padding: 14px; box-shadow: 0 6px 18px rgba(17,28,27,0.06);
 }
 .menu-side-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
-.menu-side-title { font-weight: 900; color: var(--ink); font-size: 0.92rem; letter-spacing: -0.01em; }
+
+/* Estilo Texto .menu-side-title — Sesión estudiante */
+.menu-side-title{ font-weight: 900; color: var(--ink); font-size: 0.92rem; letter-spacing: -0.01em; }
 .menu-side-list { display: flex; flex-direction: column; gap: 8px; }
-.menu-side-list .cat-pill {
+
+/* Estilo Texto .menu-side-list .cat-pill — Sesión estudiante */
+.menu-side-list .cat-pill{
   width: 100%; display: flex; align-items: center; gap: 10px;
   padding: 11px 12px; border-radius: 12px; cursor: pointer; text-align: left;
   background: #fff; border: 1px solid var(--line); color: var(--ink);
   font-weight: 750; font-size: 0.88rem; box-shadow: 0 2px 8px rgba(17,28,27,0.04);
   transition: transform var(--t-fast), box-shadow var(--t-fast), background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
 }
-.menu-side-list .cat-pill .cp-ico {
+
+/* Estilo Texto .menu-side-list .cat-pill .cp-ico — Sesión estudiante */
+.menu-side-list .cat-pill .cp-ico{
   width: 36px; height: 36px; border-radius: 10px; background: var(--teal-50); border: 1px solid var(--teal-100);
   display: grid; place-items: center; font-size: 1.1rem; flex-shrink: 0; color: var(--teal);
 }
 .menu-side-list .cat-pill .cp-name { flex: 1; text-align: left; }
-.menu-side-list .cat-pill .cp-badge {
+
+/* Estilo Texto .menu-side-list .cat-pill .cp-badge — Sesión estudiante */
+.menu-side-list .cat-pill .cp-badge{
   min-width: 22px; height: 22px; border-radius: 999px; background: var(--teal-50); color: var(--teal-700);
   display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 800; padding: 0 7px; border: 1px solid var(--teal-100);
 }
 .menu-side-list .cat-pill:hover { border-color: var(--teal-100); background: var(--teal-50); transform: translateX(2px); box-shadow: 0 6px 14px rgba(17,28,27,0.08); }
-.menu-side-list .cat-pill.active { background: var(--teal); border-color: var(--teal); color: #fff; box-shadow: 0 8px 18px rgba(64,128,126,0.28); }
-.menu-side-list .cat-pill.active .cp-ico { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.28); color: #fff; }
-.menu-side-list .cat-pill.active .cp-badge { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.28); color: #fff; }
+/* Cat-pill activo: acento blanco sólido intencional — unificado con admin (ver reporte) */
+/* Estilo Texto .menu-side-list .cat-pill.active — Sesión estudiante */
+.menu-side-list .cat-pill.active{ background: #ffffff; border-color: #ffffff; color: var(--teal-700); box-shadow: 0 8px 18px rgba(6,14,13,0.28); }
+
+/* Estilo Texto .menu-side-list .cat-pill.active .cp-ico — Sesión estudiante */
+.menu-side-list .cat-pill.active .cp-ico{ background: var(--teal-50); border-color: var(--teal-100); color: var(--teal-700); }
+
+/* Estilo Texto .menu-side-list .cat-pill.active .cp-badge — Sesión estudiante */
+.menu-side-list .cat-pill.active .cp-badge{ background: var(--teal); border-color: var(--teal); color: #fff; }
 .menu-main { min-width: 0; }
 .menu-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; }
 .menu-toolbar .mt-search { position: relative; flex: 1 1 320px; max-width: 100%; }
-.menu-toolbar .mt-search .input {
+
+/* Estilo Texto .menu-toolbar .mt-search .input — Sesión estudiante */
+.menu-toolbar .mt-search .input{
   padding-left: 42px; border-radius: 14px; background: #fff; border: 1px solid var(--line);
   box-shadow: 0 2px 10px rgba(17,28,27,0.05); font-size: 0.92rem;
 }
 .menu-toolbar .mt-search .input:focus { border-color: var(--teal-100); box-shadow: 0 0 0 3px rgba(64,128,126,0.12); }
-.menu-toolbar .mt-search .leading-ico { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--teal); font-size: 0.95rem; }
+
+/* Estilo Texto .menu-toolbar .mt-search .leading-ico — Sesión estudiante */
+.menu-toolbar .mt-search .leading-ico{ position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--teal); font-size: 0.95rem; }
 @media (max-width: 900px) {
   .menu-layout { grid-template-columns: 1fr; }
   .menu-side { position: static; padding: 12px; }
   .menu-side-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .menu-side-list .cat-pill { padding: 10px 11px; font-size: 0.82rem; }
+
+/* Estilo Texto .menu-side-list .cat-pill — Sesión estudiante */
+.menu-side-list .cat-pill{ padding: 10px 11px; font-size: 0.82rem; }
 }
 @media (max-width: 560px) {
   .menu-side-list { grid-template-columns: repeat(2, 1fr); }
-  .menu-side-title { font-size: 0.86rem; }
+
+/* Estilo Texto .menu-side-title — Sesión estudiante */
+.menu-side-title{ font-size: 0.86rem; }
 }
 
 /* ============================================================
    DETALLE DE PRODUCTO — coherente con nuevo sistema
    ============================================================ */
-.prod-detail .product-media { background: rgba(0, 0, 0, 0.25); color: #fff; }
-.prod-detail h1 { color: var(--ink); }
-.prod-detail .muted { color: var(--muted); }
+/* Estilo Texto .prod-detail .product-media — Sesión estudiante */
+.prod-detail .product-media{ background: rgba(0, 0, 0, 0.25); color: #fff; }
+
+/* Estilo Texto .prod-detail h1 — Sesión estudiante */
+.prod-detail h1{ color: var(--ink); }
+
+/* Estilo Texto .prod-detail .muted — Sesión estudiante */
+.prod-detail .muted{ color: var(--muted); }
 .prod-detail .qty-stepper { border-radius: 12px; border-color: var(--line-strong); }
-.prod-detail .qty-stepper button { color: var(--teal-700); }
-.prod-detail #btnAdd { background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(64,128,126,0.28); }
+
+/* Estilo Texto .prod-detail .qty-stepper button — Sesión estudiante */
+.prod-detail .qty-stepper button{ color: var(--teal-700); }
+
+/* Estilo Texto .prod-detail #btnAdd — Sesión estudiante */
+.prod-detail #btnAdd{ background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(64,128,126,0.28); }
 .prod-detail #btnAdd:disabled { background: var(--muted-2); box-shadow: none; }
+
+/* Estilo Texto Botón Volver al menú — Sesión estudiante */
+body.has-bottom-nav .back-to-menu-btn {
+  border: 1px solid var(--teal-700);
+  color: var(--teal-700);
+  background: rgba(255, 255, 255, 0.82);
+}
+body.has-bottom-nav .back-to-menu-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(23, 52, 50, 0.28);
+}
+
+/* Estilo Texto Resumen del pedido — Sesión estudiante */
+body.has-bottom-nav .cart-summary-title { color: #fff; }
+
+/* Estilo Texto Cambio de contraseña: título y etiquetas — Sesión estudiante */
+body.has-bottom-nav .change-pass-title,
+body.has-bottom-nav .change-pass-label { color: #fff; }
+
+/* Estilo Texto Botón Guardar cambio de contraseña — Sesión estudiante */
+body.has-bottom-nav .change-pass-save { border: 1px solid var(--teal); }
+body.has-bottom-nav .change-pass-save:disabled {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
+}
+
+/* Estilo Texto Editar perfil: título y etiquetas — Sesión estudiante */
+body.has-bottom-nav .edit-profile-title,
+body.has-bottom-nav .edit-profile-label { color: #fff; }
+
+/* Estilo Texto Botón Guardar edición de perfil — Sesión estudiante */
+body.has-bottom-nav .edit-profile-save { border: 1px solid var(--teal); }
+body.has-bottom-nav .edit-profile-save:disabled {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
+}
 
 /* ---------- Textos generales cliente ----------
    (Prefijados con body.has-bottom-nav para NO alterar el panel admin) */
-body.has-bottom-nav .page-title h1, body.has-bottom-nav .section-title { color: var(--ink); }
-body.has-bottom-nav .page-sub { color: var(--muted); }
-body.has-bottom-nav .page .btn-outline { color: var(--teal-700); border-color: var(--line-strong); }
+/* Estilo Texto body.has-bottom-nav .page-title h1, body.has-bottom-nav .section-title — Sesión estudiante */
+body.has-bottom-nav .page-title h1, body.has-bottom-nav .section-title{ color: var(--ink); }
+
+/* Estilo Texto body.has-bottom-nav .page-sub — Sesión estudiante */
+body.has-bottom-nav .page-sub{ color: var(--muted); }
+
+/* Estilo Texto body.has-bottom-nav .page .btn-outline — Sesión estudiante */
+body.has-bottom-nav .page .btn-outline{ color: var(--teal-700); border-color: var(--line-strong); }
 body.has-bottom-nav .page .btn-outline:hover:not(:disabled) { background: var(--teal-50); }
 body.has-bottom-nav .page .alert { border-radius: 14px; }
-body.has-bottom-nav .page .badge-primary { background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
+
+/* Estilo Texto body.has-bottom-nav .page .badge-primary — Sesión estudiante */
+body.has-bottom-nav .page .badge-primary{ background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100); }
 
 body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-bottom-nav .grid-4 .card {
-  border-radius: 18px; border-color: var(--line); background: #fff; box-shadow: 0 4px 14px rgba(17,28,27,0.06);
+  border-radius: var(--glass-radius); border-color: var(--glass-border);
+  background: var(--glass-surface-2); backdrop-filter: var(--glass-blur-b);
+  -webkit-backdrop-filter: var(--glass-blur-b);
+  box-shadow: var(--glass-shadow);
 }
-body.has-bottom-nav .card .card-title { color: var(--ink); }
-body.has-bottom-nav .card .card-sub { color: var(--muted); }
-body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .card .kv dd { color: var(--ink); }
+
+/* Estilo Texto body.has-bottom-nav .card .card-title — Sesión estudiante */
+body.has-bottom-nav .card .card-title{ color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+/* Estilo Texto body.has-bottom-nav .card .card-sub — Sesión estudiante */
+body.has-bottom-nav .card .card-sub{ color: rgba(255, 255, 255, 0.85); }
+
+/* Estilo Texto body.has-bottom-nav .card .kv dt — Sesión estudiante */
+body.has-bottom-nav .card .kv dt{ color: rgba(255, 255, 255, 0.72); }
+
+/* Estilo Texto body.has-bottom-nav .card .kv dd — Sesión estudiante */
+body.has-bottom-nav .card .kv dd{ color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30); }
+body.has-bottom-nav .card-header,
+body.has-bottom-nav .card-footer,
+body.has-bottom-nav .security-row,
+body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -474,128 +820,232 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
 }
 @media (max-width: 560px) {
   .cat-grid { grid-template-columns: 1fr 1fr; }
-  .home-hero h1 { font-size: 2rem; }
+
+/* Estilo Texto .home-hero h1 — Sesión estudiante */
+.home-hero h1{ font-size: 2rem; }
   .home-hero .hh-btn.ghost { display: none; }
 }
 
-  /* Refuerzo final del cristal para evitar overrides de reglas históricas. */
-  body.has-bottom-nav .card,
-  body.has-bottom-nav .product-card,
-  body.has-bottom-nav .order-card,
-  body.has-bottom-nav .cat-banner,
-  body.has-bottom-nav .cat-pill-card,
-  body.has-bottom-nav .menu-side,
-  body.has-bottom-nav .menu-side-list .cat-pill,
-  body.has-bottom-nav .orders-overview,
-  body.has-bottom-nav .summary-card,
-  body.has-bottom-nav .capacity-card,
-  body.has-bottom-nav .select-card,
-  body.has-bottom-nav .file-drop {
-    background: var(--student-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  }
-  body.has-bottom-nav .prod-detail .product-media { background: var(--student-glass); }
+  /* Cristal: product media se integra con el panel glass */
+  body.has-bottom-nav .prod-detail .product-media { background: rgba(64, 128, 126, 0.38); }
 
-  /* Pedidos: separación constante y lectura clara sobre el cristal. */
+  /* Pedidos: separación constante */
   body.has-bottom-nav #currentOrders,
   body.has-bottom-nav #historyOrders {
     display: grid;
     gap: var(--sp-5);
   }
 
-  body.has-bottom-nav .card,
-  body.has-bottom-nav .product-card,
-  body.has-bottom-nav .order-card,
-  body.has-bottom-nav .cat-banner,
-  body.has-bottom-nav .cat-pill-card,
-  body.has-bottom-nav .menu-side,
-  body.has-bottom-nav .menu-side-list .cat-pill,
-  body.has-bottom-nav .orders-overview,
-  body.has-bottom-nav .summary-card,
-  body.has-bottom-nav .capacity-card,
-  body.has-bottom-nav .select-card,
-  body.has-bottom-nav .file-drop {
-    color: #FFFFFF;
-  }
+  /* Cristal: iconos y tags priorizan contraste sobre el verde translúcido */
+/* Estilo Texto body.has-bottom-nav .product-card .product-media — Sesión estudiante */
+body.has-bottom-nav .product-card .product-media{ color: #ffffff; }
 
-  body.has-bottom-nav .card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .product-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .order-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .cat-banner :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .cat-pill-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .menu-side :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .orders-overview :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .summary-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .capacity-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .select-card :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li),
-  body.has-bottom-nav .file-drop :where(h1, h2, h3, h4, p, span, strong, b, small, dt, dd, label, li) {
-    color: #FFFFFF;
-  }
+/* Estilo Texto body.has-bottom-nav .product-media .p-cat, body.has-bottom-nav .product-media .p-cat i — Sesión estudiante */
+body.has-bottom-nav .product-media .p-cat,
+  body.has-bottom-nav .product-media .p-cat i{ color: #0e7a6e; }
 
-  /* Contraste de iconos y badges con superficies claras. */
-  body.has-bottom-nav .product-card .product-media { color: var(--teal-700); }
-  body.has-bottom-nav .product-media .p-cat { color: #0e7a6e; }
-  body.has-bottom-nav .product-media .p-cat i { color: #0e7a6e; }
-  body.has-bottom-nav .product-card .prep-tag { color: #5a6b69; }
-  body.has-bottom-nav .ci-media,
+/* Estilo Texto body.has-bottom-nav .product-card .prep-tag — Sesión estudiante */
+body.has-bottom-nav .product-card .prep-tag{ color: #ffffff; background: rgba(15, 45, 43, 0.52); border-color: rgba(255, 255, 255, 0.18); }
+
+/* Estilo Texto body.has-bottom-nav .ci-media, body.has-bottom-nav .select-card .sc-ico, body.has-bottom-nav .security-icon — Sesión estudiante */
+body.has-bottom-nav .ci-media,
   body.has-bottom-nav .select-card .sc-ico,
-  body.has-bottom-nav .security-icon { color: var(--teal-700); }
-  body.has-bottom-nav .menu-side-hint { color: var(--muted); }
-  body.has-bottom-nav .badge-primary { color: var(--teal-700); }
-  body.has-bottom-nav .badge-success { color: var(--success-strong); }
-  body.has-bottom-nav .badge-warning { color: var(--warning-strong); }
-  body.has-bottom-nav .badge-danger { color: var(--danger-strong); }
-  body.has-bottom-nav .badge-info { color: var(--info); }
-  body.has-bottom-nav .badge-neutral { color: var(--neutral); }
-  body.has-bottom-nav .badge-outline { color: var(--text-2); }
-  body.has-bottom-nav .alert.success { color: var(--success-strong); }
-  body.has-bottom-nav .alert.warning { color: var(--warning-strong); }
-  body.has-bottom-nav .alert.danger { color: var(--danger-strong); }
-  body.has-bottom-nav .alert.info { color: var(--info); }
-  body.has-bottom-nav .alert.neutral { color: var(--neutral); }
+  body.has-bottom-nav .security-icon{ color: #14464b; }
 
-  /* Jerarquía de texto directo en paneles principales. */
-  body.has-bottom-nav .page-title h1,
-  body.has-bottom-nav .section-title,
-  body.has-bottom-nav .card > .card-header .card-title,
-  body.has-bottom-nav .card > .card-header .card-sub,
-  body.has-bottom-nav .profile-hero > div > h2,
-  body.has-bottom-nav .order-card > .order-head .order-num,
-  body.has-bottom-nav .order-card > .order-glance .order-glance-label {
-    color: #FFFFFF;
+  /* Pills de categoría del menú: texto e interacción coherentes con el cristal */
+/* Estilo Texto body.has-bottom-nav .menu-side-list .cat-pill — Sesión estudiante */
+body.has-bottom-nav .menu-side-list .cat-pill{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .menu-side-list .cat-pill:hover — Sesión estudiante */
+body.has-bottom-nav .menu-side-list .cat-pill:hover{ background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.48); color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .menu-side-list .cat-pill .cp-name — Sesión estudiante */
+body.has-bottom-nav .menu-side-list .cat-pill .cp-name{ color: #ffffff; }
+
+
+/* Estilo Texto body.has-bottom-nav .badge-primary, body.has-bottom-nav .badge-success, body.has-bottom-nav .badge-warning,… — Sesión estudiante */
+body.has-bottom-nav .badge-primary,
+  body.has-bottom-nav .badge-success,
+  body.has-bottom-nav .badge-warning,
+  body.has-bottom-nav .badge-danger,
+  body.has-bottom-nav .badge-info,
+  body.has-bottom-nav .badge-neutral,
+  body.has-bottom-nav .badge-outline{ color: #000; }
+  /* Historial — badges de estado solo aquí con fondo sólido para contraste sobre glass */
+/* Estilo Texto body.has-bottom-nav #historyOrders .order-card-history .badge-success — Sesión estudiante */
+body.has-bottom-nav #historyOrders .order-card-history .badge-success{ background: var(--success) !important; color: #ffffff !important; border-color: var(--success-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav #historyOrders .order-card-history .badge-danger — Sesión estudiante */
+body.has-bottom-nav #historyOrders .order-card-history .badge-danger{ background: var(--danger) !important; color: #ffffff !important; border-color: var(--danger-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav #historyOrders .order-card-history .badge-warning — Sesión estudiante */
+body.has-bottom-nav #historyOrders .order-card-history .badge-warning{ background: var(--warning-soft) !important; color: var(--warning-strong) !important; border-color: var(--warning-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav #historyOrders .order-card-history .badge-info — Sesión estudiante */
+body.has-bottom-nav #historyOrders .order-card-history .badge-info{ background: var(--info-soft) !important; color: var(--info) !important; border-color: var(--info) !important; }
+
+/* Estilo Texto body.has-bottom-nav .alert.success, body.has-bottom-nav .alert.warning, body.has-bottom-nav .alert.danger, … — Sesión estudiante */
+body.has-bottom-nav .alert.success,
+  body.has-bottom-nav .alert.warning,
+  body.has-bottom-nav .alert.danger,
+  body.has-bottom-nav .alert.info,
+  body.has-bottom-nav .alert.neutral{ color: #ffffff; }
+
+  /* Encabezados de página y títulos de sección sobre el fondo difuminado:
+     conservan su color oscuro original (no están sobre el cristal) */
+/* Estilo Texto body.has-bottom-nav .page-title h1, body.has-bottom-nav .section-title — Sesión estudiante */
+body.has-bottom-nav .page-title h1,
+  body.has-bottom-nav .section-title{ color: var(--ink); }
+
+/* Estilo Texto body.has-bottom-nav .page-sub — Sesión estudiante */
+body.has-bottom-nav .page-sub{ color: var(--muted); }
+
+  /* Jerarquía de texto sobre el cristal: títulos y cuerpo en blanco legible */
+/* Estilo Texto body.has-bottom-nav .card > .card-header .card-title — Sesión estudiante */
+body.has-bottom-nav .card > .card-header .card-title{
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
   }
+
+/* Estilo Texto body.has-bottom-nav .card > .card-header .card-sub — Sesión estudiante */
+body.has-bottom-nav .card > .card-header .card-sub{ color: rgba(255, 255, 255, 0.85); }
+
+/* Estilo Texto body.has-bottom-nav .card .muted, body.has-bottom-nav .order-card .muted — Sesión estudiante */
+body.has-bottom-nav .card .muted,
+  body.has-bottom-nav .order-card .muted{ color: rgba(255, 255, 255, 0.78); }
+
+/* Estilo Texto body.has-bottom-nav .profile-hero > div > h2 — Sesión estudiante */
+body.has-bottom-nav .profile-hero > div > h2{ color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+/* Estilo Texto body.has-bottom-nav .order-card > .order-head .order-num — Sesión estudiante */
+body.has-bottom-nav .order-card > .order-head .order-num{ color: #eafff8; }
+
+/* Estilo Texto body.has-bottom-nav .order-card > .order-glance .order-glance-label — Sesión estudiante */
+body.has-bottom-nav .order-card > .order-glance .order-glance-label{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .order-card .order-meta — Sesión estudiante */
+body.has-bottom-nav .order-card .order-meta{ color: rgba(255, 255, 255, 0.84); }
+
+/* Estilo Texto body.has-bottom-nav .order-card .tl-label — Sesión estudiante */
+body.has-bottom-nav .order-card .tl-label{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .order-card .tl-time, body.has-bottom-nav .order-card .tl-step.done .tl-label — Sesión estudiante */
+body.has-bottom-nav .order-card .tl-time,
+  body.has-bottom-nav .order-card .tl-step.done .tl-label{ color: rgba(255, 255, 255, 0.76); }
+
+/* Estilo Texto body.has-bottom-nav .order-eta strong — Sesión estudiante */
+body.has-bottom-nav .order-eta strong{ color: #b6ffe9; }
+
+/* Estilo Texto body.has-bottom-nav .cart-item .ci-name — Sesión estudiante */
+body.has-bottom-nav .cart-item .ci-name{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .cart-item .ci-meta — Sesión estudiante */
+body.has-bottom-nav .cart-item .ci-meta{ color: rgba(255, 255, 255, 0.84); }
+
+/* Estilo Texto body.has-bottom-nav .summary-row — Sesión estudiante */
+body.has-bottom-nav .summary-row{ color: rgba(255, 255, 255, 0.84); }
+
+/* Estilo Texto body.has-bottom-nav .summary-row.total — Sesión estudiante */
+body.has-bottom-nav .summary-row.total{ color: #ffffff; border-color: rgba(255, 255, 255, 0.28); }
+
+/* Estilo Texto body.has-bottom-nav .summary-row.total span:last-child — Sesión estudiante */
+body.has-bottom-nav .summary-row.total span:last-child{ color: #d4fff0; }
+
+/* Estilo Texto body.has-bottom-nav .capacity-head h3, body.has-bottom-nav .capacity-num — Sesión estudiante */
+body.has-bottom-nav .capacity-head h3,
+  body.has-bottom-nav .capacity-num{ color: rgba(255, 255, 255, 0.88); }
+
+/* Estilo Texto body.has-bottom-nav .capacity-num b — Sesión estudiante */
+body.has-bottom-nav .capacity-num b{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .select-card .sc-desc — Sesión estudiante */
+body.has-bottom-nav .select-card .sc-desc{ color: rgba(255, 255, 255, 0.82); }
+
+/* Estilo Texto body.has-bottom-nav .select-card .sc-name — Sesión estudiante */
+body.has-bottom-nav .select-card .sc-name{ color: #ffffff; }
+  body.has-bottom-nav .select-card.active { background: rgba(255, 255, 255, 0.30); border-color: rgba(255, 255, 255, 0.62); }
+
+/* Estilo Texto body.has-bottom-nav .file-drop — Sesión estudiante */
+body.has-bottom-nav .file-drop{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .file-drop:hover — Sesión estudiante */
+body.has-bottom-nav .file-drop:hover{ color: var(--teal-700); background: rgba(255, 255, 255, 0.55); border-color: rgba(255, 255, 255, 0.70); }
+
+/* Estilo Texto body.has-bottom-nav .file-drop.success — Sesión estudiante */
+body.has-bottom-nav .file-drop.success{ color: var(--success-strong); background: rgba(230, 246, 238, 0.85); }
+
+  /* Resumen de pedidos sobre cristal */
+/* Estilo Texto body.has-bottom-nav .orders-overview-num — Sesión estudiante */
+body.has-bottom-nav .orders-overview-num{ color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+/* Estilo Texto body.has-bottom-nav .orders-overview .muted — Sesión estudiante */
+body.has-bottom-nav .orders-overview .muted{ color: rgba(255, 255, 255, 0.82); }
+
+/* Estilo Texto body.has-bottom-nav .card .empty-state, body.has-bottom-nav .card .empty-state h3, body.has-bottom-nav .car… — Sesión estudiante */
+body.has-bottom-nav .card .empty-state,
+  body.has-bottom-nav .card .empty-state h3,
+  body.has-bottom-nav .card .empty-state p{ color: rgba(255, 255, 255, 0.88); }
+
+/* Estilo Texto body.has-bottom-nav .card .empty-state h3 — Sesión estudiante */
+body.has-bottom-nav .card .empty-state h3{ text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+  /* Detalle de producto dentro del panel glass */
+/* Estilo Texto body.has-bottom-nav .prod-detail h1, body.has-bottom-nav .prod-detail .label — Sesión estudiante */
+body.has-bottom-nav .prod-detail h1,
+  body.has-bottom-nav .prod-detail .label{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .prod-detail h1 — Sesión estudiante */
+body.has-bottom-nav .prod-detail h1{ text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
+
+/* Estilo Texto body.has-bottom-nav .prod-detail .muted — Sesión estudiante */
+body.has-bottom-nav .prod-detail .muted{ color: rgba(255, 255, 255, 0.82); }
+
+/* Estilo Texto body.has-bottom-nav .prod-detail .checkbox-row — Sesión estudiante */
+body.has-bottom-nav .prod-detail .checkbox-row{ color: rgba(255, 255, 255, 0.90); }
+
+/* Estilo Texto body.has-bottom-nav .prod-detail span[style*="primary-strong"] — Sesión estudiante */
+body.has-bottom-nav .prod-detail span[style*="primary-strong"]{ color: #d4fff0 !important; }
 
   /* Separa el aviso de demanda del panel de capacidad en Mi carrito. */
   body.has-bottom-nav #cartCapacity { margin-top: var(--sp-4); }
 
   /* Historial: número destacado y fecha en una etiqueta visible. */
-  body.has-bottom-nav .order-card-history > div:first-child .order-num {
-    color: var(--primary-light);
+/* Estilo Texto body.has-bottom-nav .order-card-history > div:first-child .order-num — Sesión estudiante */
+body.has-bottom-nav .order-card-history > div:first-child .order-num{
+    color: #d4fff0;
+    text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
   }
-  body.has-bottom-nav .order-card-history > div:first-child .badge-outline {
+
+/* Estilo Texto body.has-bottom-nav .order-card-history .order-history-meta .bold — Sesión estudiante */
+body.has-bottom-nav .order-card-history .order-history-meta .bold{ color: #d4fff0 !important; }
+
+/* Estilo Texto body.has-bottom-nav .security-row b — Sesión estudiante */
+body.has-bottom-nav .security-row b{ color: #ffffff; }
+
+/* Estilo Texto body.has-bottom-nav .order-card-history > div:first-child .badge-outline — Sesión estudiante */
+body.has-bottom-nav .order-card-history > div:first-child .badge-outline{
     background: var(--teal);
     border-color: var(--teal);
     color: #FFFFFF;
     margin-left: 6px;
   }
 
-  /* Notificaciones: mismo cristal del resto del Panel Cliente. */
-  body.has-bottom-nav .toast {
-    background: var(--student-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+  /* Notificaciones: mismo cristal verde del resto del Panel Cliente. */
+/* Estilo Texto body.has-bottom-nav .toast — Sesión estudiante */
+body.has-bottom-nav .toast{
+    background: rgba(64, 128, 126, 0.50);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.30);
     border-left-width: 4px;
     border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 30px rgba(17, 28, 27, 0.18), 0 2px 10px rgba(64, 128, 126, 0.20);
     color: #FFFFFF;
   }
-  body.has-bottom-nav .toast .t-ico,
-  body.has-bottom-nav .toast > span:not(.t-ico) {
+
+/* Estilo Texto body.has-bottom-nav .toast .t-ico, body.has-bottom-nav .toast > span:not(.t-ico) — Sesión estudiante */
+body.has-bottom-nav .toast .t-ico,
+  body.has-bottom-nav .toast > span:not(.t-ico){
     color: #FFFFFF;
   }
 
@@ -604,53 +1054,555 @@ body.has-bottom-nav .card .kv dt { color: var(--muted); } body.has-bottom-nav .c
     background: transparent;
     border-color: var(--teal);
   }
-  body.has-bottom-nav .qty-stepper > button {
+
+/* Estilo Texto body.has-bottom-nav .qty-stepper > button — Sesión estudiante */
+body.has-bottom-nav .qty-stepper > button{
     background: var(--teal);
     color: #fff;
   }
-  body.has-bottom-nav .qty-stepper > button:hover:not(:disabled) {
+
+/* Estilo Texto body.has-bottom-nav .qty-stepper > button:hover:not(:disabled) — Sesión estudiante */
+body.has-bottom-nav .qty-stepper > button:hover:not(:disabled){
     background: var(--teal-600);
     color: #fff;
   }
-  body.has-bottom-nav .qty-stepper > button:disabled {
+
+/* Estilo Texto body.has-bottom-nav .qty-stepper > button:disabled — Sesión estudiante */
+body.has-bottom-nav .qty-stepper > button:disabled{
     background: var(--teal-600);
     color: rgba(255, 255, 255, 0.7);
   }
-  body.has-bottom-nav .qty-stepper .qty-val {
+
+/* Estilo Texto body.has-bottom-nav .qty-stepper .qty-val — Sesión estudiante */
+body.has-bottom-nav .qty-stepper .qty-val{
     min-height: 34px;
     background: #fff;
     color: #111c1b;
   }
 
   /* Pedidos y perfil: botones visibles con la paleta existente. */
-  body.has-bottom-nav .order-card [data-detail],
+/* Estilo Texto body.has-bottom-nav .order-card [data-detail], body.has-bottom-nav .order-card [data-history-detail], body.… — Sesión estudiante */
+body.has-bottom-nav .order-card [data-detail],
   body.has-bottom-nav .order-card [data-history-detail],
   body.has-bottom-nav [data-detail-cancel],
   body.has-bottom-nav #btnEditProfile,
-  body.has-bottom-nav #btnChangePass {
+  body.has-bottom-nav #btnChangePass{
     background: var(--teal);
     border-color: var(--teal);
     color: #fff;
   }
-  body.has-bottom-nav .order-card [data-detail]:hover:not(:disabled),
+
+/* Estilo Texto body.has-bottom-nav .order-card [data-detail]:hover:not(:disabled), body.has-bottom-nav .order-card [data-h… — Sesión estudiante */
+body.has-bottom-nav .order-card [data-detail]:hover:not(:disabled),
   body.has-bottom-nav .order-card [data-history-detail]:hover:not(:disabled),
   body.has-bottom-nav [data-detail-cancel]:hover:not(:disabled),
   body.has-bottom-nav #btnEditProfile:hover:not(:disabled),
-  body.has-bottom-nav #btnChangePass:hover:not(:disabled) {
+  body.has-bottom-nav #btnChangePass:hover:not(:disabled){
     background: var(--teal-600);
     border-color: var(--teal-600);
     color: #fff;
   }
-  body.has-bottom-nav .order-card [data-cancel],
-  body.has-bottom-nav #btnLogout {
+
+/* Estilo Texto body.has-bottom-nav .order-card [data-cancel], body.has-bottom-nav #btnLogout — Sesión estudiante */
+body.has-bottom-nav .order-card [data-cancel],
+  body.has-bottom-nav #btnLogout{
     background: var(--danger);
     border-color: var(--danger);
     color: #fff;
   }
-  body.has-bottom-nav .order-card [data-cancel]:hover:not(:disabled),
-  body.has-bottom-nav #btnLogout:hover:not(:disabled) {
+
+/* Estilo Texto body.has-bottom-nav .order-card [data-cancel]:hover:not(:disabled), body.has-bottom-nav #btnLogout:hover:no… — Sesión estudiante */
+body.has-bottom-nav .order-card [data-cancel]:hover:not(:disabled),
+  body.has-bottom-nav #btnLogout:hover:not(:disabled){
     background: var(--danger-strong);
     border-color: var(--danger-strong);
     color: #fff;
   }
+/* ============================================================
+   Glass verde institucional — TODOS los paneles usuario/cliente
+   Sobrescribe cualquier fondo blanco residual con --glass-bg
+   ============================================================ */
+body.has-bottom-nav .card,
+body.has-bottom-nav .product-card,
+body.has-bottom-nav .order-card,
+body.has-bottom-nav .cat-pill-card,
+body.has-bottom-nav .menu-side,
+body.has-bottom-nav .menu-side-list .cat-pill,
+body.has-bottom-nav .orders-overview,
+body.has-bottom-nav .summary-card,
+body.has-bottom-nav .capacity-card,
+body.has-bottom-nav .select-card,
+body.has-bottom-nav .file-drop,
+body.has-bottom-nav .detail-eta,
+body.has-bottom-nav .grid-2 .card,
+body.has-bottom-nav .grid-3 .card,
+body.has-bottom-nav .grid-4 .card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: 16px !important;
+}
+/* Texto sobre glass usuario */
+/* Estilo Texto body.has-bottom-nav .card .card-title, body.has-bottom-nav .product-card .product-name, body.has-bottom-nav… — Sesión estudiante */
+body.has-bottom-nav .card .card-title,
+body.has-bottom-nav .product-card .product-name,
+body.has-bottom-nav .order-card .order-num,
+body.has-bottom-nav .menu-side .menu-side-title{ color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.22); }
 
+/* Estilo Texto body.has-bottom-nav .card .card-sub, body.has-bottom-nav .product-card .product-desc, body.has-bottom-nav .… — Sesión estudiante */
+body.has-bottom-nav .card .card-sub,
+body.has-bottom-nav .product-card .product-desc,
+body.has-bottom-nav .muted,
+body.has-bottom-nav .page-sub{ color: var(--text-secondary-on-glass) !important; }
+/* Campos, tablas, modales ya cubiertos por main.css; refuerza drawer cliente */
+body.has-bottom-nav .modal,
+body.has-bottom-nav .drawer { background: var(--glass-bg) !important; backdrop-filter: var(--glass-blur) !important; border: 1px solid var(--glass-border) !important; box-shadow: var(--glass-shadow) !important; }
+/* ── Detalle pedido: drawer sobre glass oscuro — solo texto/iconos, mismo fondo ── */
+/* Estilo Texto body.has-bottom-nav .drawer .detail-status .tiny, body.is-adminbar .drawer .detail-status .tiny, body.is-ad… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-status .tiny,
+body.is-adminbar .drawer .detail-status .tiny,
+body.is-admin .drawer .detail-status .tiny{ color: var(--text-secondary-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-number, body.is-adminbar .drawer .detail-number, body.is-admin .drawer … — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-number,
+body.is-adminbar .drawer .detail-number,
+body.is-admin .drawer .detail-number{ color: var(--text-on-glass) !important; text-shadow: 0 1px 3px rgba(0,0,0,0.35) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-eta, body.is-adminbar .drawer .detail-eta, body.is-admin .drawer .detai… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-eta,
+body.is-adminbar .drawer .detail-eta,
+body.is-admin .drawer .detail-eta{ color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-eta .bx, body.is-adminbar .drawer .detail-eta .bx, body.is-admin .drawe… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-eta .bx,
+body.is-adminbar .drawer .detail-eta .bx,
+body.is-admin .drawer .detail-eta .bx{ color: var(--text-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-section h4, body.is-adminbar .drawer .detail-section h4, body.is-admin … — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-section h4,
+body.is-adminbar .drawer .detail-section h4,
+body.is-admin .drawer .detail-section h4{ color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.32) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-item, body.is-adminbar .drawer .detail-item, body.is-admin .drawer .det… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-item,
+body.is-adminbar .drawer .detail-item,
+body.is-admin .drawer .detail-item,
+body.has-bottom-nav .drawer .detail-item span,
+body.is-adminbar .drawer .detail-item span,
+body.is-admin .drawer .detail-item span{ color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.28) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-item .muted, body.is-adminbar .drawer .detail-item .muted, body.is-admi… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-item .muted,
+body.is-adminbar .drawer .detail-item .muted,
+body.is-admin .drawer .detail-item .muted{ color: var(--text-secondary-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-total, body.is-adminbar .drawer .detail-total, body.is-admin .drawer .d… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-total,
+body.is-adminbar .drawer .detail-total,
+body.is-admin .drawer .detail-total{ color: var(--text-on-glass) !important; border-color: rgba(255,255,255,0.22) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-total b, body.is-adminbar .drawer .detail-total b, body.is-admin .drawe… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-total b,
+body.is-adminbar .drawer .detail-total b,
+body.is-admin .drawer .detail-total b{ color: #d4fff0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-facts > div > span, body.is-adminbar .drawer .detail-facts > div > span… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-facts > div > span,
+body.is-adminbar .drawer .detail-facts > div > span,
+body.is-admin .drawer .detail-facts > div > span{ color: var(--text-secondary-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .detail-facts > div > b, body.is-adminbar .drawer .detail-facts > div > b, body… — Sesión administración Bar */
+body.has-bottom-nav .drawer .detail-facts > div > b,
+body.is-adminbar .drawer .detail-facts > div > b,
+body.is-admin .drawer .detail-facts > div > b{ color: var(--text-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .timeline .tl-label, body.is-adminbar .drawer .timeline .tl-label, body.is-admi… — Sesión administración Bar */
+body.has-bottom-nav .drawer .timeline .tl-label,
+body.is-adminbar .drawer .timeline .tl-label,
+body.is-admin .drawer .timeline .tl-label{ color: var(--text-on-glass) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.30) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .timeline .tl-time, body.is-adminbar .drawer .timeline .tl-time, body.is-admin … — Sesión administración Bar */
+body.has-bottom-nav .drawer .timeline .tl-time,
+body.is-adminbar .drawer .timeline .tl-time,
+body.is-admin .drawer .timeline .tl-time{ color: var(--text-secondary-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .timeline .tl-dot, body.is-adminbar .drawer .timeline .tl-dot, body.is-admin .d… — Sesión administración Bar */
+body.has-bottom-nav .drawer .timeline .tl-dot,
+body.is-adminbar .drawer .timeline .tl-dot,
+body.is-admin .drawer .timeline .tl-dot{ color: var(--text-on-glass) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .timeline .tl-dot .bx, body.is-adminbar .drawer .timeline .tl-dot .bx, body.is-… — Sesión administración Bar */
+body.has-bottom-nav .drawer .timeline .tl-dot .bx,
+body.is-adminbar .drawer .timeline .tl-dot .bx,
+body.is-admin .drawer .timeline .tl-dot .bx{ color: var(--text-on-glass) !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+
+/* Estilo Texto body.has-bottom-nav .drawer [data-dclose], body.is-adminbar .drawer [data-dclose], body.is-admin .drawer [d… — Sesión administración Bar */
+body.has-bottom-nav .drawer [data-dclose],
+body.is-adminbar .drawer [data-dclose],
+body.is-admin .drawer [data-dclose],
+body.has-bottom-nav .drawer .drawer-header .modal-close,
+body.is-adminbar .drawer .drawer-header .modal-close{ color: var(--text-on-glass) !important; background: rgba(255,255,255,0.10) !important; border-color: rgba(255,255,255,0.18) !important; }
+/* Bloque rosado de cancelación: fondo claro → texto oscuro (no blanco global) */
+/* Estilo Texto body.has-bottom-nav .drawer .alert.danger, body.is-adminbar .drawer .alert.danger, body.is-admin .drawer .a… — Sesión administración Bar */
+body.has-bottom-nav .drawer .alert.danger,
+body.is-adminbar .drawer .alert.danger,
+body.is-admin .drawer .alert.danger{ background: var(--danger-soft) !important; color: var(--danger-strong) !important; border-color: #f3cfcf !important; text-shadow: none !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .alert.danger .a-title, body.is-adminbar .drawer .alert.danger .a-title, body.i… — Sesión administración Bar */
+body.has-bottom-nav .drawer .alert.danger .a-title,
+body.is-adminbar .drawer .alert.danger .a-title,
+body.is-admin .drawer .alert.danger .a-title,
+body.has-bottom-nav .drawer .alert.danger .a-ico,
+body.is-adminbar .drawer .alert.danger .a-ico,
+body.is-admin .drawer .alert.danger .a-ico,
+body.has-bottom-nav .drawer .alert.danger .a-ico .bx,
+body.is-adminbar .drawer .alert.danger .a-ico .bx{ color: var(--danger-strong) !important; filter: none !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .alert.warning, body.is-adminbar .drawer .alert.warning — Sesión administración Bar */
+body.has-bottom-nav .drawer .alert.warning,
+body.is-adminbar .drawer .alert.warning{ background: var(--warning-soft) !important; color: #8a5c05 !important; border-color: #f0dfb0 !important; text-shadow: none !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .alert.info, body.is-adminbar .drawer .alert.info — Sesión administración Bar */
+body.has-bottom-nav .drawer .alert.info,
+body.is-adminbar .drawer .alert.info{ background: var(--info-soft) !important; color: var(--info) !important; border-color: #cfe0f7 !important; text-shadow: none !important; }
+/* Badges de estado/pago dentro del drawer sobre glass: mantener paleta pero con contraste correcto */
+body.has-bottom-nav .drawer .badge,
+body.is-adminbar .drawer .badge,
+body.is-admin .drawer .badge { border-width: 1px !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .badge.badge-success, body.is-adminbar .drawer .badge.badge-success — Sesión administración Bar */
+body.has-bottom-nav .drawer .badge.badge-success,
+body.is-adminbar .drawer .badge.badge-success{ background: var(--success) !important; color: #ffffff !important; border-color: var(--success-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .badge.badge-danger, body.is-adminbar .drawer .badge.badge-danger — Sesión administración Bar */
+body.has-bottom-nav .drawer .badge.badge-danger,
+body.is-adminbar .drawer .badge.badge-danger{ background: var(--danger) !important; color: #ffffff !important; border-color: var(--danger-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .badge.badge-warning, body.is-adminbar .drawer .badge.badge-warning — Sesión administración Bar */
+body.has-bottom-nav .drawer .badge.badge-warning,
+body.is-adminbar .drawer .badge.badge-warning{ background: var(--warning-soft) !important; color: var(--warning-strong) !important; border-color: var(--warning-strong) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .badge.badge-info, body.is-adminbar .drawer .badge.badge-info — Sesión administración Bar */
+body.has-bottom-nav .drawer .badge.badge-info,
+body.is-adminbar .drawer .badge.badge-info{ background: var(--info-soft) !important; color: var(--info) !important; border-color: var(--info) !important; }
+
+/* Estilo Texto body.has-bottom-nav .drawer .badge.badge-neutral, body.is-adminbar .drawer .badge.badge-neutral — Sesión administración Bar */
+body.has-bottom-nav .drawer .badge.badge-neutral,
+body.is-adminbar .drawer .badge.badge-neutral{ background: var(--neutral-soft) !important; color: var(--neutral) !important; }
+/* Elimina barras blancas vacías */
+body.has-bottom-nav .app .page { background: transparent; }
+body.has-bottom-nav .table-wrap { background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important; }
+/* Responsive global sin scroll horizontal y filtros horizontales */
+html, body, .app, .page, .admin-layout, .admin-main, .admin-content { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+.adv-tabs, .cat-pills, .menu-side-list { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.adv-tabs .category-chip, .cat-pill, .cat-pill-card { flex-shrink: 0; min-height: 44px; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+.btn, .input, .sb-link, .category-chip, .admin-menu-toggle, .sb-close { min-height: 44px; }
+img, .product-media, .cat-pill-card .cp-ico { max-width: 100%; object-fit: contain; }
+/* Modales fluidos */
+.modal, .drawer { width: calc(100% - 32px) !important; max-height: 90vh; overflow-y: auto; }
+/* Headers glass reales — Cliente, Admin Bar, Admin Dev (unificado) */
+.user-header, .admin-topbar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+}
+
+/* ============================================================
+   CHECKOUT — contraste de textos e iconos (SOLO esta pantalla)
+   Únicamente color/sombra de texto; no se cambian fondos,
+   estructura, tamaños ni el estilo glass. Se acota con la clase
+   .checkout-view que app.js añade al <main> del checkout.
+   Misma paleta del diseño (blanco glass y verde oscuro #14464b).
+   ============================================================ */
+/* Estilo Texto body.has-bottom-nav .checkout-view .card > .card-header .card-title, body.has-bottom-nav .checkout-view .al… — Sesión estudiante */
+body.has-bottom-nav .checkout-view .card > .card-header .card-title,
+body.has-bottom-nav .checkout-view .alert .a-title,
+body.has-bottom-nav .checkout-view .select-card .sc-name{
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilo Texto body.has-bottom-nav .checkout-view .muted, body.has-bottom-nav .checkout-view .card-sub, body.has-bottom-na… — Sesión estudiante */
+body.has-bottom-nav .checkout-view .muted,
+body.has-bottom-nav .checkout-view .card-sub,
+body.has-bottom-nav .checkout-view .sc-desc,
+body.has-bottom-nav .checkout-view .summary-row,
+body.has-bottom-nav .checkout-view .capacity-num,
+body.has-bottom-nav .checkout-view .tiny,
+body.has-bottom-nav .checkout-view .small,
+body.has-bottom-nav .checkout-view .alert,
+body.has-bottom-nav .checkout-view .alert div,
+body.has-bottom-nav .checkout-view .alert p,
+body.has-bottom-nav .checkout-view .alert span:not(.a-ico){
+  color: rgba(255, 255, 255, 0.97) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+}
+/* Texto plano dentro de las tarjetas: deja de heredar el gris oscuro
+   del cuerpo y queda blanco legible sobre el cristal (misma paleta). */
+/* Estilo Texto body.has-bottom-nav .checkout-view .card — Sesión estudiante */
+body.has-bottom-nav .checkout-view .card{
+  color: rgba(255, 255, 255, 0.97) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
+}
+/* Iconos de los métodos de entrega/pago dentro de su cajón claro:
+   se pinchan sobre el <i> el verde oscuro del diseño (#14464b) que
+   antes quedaba anulado por .card .bx blanco → iconos invisibles. */
+/* Estilo Texto body.has-bottom-nav .checkout-view .select-card .sc-ico .bx, body.has-bottom-nav .checkout-view .select-car… — Sesión estudiante */
+body.has-bottom-nav .checkout-view .select-card .sc-ico .bx,
+body.has-bottom-nav .checkout-view .select-card .sc-ico i{
+  color: #14464b !important;
+  font-weight: 700;
+}
+/* Iconos de avisos/instrucciones sobre glass: blancos con sombra
+   para separarlos del fondo difuminado, mismo tamaño de glyph. */
+/* Estilo Texto body.has-bottom-nav .checkout-view .alert .a-ico .bx, body.has-bottom-nav .checkout-view .alert .a-ico i — Sesión estudiante */
+body.has-bottom-nav .checkout-view .alert .a-ico .bx,
+body.has-bottom-nav .checkout-view .alert .a-ico i{
+  font-weight: 700;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+/* ============================================================
+   CHECKOUT · Aviso del método de pago seleccionado (#payDetail)
+   Causa real (DevTools): la regla genérica de checkout fuerza
+   texto blanco con !important (cafeteria.css:784-809) y main.css
+   fuerza .muted/.a-title/iconos blancos sobre glass (main.css:
+   460-463). El aviso DEUNA/Transferencia está sobre fondo claro
+   (--info-soft / --surface-2), así que ese detalle vuelve a su
+   tono oscuro del diseño — usando !important ACOTADO a #payDetail
+   (que permite ganar la cascada). Nada más cambia: el resto del
+   checkout (glass-X) conserva su vidrio y su texto blanco.
+   ============================================================ */
+/* Estilo Texto body.has-bottom-nav .checkout-view #payDetail .alert.info, body.has-bottom-nav .checkout-view #payDetail .a… — Sesión estudiante */
+body.has-bottom-nav .checkout-view #payDetail .alert.info,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-title,
+body.has-bottom-nav .checkout-view #payDetail .alert.info div,
+body.has-bottom-nav .checkout-view #payDetail .alert.info p,
+body.has-bottom-nav .checkout-view #payDetail .alert.info span:not(.a-ico),
+body.has-bottom-nav .checkout-view #payDetail .alert.info .muted,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .tiny,
+body.has-bottom-nav .checkout-view #payDetail .alert.info small,
+body.has-bottom-nav .checkout-view #payDetail .alert.info b{
+  color: var(--info) !important;
+  text-shadow: none !important;
+}
+
+/* Estilo Texto body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico .bx, body.has-bottom-nav .checkout-view #p… — Sesión estudiante */
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico .bx,
+body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico i{
+  color: var(--info) !important;
+  font-weight: 700;
+  filter: none !important;
+}
+/* Tarjetas (QR, Titular, QR/Código) dentro del detalle:
+   NADA de fondo aquí: el glass verde institucional (cafeteria.css
+   722-740, var(--glass-bg) + blur) vuelve a ganar intacto.
+   Solo se mantiene el texto legible (paleta glass del proyecto). */
+/* Estilo Texto body.has-bottom-nav .checkout-view #payDetail .card — Sesión estudiante */
+body.has-bottom-nav .checkout-view #payDetail .card{
+  color: var(--text-on-glass) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Estilo Texto body.has-bottom-nav .checkout-view #payDetail .card .muted, body.has-bottom-nav .checkout-view #payDetail .… — Sesión estudiante */
+body.has-bottom-nav .checkout-view #payDetail .card .muted,
+body.has-bottom-nav .checkout-view #payDetail .card .small,
+body.has-bottom-nav .checkout-view #payDetail .card .tiny,
+body.has-bottom-nav .checkout-view #payDetail .card .muted.small,
+body.has-bottom-nav .checkout-view #payDetail .card b,
+body.has-bottom-nav .checkout-view #payDetail .card .bold{
+  color: var(--text-secondary-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Estilo Texto body.has-bottom-nav .checkout-view #payDetail > .muted.small, body.has-bottom-nav .checkout-view #payDetail… — Sesión estudiante */
+body.has-bottom-nav .checkout-view #payDetail > .muted.small,
+body.has-bottom-nav .checkout-view #payDetail > .muted.small b{
+  color: var(--text-secondary-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ============================================================
+   Etiquetas del gráfico "Ventas por hora (hoy)" (adminbar)
+   El área de ese gráfico es --surface-2 (claro) con barras
+   verdes; las etiquetas $0.00 / horas quedaban blancas por
+   body.is-admin .card .tiny y no se leían sobre ese fondo.
+   Solo color de esas etiquetas sobre el área clara de la gráfica.
+   ============================================================ */
+/* Estilo Texto body.is-adminbar .sales-hour-chart .tiny — Sesión administración Bar */
+body.is-adminbar .sales-hour-chart .tiny{
+  color: var(--text-2) !important;
+  text-shadow: none !important;
+}
+
+/* Estilo Texto body.is-adminbar .sales-hour-chart — Sesión administración Bar */
+body.is-adminbar .sales-hour-chart{
+  color: var(--text) !important;
+}
+
+/* ============================================================
+   Visibilidad de textos/iconos del panel principal adminbar
+   (solo /adminbar/dashboard, marcado con clase bb en admin.js).
+   No toca fondo/glass/tamaños de las tarjetas: solo color de
+   letras e iconos sobre el glass, con la paleta existente.
+   ============================================================ */
+/* Estilo Texto body.is-adminbar .bb .st-sub a — Sesión administración Bar */
+body.is-adminbar .bb .st-sub a{
+  color: #cdf4e4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Estilo Texto body.is-adminbar .bb .stat-ico — Sesión administración Bar */
+body.is-adminbar .bb .stat-ico{
+  opacity: 0.92 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+/* Tarjeta "Productos más vendidos" (sigue al grid .bb en el dashboard):
+   unidades e icono de cada chip sobre fondo claro --surface-2 → tinta oscura. */
+/* Estilo Texto body.is-adminbar .bb + .card .tiny.muted — Sesión administración Bar */
+body.is-adminbar .bb + .card .tiny.muted{
+  color: var(--text-2) !important;
+}
+
+/* Estilo Texto body.is-adminbar .bb + .card > div:nth-of-type(2) i — Sesión administración Bar */
+body.is-adminbar .bb + .card > div:nth-of-type(2) i{
+  color: var(--text-2) !important;
+}
+
+/* Estilo Texto body.is-adminbar .bb + .card a.tiny — Sesión administración Bar */
+body.is-adminbar .bb + .card a.tiny{
+  color: #cdf4e4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ============================================================
+   Configuración — /adminbar/config-hours (solo esta pantalla)
+   Solo color de texto para legibilidad sobre glass oscuro.
+   No se tocan fondos, tarjetas, botones, campos ni tamaños.
+   Fondo glass oscuro → texto claro con alta opacidad.
+   Tarjeta Nota (fondo claro primary-soft) → texto oscuro.
+   ============================================================ */
+/* Estilo Texto body.is-adminbar .config-hours-view div[style*="color:var(--primary)"] — Sesión administración Bar */
+body.is-adminbar .config-hours-view div[style*="color:var(--primary)"]{
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .tiny — Sesión administración Bar */
+body.is-adminbar .config-hours-view .tiny{
+  color: rgba(255, 255, 255, 0.94) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .tiny.muted — Sesión administración Bar */
+body.is-adminbar .config-hours-view .tiny.muted{
+  color: rgba(255, 255, 255, 0.90) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .label — Sesión administración Bar */
+body.is-adminbar .config-hours-view .label{
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .checkbox-row — Sesión administración Bar */
+body.is-adminbar .config-hours-view .checkbox-row{
+  color: rgba(255, 255, 255, 0.94) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .checkbox-row .tiny.muted — Sesión administración Bar */
+body.is-adminbar .config-hours-view .checkbox-row .tiny.muted{
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+/* Tarjeta Nota: fondo claro primary-soft → texto oscuro para contraste */
+/* Estilo Texto body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--primary-strong)"] — Sesión administración Bar */
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--primary-strong)"]{
+  color: var(--teal-800) !important;
+  text-shadow: none !important;
+}
+
+/* Estilo Texto body.is-adminbar .config-hours-view .card[style*="primary-soft"] .tiny, body.is-adminbar .config-hours-view… — Sesión administración Bar */
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] .tiny,
+body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--text-2)"]{
+  color: var(--ink) !important;
+  text-shadow: none !important;
+}
+
+/* ============================================================
+   Informes — botones Descargar (solo /adminbar/reports)
+   Solo texto/borde/contraste del botón, sin tocar fondo glass
+   ni tamaño de tarjetas. Usa selector específico para no afectar
+   otros btn-outline del sistema.
+   ============================================================ */
+/* Estilo Texto body.is-adminbar .reports-download-btn — Sesión administración Bar */
+body.is-adminbar .reports-download-btn{
+  background: #ffffff !important;
+  color: var(--teal-700) !important;
+  border-color: var(--teal-700) !important;
+  opacity: 1 !important;
+}
+
+/* Estilo Texto body.is-adminbar .reports-download-btn i — Sesión administración Bar */
+body.is-adminbar .reports-download-btn i{
+  color: var(--teal-700) !important;
+  fill: var(--teal-700) !important;
+  stroke: var(--teal-700) !important;
+}
+
+/* Estilo Texto body.is-adminbar .reports-download-btn:hover:not(:disabled) — Sesión administración Bar */
+body.is-adminbar .reports-download-btn:hover:not(:disabled){
+  background: var(--teal-50) !important;
+  color: var(--teal-700) !important;
+  border-color: var(--teal-700) !important;
+}
+body.is-adminbar .reports-download-btn:focus-visible {
+  outline: 2px solid var(--teal-700) !important;
+  outline-offset: 2px !important;
+}
+
+/* Estilo Texto body.is-adminbar .reports-download-btn:disabled — Sesión administración Bar */
+body.is-adminbar .reports-download-btn:disabled{
+  background: var(--surface-3) !important;
+  color: var(--text-3) !important;
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+/* ============================================================
+   Pedidos — badges Listo/Entregado/Cancelado (solo /orders)
+   Sobrios para glass verde/azulado, no neón. Solo badges de
+   estado, no tarjetas/fondos/botones. Usa status-* añadido en ui.js
+   ============================================================ */
+/* Estilo Texto body.has-bottom-nav #currentOrders .badge.status-ready, body.has-bottom-nav #historyOrders .badge.status-re… — Sesión estudiante */
+body.has-bottom-nav #currentOrders .badge.status-ready,
+body.has-bottom-nav #historyOrders .badge.status-ready,
+body.has-bottom-nav .drawer .badge.status-ready{
+  background: rgba(46, 155, 160, .28) !important;
+  border-color: rgba(130, 230, 230, .45) !important;
+  color: #d8ffff !important;
+}
+
+/* Estilo Texto body.has-bottom-nav #currentOrders .badge.status-delivered, body.has-bottom-nav #historyOrders .badge.statu… — Sesión estudiante */
+body.has-bottom-nav #currentOrders .badge.status-delivered,
+body.has-bottom-nav #historyOrders .badge.status-delivered,
+body.has-bottom-nav .drawer .badge.status-delivered{
+  background: rgba(38, 150, 110, .30) !important;
+  border-color: rgba(120, 220, 180, .45) !important;
+  color: #e4fff5 !important;
+}
+
+/* Estilo Texto body.has-bottom-nav #currentOrders .badge.status-cancelled, body.has-bottom-nav #historyOrders .badge.statu… — Sesión estudiante */
+body.has-bottom-nav #currentOrders .badge.status-cancelled,
+body.has-bottom-nav #historyOrders .badge.status-cancelled,
+body.has-bottom-nav .drawer .badge.status-cancelled{
+  background: rgba(190, 75, 75, .28) !important;
+  border-color: rgba(255, 150, 150, .45) !important;
+  color: #ffeaea !important;
+}
