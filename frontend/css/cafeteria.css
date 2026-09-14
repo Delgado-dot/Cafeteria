@@ -587,6 +587,12 @@ body.has-bottom-nav .back-to-menu-btn:hover:not(:disabled) {
   box-shadow: 0 4px 12px rgba(23, 52, 50, 0.28);
 }
 body.has-bottom-nav .cart-summary-title { color: #fff; }
+.ci-subtotal {
+  margin-left: auto; display: flex; flex-direction: column;
+  align-items: center; min-width: 76px; color: #fff; line-height: 1.15;
+}
+.ci-subtotal small { color: #fff; font-size: var(--fs-xs); padding-bottom: 4px; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.42); }
+.ci-subtotal b { color: #fff; font-weight: var(--fw-bold); }
 body.has-bottom-nav .change-pass-title,
 body.has-bottom-nav .change-pass-label { color: #fff; }
 body.has-bottom-nav .change-pass-save { border: 1px solid var(--teal); }

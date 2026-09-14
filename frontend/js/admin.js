@@ -566,6 +566,10 @@ async function barConfigTabs(el, initialTab) {
             <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
           </div>
         </div>
+        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
+          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
+          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
+        </div>
       </div>
     </div>
   `;
@@ -688,19 +692,19 @@ async function barReports(el) {
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
         <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
         <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
         <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
     </div>
   `;
@@ -1307,7 +1311,7 @@ function queueOrderCard(o, tab) {
           return `<div style="display:flex;align-items:center;gap:8px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
         }).join('')}
       </div>
-      <div class="tiny" style="color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:var(--r-sm);margin-top:6px"><b style="color:#fff">Cliente:</b> ${esc(d.userName)} · <b style="color:#fff">Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b style="color:#fff">Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b style="color:#fff">Nota:</b> ${esc(d.note)}` : ''}</div>
+      <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(d.userName)} · <b>Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b>Nota:</b> ${esc(d.note)}` : ''}</div>
       ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(d.payment)}: ${d.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(d.paymentStatus)}</div></div>` : ''}
       <div class="queue-actions">${actionBtns}</div>
     </div>`;
@@ -1372,7 +1376,10 @@ async function barProducts(el) {
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
     </div>
-    <div class="prod-grid" id="prodCards"><div class="skeleton" style="height:220px;width:100%"></div></div>`;
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
 
   const productsRes = await ApiClient.getAll(API_ENDPOINTS.products.list);
   if (!productsRes.ok) {
@@ -1409,7 +1416,10 @@ async function barProducts(el) {
         return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
       }).join('')}
     </div>
-    <div class="prod-grid" id="prodCards"></div>`;
+    <div class="table-wrap"><table class="admin-table">
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="prodRows"></tbody>
+    </table></div>`;
 
   const renderRows = () => {
     let list = cat === 'Todas' ? products : products.filter((p) => (p.category || 'Sin categoría') === cat);
@@ -1417,44 +1427,36 @@ async function barProducts(el) {
       const term = searchTerm.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.category || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term));
     }
-    const grid = $('#prodCards', el);
+    const tbody = $('#prodRows', el);
     if (!list.length) {
-      grid.innerHTML = '<div class="prod-empty"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></div>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></td></tr>';
       return;
     }
-    grid.innerHTML = list.map((p) => `
-      <div class="prod-card">
-        <div class="prod-card-media">
-          ${p.image ? `<img loading="lazy" src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <div class="prod-card-media-fallback" style="${p.image ? 'display:none' : 'display:flex'}">${productIcon(p)}</div>
-        </div>
-        <div class="prod-card-body">
-          <div class="prod-card-head">
-            <div class="prod-card-title" title="${esc(p.name)}">${esc(p.name)}</div>
-            <div style="position:relative">
+    tbody.innerHTML = list.map((p) => `
+      <tr>
+        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${esc(p.image ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(p.image) : p.image) : '')}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category || 'Sin categoría')}">${esc(p.category || 'Sin categoría')}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.description || '')}">${esc(p.description || '')}</div></div></div></td>
+        <td data-label="Categoría"><span>${esc(p.category || 'Sin categoría')}</span></td>
+        <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
+        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.min_stock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.min_stock ? '· bajo' : ''}</span></td>
+        <td data-label="Prep"><span>${p.prepMin} min</span></td>
+        <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
+        <td data-label="Acciones">
+            <div style="position:relative; overflow: visible">
               <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
               <div class="dropdown-menu product-actions-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:1000">
                 <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
                 <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
               </div>
             </div>
-          </div>
-          <div class="prod-card-cat">${esc(p.category || 'Sin categoría')}</div>
-          <div class="prod-card-price">${money(p.price)}</div>
-          <div class="prod-card-meta">
-            <span class="prod-meta-chip"><i class="bx bx-package"></i> <span>Stock ${p.stock}</span></span>
-            <span class="prod-meta-chip"><i class="bx bx-time"></i> <span>${p.prepMin} min</span></span>
-          </div>
-          <div class="prod-card-status">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</div>
-        </div>
-      </div>
+          </td>
+      </tr>
     `).join('');
-    $$('[data-edit]', grid).forEach((b) => b.onclick = (e) => {
+    $$('[data-edit]', tbody).forEach((b) => b.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit)));
     });
-    $$('[data-toggle]', grid).forEach((b) => {
+    $$('[data-toggle]', tbody).forEach((b) => {
       b.onclick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1485,7 +1487,7 @@ async function barProducts(el) {
         if (contentEl) barProducts(contentEl);
       };
     });
-    $$('[data-menu]', grid).forEach((btn) => btn.onclick = (e) => {
+    $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
       e.stopPropagation();
       const menu = document.getElementById('prodMenu-' + btn.dataset.menu);
       if (!menu) return;
@@ -1882,9 +1884,7 @@ async function barStock(el) {
       <div id="lowStockList" style="display:flex;flex-direction:column;gap:10px">
         ${lowStock.length ? lowStock.slice(0,4).map((p)=>`
           <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer" data-low="${p.id}">
-            <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              ${p.image ? `<img src="${resolveMediaUrl(p.image)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<i class=\\'bx bx-error\\' style=\\'color:var(--warning-strong)\\'></i>'">` : `<i class="bx bx-error" style="color:var(--warning-strong)"></i>`}
-            </div>
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--warning-soft);display:flex;align-items:center;justify-content:center;color:var(--warning-strong)"><i class="bx bx-error"></i></div>
             <div style="flex:1;min-width:0"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
             <span class="badge ${p.stock <= 2 ? 'badge-danger' : 'badge-warning'}">${p.stock <= 2 ? 'Muy bajo' : 'Bajo'}</span>
             <span class="bold tabular-nums">${p.stock}</span>
@@ -1897,9 +1897,7 @@ async function barStock(el) {
       <div id="outStockList" style="display:flex;flex-direction:column;gap:10px">
         ${outOfStock.length ? outOfStock.slice(0,4).map((p)=>`
           <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md)">
-            <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              ${p.image ? `<img src="${resolveMediaUrl(p.image)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<i class=\\'bx bx-x-circle\\' style=\\'color:var(--danger)\\'></i>'">` : `<i class="bx bx-x-circle" style="color:var(--danger)"></i>`}
-            </div>
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;color:var(--danger)"><i class="bx bx-x-circle"></i></div>
             <div style="flex:1"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
             <span class="badge badge-danger">Agotado</span>
           </div>
@@ -2176,13 +2174,12 @@ async function barPayments(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
-    <div class="card" style="margin-bottom:16px;background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);color:#fff;position:relative;overflow:hidden;padding:20px 18px">
-      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.08;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(64,128,126,0.25) 0%,rgba(64,128,126,0.08) 100%);pointer-events:none;border-radius:inherit"></div>
+    <div class="card" style="margin-bottom:16px;background:var(--primary);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none">
+      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.14;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
       <div style="position:relative;z-index:1">
-        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;font-weight:600">Total recaudado</div>
-        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px;color:#fff">${money(totalToday)}</div>
-        <div style="font-size:13px;opacity:0.7">en ${validToday.length} transacciones · hoy ${today}</div>
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;font-weight:600">Total recaudado</div>
+        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px">${money(totalToday)}</div>
+        <div style="font-size:13px;opacity:0.9">en ${validToday.length} transacciones · hoy ${today}</div>
       </div>
     </div>
     <div class="card" style="margin-bottom:16px;padding:16px">
@@ -2794,49 +2791,36 @@ async function barSalesHistory(el) {
       <div class="table-wrap"><table class="admin-table">
         <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
         <tbody id="salesHistoryRows"></tbody></table></div>
-      <div id="salesHistoryPagination" class="sales-history-pagination" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap"></div>
     `;
   } else {
     tbody.innerHTML = '';
-    let pag = $('#salesHistoryPagination', el);
-    if (!pag) {
-      pag = document.createElement('div');
-      pag.id = 'salesHistoryPagination';
-      pag.className = 'sales-history-pagination';
-      pag.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap';
-      tbody.closest('.table-wrap')?.after(pag);
-    }
   }
 
-  const PAGE_SIZE = 20;
-  let page = 1;
+  const renderSkeletonRows = (count = 5) => {
+    const tbodyEl = $('#salesHistoryRows', el);
+    if (tbodyEl) {
+      tbodyEl.innerHTML = Array.from({ length: count }, () => `
+        <tr>
+          <td><div class="skeleton" style="width:90px;height:14px"></div></td>
+          <td><div class="skeleton" style="width:60px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:70px;height:16px"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
+        </tr>
+      `).join('');
+    }
+  };
 
   const renderRows = () => {
     const tbodyEl = $('#salesHistoryRows', el);
     if (!tbodyEl) return;
-    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date));
-    const pages = Math.max(1, Math.ceil(validSales.length / PAGE_SIZE));
-    if (page > pages) page = pages;
-    const start = (page - 1) * PAGE_SIZE;
-    const pageRows = validSales.slice(start, start + PAGE_SIZE);
-    tbodyEl.innerHTML = pageRows.length ? pageRows.map((o) => `
+    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+    tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
       <tr><td data-label="Fecha/hora"><span class="small">${o.date} ${o.time || '—'}</span></td><td data-label="Pedido"><span class="bold">#${o.id}</span></td><td data-label="Monto"><span class="bold tabular-nums">${money(o.total)}</span></td><td data-label="Método pago"><span>${paymentMethodLabel(o.payment)}</span></td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
-    const pagEl = $('#salesHistoryPagination', el);
-    if (pagEl) {
-      pagEl.innerHTML = `
-        <span class="tiny muted">${validSales.length} ventas · Página ${page} de ${pages}</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" data-shpage="prev" ${page <= 1 ? 'disabled' : ''}>Anterior</button>
-          <button class="btn btn-outline btn-sm" data-shpage="next" ${page >= pages ? 'disabled' : ''}>Siguiente</button>
-        </div>`;
-      const prevBtn = pagEl.querySelector('[data-shpage="prev"]');
-      const nextBtn = pagEl.querySelector('[data-shpage="next"]');
-      if (prevBtn) prevBtn.onclick = () => { if (page > 1) { page--; renderRows(); } };
-      if (nextBtn) nextBtn.onclick = () => { if (page < pages) { page++; renderRows(); } };
-    }
   };
 
-  renderRows();
+  renderSkeletonRows();
+  setTimeout(renderRows, 350);
 }
  
 async function barDelivery(el) {

@@ -8,7 +8,6 @@ const DEV_SECTIONS = {
   roles: { label: 'Roles y permisos', icon: 'bx-shield' },
   cafe: { label: 'Información de cafetería', icon: 'bx-store' },
   config: { label: 'Configuración general', icon: 'bx-cog' },
-  appearance: { label: 'Apariencia del sistema', icon: 'bx-palette' },
   audit: { label: 'Auditoría', icon: 'bx-file' },
 };
 
@@ -111,7 +110,6 @@ async function renderDevAdmin(page) {
     roles: devRoles,
     cafe: devCafe,
     config: devConfig,
-    appearance: devAppearance,
     audit: devAudit,
   };
   // Show loading skeleton
@@ -216,10 +214,8 @@ async function devUsers(el) {
           <td class="small muted">${esc(u.profile?.last_access || '—')}</td>
           <td class="small muted">${u.date_joined ? u.date_joined.slice(0, 10) : '—'}</td>
           <td>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn btn-outline btn-sm" data-edit="${u.id}">Editar</button>
-              <button class="btn btn-neutral btn-sm" data-toggle="${u.id}">${u.is_active ? 'Desactivar' : 'Activar'}</button>
-            </div>
+            <button class="btn btn-outline btn-sm" data-edit="${u.id}">Editar</button>
+            <button class="btn btn-neutral btn-sm" data-toggle="${u.id}">${u.is_active ? 'Desactivar' : 'Activar'}</button>
           </td>
         </tr>`).join('')}</tbody></table></div>`;
 
@@ -468,144 +464,6 @@ async function devConfig(el) {
       toast('Error al guardar: ' + (response.data?.detail || deliveryResponse.data?.detail || 'Error desconocido'), 'error');
     }
   };
-}
-
-/* ============================================================
-   APARIENCIA DEL SISTEMA
-   ============================================================ */
-const APPEARANCE_FIELDS = [
-  { field: 'hero_background', urlKey: 'hero_background_url', label: 'Fondo del Landing', hint: 'Portada de la página de inicio', group: 'Inicio' },
-  { field: 'barra_atencion_image', urlKey: 'barra_atencion_image_url', label: 'Barra de atención', hint: 'Imagen del bloque "Barra de atención"', group: 'Landing · galería' },
-  { field: 'espacio_disfrutar_image', urlKey: 'espacio_disfrutar_image_url', label: 'Espacio para disfrutar', hint: 'Imagen del bloque "Espacio para disfrutar"', group: 'Landing · galería' },
-  { field: 'cafe_snacks_image', urlKey: 'cafe_snacks_image_url', label: 'Café y snacks', hint: 'Imagen del bloque "Café y snacks"', group: 'Landing · galería' },
-  { field: 'login_background', urlKey: 'login_background_url', label: 'Fondo del Login', hint: 'Fondo de la pantalla de inicio de sesión', group: 'Acceso' },
-  { field: 'login_mascot', urlKey: 'login_mascot_url', label: 'Mascota del Login', hint: 'Imagen decorativa junto al formulario', group: 'Acceso' },
-  { field: 'system_logo', urlKey: 'system_logo_url', label: 'Logo del sistema', hint: 'Logotipo usado en Login y Landing', group: 'Acceso' },
-];
-
-function devAppearanceCard(h, cfg) {
-  const url = cfg[h.urlKey];
-  const name = url ? url.split('/').pop() : '';
-  const thumb = url
-    ? `<img src="${url}" alt="${esc(h.label)}">`
-    : `<div class="tiny muted" style="display:flex;align-items:center;justify-content:center;height:100%;width:100%;text-align:center;padding:4px">Imagen predeterminada</div>`;
-  return `
-    <div class="appearance-item" data-field="${h.field}" style="display:flex;gap:14px;align-items:center;padding:12px;border:1px solid var(--glass-border);border-radius:12px;margin-bottom:12px;background:var(--glass-inner)">
-      <div class="app-thumb" style="width:96px;height:64px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--glass-inner);display:flex;align-items:center;justify-content:center">${thumb}</div>
-      <div style="flex:1;min-width:0">
-        <div class="bold small">${esc(h.label)}</div>
-        <div class="tiny muted">${esc(h.hint)}</div>
-        <div class="tiny" data-state style="margin-top:2px">${name ? 'Actual: ' + esc(name) : 'Usa la imagen predeterminada'}</div>
-      </div>
-      <div class="app-actions" style="display:flex;flex-direction:column;gap:6px;align-items:stretch;flex-shrink:0">
-        <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" data-file>
-        <button class="btn btn-sm btn-outline" data-pick>Cambiar imagen</button>
-        <button class="btn btn-sm btn-primary" data-save disabled>Guardar</button>
-        <button class="btn btn-sm btn-ghost" data-reset ${url ? '' : 'disabled'}>Restaurar predeterminada</button>
-      </div>
-    </div>`;
-}
-
-async function devAppearance(el) {
-  const configRes = await ApiClient.get(API_ENDPOINTS.config.get);
-  const cfg = configRes.ok ? configRes.data : {};
-
-  const groups = {};
-  APPEARANCE_FIELDS.forEach((h) => { (groups[h.group] = groups[h.group] || []).push(h); });
-
-  el.innerHTML = `
-    <div class="page-title"><h1>Apariencia del sistema</h1></div>
-    <p class="page-sub">Personaliza las imágenes de Landing y Login. Se aceptan PNG/JPG/WEBP de hasta 5&nbsp;MB. Si dejas el campo vacío, se usa la imagen predeterminada.</p>
-    <div id="appGroups">
-      ${Object.entries(groups).map(([g, hs]) => `
-        <div class="card" style="margin-bottom:16px">
-          <h3 style="margin-bottom:10px">${esc(g)}</h3>
-          ${hs.map((h) => devAppearanceCard(h, cfg)).join('')}
-        </div>`).join('')}
-    </div>`;
-
-  const pending = {};
-  const applyResult = (data) => {
-    Store.config = data;
-    if (typeof bindAssetCssVars === 'function') bindAssetCssVars(data);
-  };
-  const fieldError = (data) => (data && (
-    data.hero_background?.[0] || data.barra_atencion_image?.[0]
-    || data.espacio_disfrutar_image?.[0] || data.cafe_snacks_image?.[0]
-    || data.login_background?.[0] || data.login_mascot?.[0]
-    || data.system_logo?.[0] || data.detail)) || null;
-
-  $$('[data-pick]', el).forEach((btn) => {
-    btn.onclick = () => btn.closest('.appearance-item').querySelector('[data-file]').click();
-  });
-
-  $$('[data-file]', el).forEach((input) => {
-    input.addEventListener('change', () => {
-      const item = input.closest('.appearance-item');
-      const file = input.files && input.files[0];
-      if (!file) return;
-      const ext = (file.name.split('.').pop() || '').toLowerCase();
-      if (!['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
-        toast('Solo se aceptan imágenes PNG, JPG o WEBP.', 'error');
-        input.value = '';
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast('La imagen no puede superar los 5 MB.', 'error');
-        input.value = '';
-        return;
-      }
-      pending[item.dataset.field] = file;
-      item.querySelector('.app-thumb').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Vista previa">`;
-      item.querySelector('[data-state]').textContent = 'Listo para guardar: ' + file.name;
-      item.querySelector('[data-save]').disabled = false;
-    });
-  });
-
-  $('#appGroups', el).addEventListener('click', async (e) => {
-    const saveBtn = e.target.closest('[data-save]');
-    const resetBtn = e.target.closest('[data-reset]');
-    const item = e.target.closest('.appearance-item');
-    if (!item) return;
-    const field = item.dataset.field;
-
-    if (saveBtn) {
-      const file = pending[field];
-      if (!file) return;
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Subiendo...';
-      const form = new FormData();
-      form.append(field, file);
-      const res = await ApiClient.patch(API_ENDPOINTS.config.update, form);
-      if (!res.ok) {
-        toast('Error: ' + (fieldError(res.data) || 'Error al guardar la imagen'), 'error');
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = 'Guardar';
-        return;
-      }
-      applyResult(res.data);
-      delete pending[field];
-      toast('Imagen guardada.', 'success');
-      logAudit('Cambió la imagen', field);
-      devAppearance(el);
-      return;
-    }
-
-    if (resetBtn) {
-      resetBtn.disabled = true;
-      const res = await ApiClient.patch(API_ENDPOINTS.config.update, { [field]: null });
-      if (!res.ok) {
-        toast('Error: ' + (fieldError(res.data) || 'Error al restaurar la imagen'), 'error');
-        resetBtn.disabled = false;
-        return;
-      }
-      applyResult(res.data);
-      toast('Se restauró la imagen predeterminada.', 'success');
-      logAudit('Restauró imagen predeterminada', field);
-      devAppearance(el);
-      return;
-    }
-  });
 }
 
 /* ============================================================
