@@ -55,6 +55,12 @@ function apiDateToLocalKey(apiStr) {
   if (isNaN(dt.getTime())) return apiStr.slice(0, 10);
   return localDateKey(dt);
 }
+function apiDateToLocalTime(apiStr) {
+  if (!apiStr) return "";
+  const dt = new Date(apiStr);
+  if (isNaN(dt.getTime())) return "";
+  return String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0");
+}
 
 // Sistema uniforme de mensajes para Administrador del Bar — usa nombre real del usuario autenticado
 function getBarAdminName() {
@@ -2333,6 +2339,7 @@ async function openPaymentMethodConfig(code) {
   const isTransfer = code === 'transferencia';
   const isDeuna = code === 'deuna';
   const ov = modal(`
+    <div class="pm-config-modal">
     <h3>Configurar ${esc(m.name)}</h3>
     <div class="field"><label class="label">Activo</label><label class="checkbox-row"><input type="checkbox" id="pmActive" ${m.active ? 'checked' : ''}> Habilitado</label></div>
     ${isTransfer ? `
@@ -2359,6 +2366,7 @@ async function openPaymentMethodConfig(code) {
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSavePm">Guardar</button>
+    </div>
     </div>
   `, { wide: false });
   $('[data-cancel]', ov).onclick = () => ov.remove();
@@ -2518,11 +2526,11 @@ async function barSalesDashboard(el) {
   const [ordersRes, productsRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.products.list) ]);
   if (!ordersRes.ok) { el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>','Error','No se pudo cargar ventas'); return; }
   const raw = ordersRes.data.results || ordersRes.data || [];
-  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
+  const ordersNorm = raw.map(o=>({ ...o, date: apiDateToLocalKey(o.created_at), time: apiDateToLocalTime(o.created_at), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
   const orders = ordersNorm;
   const productsRaw = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
   const products = productsRaw;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   const validSales = orders.filter(isValidSale);
   const todayOrders = validSales.filter((o) => o.date === today);
   const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
@@ -2541,7 +2549,7 @@ const prodSales = {};
 const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const date = d.toISOString().slice(0, 10);
+    const date = localDateKey(d);
     const total = validSales.filter((o) => o.date === date).reduce((sum, o) => sum + o.total, 0);
     days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total });
   }
@@ -2551,7 +2559,7 @@ const days = [];
   const currentMonthStart = new Date(today.slice(0, 7) + '-01');
   const prevMonthEnd = new Date(currentMonthStart);
   prevMonthEnd.setDate(0);
-  const prevMonthStr = prevMonthEnd.toISOString().slice(0, 7);
+  const prevMonthStr = `${prevMonthEnd.getFullYear()}-${String(prevMonthEnd.getMonth() + 1).padStart(2, '0')}`;
   const salesPrevMonth = validSales.filter((o) => o.date.startsWith(prevMonthStr)).reduce((s, o) => s + o.total, 0);
   const momChange = salesPrevMonth > 0 ? ((salesMonth - salesPrevMonth) / salesPrevMonth) * 100 : (salesMonth > 0 ? 100 : 0);
   const momPositive = momChange >= 0;
@@ -2777,7 +2785,7 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
 async function barSalesHistory(el) {
   const ordersRes = await ApiClient.getAll(API_ENDPOINTS.orders.all);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
-  const orders = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
+  const orders = raw.map(o=>({ ...o, date: apiDateToLocalKey(o.created_at), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
   const tbody = $('#salesHistoryRows');
   if (!tbody) {
     el.innerHTML = `
@@ -2785,36 +2793,49 @@ async function barSalesHistory(el) {
       <div class="table-wrap"><table class="admin-table">
         <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
         <tbody id="salesHistoryRows"></tbody></table></div>
+      <div id="salesHistoryPagination" class="sales-history-pagination" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap"></div>
     `;
   } else {
     tbody.innerHTML = '';
+    let pag = $('#salesHistoryPagination', el);
+    if (!pag) {
+      pag = document.createElement('div');
+      pag.id = 'salesHistoryPagination';
+      pag.className = 'sales-history-pagination';
+      pag.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap';
+      tbody.closest('.table-wrap')?.after(pag);
+    }
   }
 
-  const renderSkeletonRows = (count = 5) => {
-    const tbodyEl = $('#salesHistoryRows', el);
-    if (tbodyEl) {
-      tbodyEl.innerHTML = Array.from({ length: count }, () => `
-        <tr>
-          <td><div class="skeleton" style="width:90px;height:14px"></div></td>
-          <td><div class="skeleton" style="width:60px;height:16px"></div></td>
-          <td><div class="skeleton" style="width:70px;height:16px"></div></td>
-          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
-          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
-        </tr>
-      `).join('');
-    }
-  };
+  const PAGE_SIZE = 20;
+  let page = 1;
 
   const renderRows = () => {
     const tbodyEl = $('#salesHistoryRows', el);
     if (!tbodyEl) return;
-    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
-    tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
+    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date));
+    const pages = Math.max(1, Math.ceil(validSales.length / PAGE_SIZE));
+    if (page > pages) page = pages;
+    const start = (page - 1) * PAGE_SIZE;
+    const pageRows = validSales.slice(start, start + PAGE_SIZE);
+    tbodyEl.innerHTML = pageRows.length ? pageRows.map((o) => `
       <tr><td data-label="Fecha/hora"><span class="small">${o.date} ${o.time || '—'}</span></td><td data-label="Pedido"><span class="bold">#${o.id}</span></td><td data-label="Monto"><span class="bold tabular-nums">${money(o.total)}</span></td><td data-label="Método pago"><span>${paymentMethodLabel(o.payment)}</span></td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
+    const pagEl = $('#salesHistoryPagination', el);
+    if (pagEl) {
+      pagEl.innerHTML = `
+        <span class="tiny muted">${validSales.length} ventas · Página ${page} de ${pages}</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" data-shpage="prev" ${page <= 1 ? 'disabled' : ''}>Anterior</button>
+          <button class="btn btn-outline btn-sm" data-shpage="next" ${page >= pages ? 'disabled' : ''}>Siguiente</button>
+        </div>`;
+      const prevBtn = pagEl.querySelector('[data-shpage="prev"]');
+      const nextBtn = pagEl.querySelector('[data-shpage="next"]');
+      if (prevBtn) prevBtn.onclick = () => { if (page > 1) { page--; renderRows(); } };
+      if (nextBtn) nextBtn.onclick = () => { if (page < pages) { page++; renderRows(); } };
+    }
   };
 
-  renderSkeletonRows();
-  setTimeout(renderRows, 350);
+  renderRows();
 }
  
 async function barDelivery(el) {

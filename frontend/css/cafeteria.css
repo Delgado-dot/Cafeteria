@@ -1,54 +1,54 @@
 /* ============================================================
    cafeteria.css — Experiencia del cliente (inicio + menú)
-   DISEÑO PREMIUM INTESUD · blanco · turquesa #40807E · gris oscuro
+   DISEÑO PREMIUM INTESUD · blanco · verde petróleo #165B54 · gris oscuro
    Minimal editorial, limpio y llamativo — no plantilla e-commerce
    ============================================================ */
 
 :root {
-  --teal: #40807e;
-  --teal-600: #2f6361;
-  --teal-700: #234f4d;
-  --teal-800: #173432;
-  --teal-50: #eef4f3;
-  --teal-100: #d9e8e6;
-  --ink: #111c1b;
-  --ink-2: #2b3533;
-  --muted: #6b7a78;
-  --muted-2: #8d9b99;
-  --line: #e6eceb;
-  --line-strong: #d2dddb;
-  --bg: #f4f7f6;
+  --teal: #165B54;
+  --teal-600: #2F746D;
+  --teal-700: #0F4944;
+  --teal-800: #0F4944;
+  --teal-50: #EEF3F2;
+  --teal-100: #80AAA5;
+  --ink: #0F4944;
+  --ink-2: #2F746D;
+  --muted: #2F746D;
+  --muted-2: #2F746D;
+  --line: #80AAA5;
+  --line-strong: #2F746D;
+  --bg: #EEF3F2;
   --surface: #ffffff;
-  --grad-teal: linear-gradient(135deg, #40807e 0%, #234f4d 100%);
+  --grad-teal: linear-gradient(135deg, #165B54 0%, #0F4944 100%);
   /* Glass — tokens canónicos (misma escala que main.css, gana por cascada al ser último) */
-  --glass-surface: rgba(12, 32, 30, 0.82);
-  --glass-surface-2: rgba(12, 32, 30, 0.78);
-  --glass-surface-3: rgba(12, 32, 30, 0.74);
-  --glass-surface-strong: rgba(12, 32, 30, 0.88);
-  --glass-surface-stronger: rgba(12, 32, 30, 0.92);
+  --glass-surface: rgba(22, 91, 84, 0.72);
+  --glass-surface-2: rgba(22, 91, 84, 0.72);
+  --glass-surface-3: rgba(22, 91, 84, 0.72);
+  --glass-surface-strong: rgba(22, 91, 84, 0.72);
+  --glass-surface-stronger: rgba(22, 91, 84, 0.72);
   --glass-inner: rgba(255, 255, 255, 0.10);
   --glass-inner-less: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-border-2: rgba(255, 255, 255, 0.10);
-  --glass-border-strong: rgba(255, 255, 255, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.20);
+  --glass-border-2: rgba(255, 255, 255, 0.20);
+  --glass-border-strong: rgba(255, 255, 255, 0.20);
   --glass-blur: blur(20px) saturate(140%);
   --glass-blur-b: blur(18px) saturate(140%);
   --glass-blur-inner: blur(14px) saturate(130%);
   --glass-shadow: 0 8px 32px rgba(6, 14, 13, 0.42), 0 2px 10px rgba(12, 32, 30, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --glass-radius: 16px;
   --glass-text: #ffffff;
-  --glass-text-soft: rgba(255, 255, 255, 0.84);
-  --glass-text-dim: rgba(255, 255, 255, 0.72);
-  --glass-text-faint: rgba(255, 255, 255, 0.58);
+  --glass-text-soft: rgba(255, 255, 255, 0.82);
+  --glass-text-dim: rgba(255, 255, 255, 0.82);
+  --glass-text-faint: rgba(255, 255, 255, 0.82);
   /* Glass institucional unificado — sobrescribe tokens previos para unificar TODOS los paneles */
-  --glass-bg: rgba(32, 82, 79, 0.58);
-  --glass-bg-dark: rgba(18, 55, 53, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-bg: rgba(22, 91, 84, 0.72);
+  --glass-bg-dark: rgba(22, 91, 84, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.20);
   --glass-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   --glass-blur: blur(20px) saturate(130%);
   --text-on-glass: #ffffff;
-  --text-secondary-on-glass: rgba(255, 255, 255, 0.78);
-  --institutional-green: #40807e;
+  --text-secondary-on-glass: rgba(255, 255, 255, 0.82);
+  --institutional-green: #165B54;
   /* Aliases para compatibilidad con código existente */
   --glass-surface: var(--glass-bg);
   --glass-surface-2: var(--glass-bg);
@@ -117,7 +117,7 @@ body.has-bottom-nav .avatar { background: var(--grad-teal); }
 /* Barra inferior — estética como 2da imagen pero mejorada, bien ubicada en móvil y desktop */
 body.has-bottom-nav .mobile-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
-  background: #0f1e1d; border-top: 1px solid rgba(255,255,255,0.08);
+  background: #0F4944; border-top: 1px solid rgba(255,255,255,0.08);
   padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
   box-shadow: 0 -4px 18px rgba(0,0,0,0.18);
   display: none;
@@ -125,14 +125,14 @@ body.has-bottom-nav .mobile-nav {
 body.has-bottom-nav .mobile-nav .mn-grid { display: flex; gap: 4px; max-width: 520px; margin: 0 auto; }
 body.has-bottom-nav .mobile-nav .mn-item {
   flex: 1; min-width: 0; padding: 7px 8px; border-radius: 14px;
-  color: #8ea8a6; background: transparent; font-size: 0.66rem; font-weight: 700; gap: 3px;
+  color: rgba(255,255,255,0.82); background: transparent; font-size: 0.66rem; font-weight: 700; gap: 3px;
   transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
 body.has-bottom-nav .mobile-nav .mn-item .mn-ico { font-size: 1.32rem; line-height: 1; transition: transform var(--t-fast); }
 body.has-bottom-nav .mobile-nav .mn-item.active { color: #fff; background: rgba(255,255,255,0.10); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
 body.has-bottom-nav .mobile-nav .mn-item.active .mn-ico { transform: scale(1.08); }
 body.has-bottom-nav .mobile-nav .mn-item .mn-badge {
-  top: 2px; background: #ff5a3c; border: 2px solid #0f1e1d; font-size: 0.60rem; min-width: 17px; height: 17px;
+  top: 2px; background: #165B54; border: 2px solid #80AAA5; font-size: 0.60rem; min-width: 17px; height: 17px;
 }
 body.has-bottom-nav .app { padding-bottom: 76px; }
 @media (max-width: 900px) {
@@ -166,7 +166,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   @media (prefers-reduced-motion: reduce) {
     body.has-bottom-nav .mobile-nav { transition: none; }
   }
-  body.has-bottom-nav .mobile-nav .mn-item.active { background: var(--teal); color: #fff; box-shadow: 0 6px 16px rgba(64,128,126,0.38); transform: translateY(-1px); }
+  body.has-bottom-nav .mobile-nav .mn-item.active { background: var(--teal); color: #fff; box-shadow: 0 6px 16px rgba(22,91,84,0.38); transform: translateY(-1px); }
   body.has-bottom-nav .mobile-nav .mn-item .mn-badge { border-color: rgba(15,30,29,0.94); top: 4px; }
   body.has-bottom-nav .app { padding-bottom: 88px; }
 }
@@ -193,14 +193,14 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .home-hero .hh-copy { max-width: 560px; align-self: end; padding-bottom: 6px; }
 .home-hero .hh-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.13); color: #d6ecea;
+  background: rgba(255,255,255,0.13); color: #FFFFFF;
   border: 1px solid rgba(255,255,255,0.20);
   padding: 6px 12px; border-radius: 999px;
   font-size: 0.66rem; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase;
   backdrop-filter: blur(6px);
 }
 .home-hero .hh-welcome {
-  margin-top: 10px; color: rgba(255,255,255,0.92); font-size: clamp(0.72rem, 1.4vw, 0.84rem);
+  margin-top: 10px; color: rgba(255,255,255,0.82); font-size: clamp(0.72rem, 1.4vw, 0.84rem);
   font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; line-height: 1;
   opacity: 0.92;
 }
@@ -208,9 +208,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   color: #fff; font-size: clamp(1.9rem, 4.4vw, 3.2rem); font-weight: 900;
   line-height: 0.98; margin: 10px 0 12px; letter-spacing: -0.03em; text-shadow: 0 2px 18px rgba(0,0,0,0.28);
 }
-.home-hero h1 .hl { color: #8fe0d8; font-weight: 900; }
+.home-hero h1 .hl { color: #FFFFFF; font-weight: 900; }
 .home-hero .hh-sub {
-  color: rgba(255,255,255,0.86); font-size: clamp(0.94rem, 1.7vw, 1.05rem);
+  color: rgba(255,255,255,0.82); font-size: clamp(0.94rem, 1.7vw, 1.05rem);
   line-height: 1.55; max-width: 500px;
 }
 .home-hero .hh-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
@@ -248,12 +248,12 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
    ============================================================ */
 .cat-banner {
   position: relative; margin-top: 10px;
-  background: #0a2e30; border-radius: 18px; padding: 16px;
+  background: #0F4944; border-radius: 18px; padding: 16px;
   box-shadow: 0 10px 28px rgba(6,30,30,0.22); overflow: hidden;
-  border: 1px solid rgba(127,207,200,0.18);
+  border: 1px solid rgba(128,170,165,0.18);
 }
 .cat-banner::before {
-  content: ''; position: absolute; inset: 8px; border: 1px solid rgba(45,180,170,0.35);
+  content: ''; position: absolute; inset: 8px; border: 1px solid rgba(47,116,109,0.35);
   border-radius: 14px; pointer-events: none;
 }
 .cat-banner-inner {
@@ -263,7 +263,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .cat-banner-left { display: flex; align-items: center; gap: 18px; }
 .cat-s {
   width: 78px; height: 78px; flex-shrink: 0;
-  background: transparent; color: #e0fffe;
+  background: transparent; color: #FFFFFF;
   border: 0; border-radius: 0; display: grid; place-items: center;
   font-size: 3.2rem; font-weight: 900; font-style: italic; line-height: 1;
   box-shadow: none;
@@ -274,9 +274,9 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .cat-title { line-height: 0.95; }
 .cat-title { font-family: "Playfair Display", serif; }
 .cat-t-white { color: #fff; font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; }
-.cat-t-teal { color: #2ec5b8; font-size: 1.85rem; font-weight: 900; letter-spacing: -0.02em; }
-.cat-sub { color: rgba(255,255,255,0.85); font-size: 0.78rem; margin-top: 6px; display: flex; align-items: center; gap: 8px; }
-.cat-sub-line { display: inline-block; width: 28px; height: 2px; background: #2ec5b8; border-radius: 2px; }
+.cat-t-teal { color: #FFFFFF; font-size: 1.85rem; font-weight: 900; letter-spacing: -0.02em; }
+.cat-sub { color: rgba(255,255,255,0.82); font-size: 0.78rem; margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+.cat-sub-line { display: inline-block; width: 28px; height: 2px; background: #80AAA5; border-radius: 2px; }
 .cat-banner-deco {
   display: none;
 }
@@ -301,13 +301,13 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .cat-pill-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,0.16); }
 .cat-pill-card .cp-ico {
   width: 38px; height: 38px; flex-shrink: 0; border-radius: 9px;
-  background: #f0fffe; border: 1px solid #c8ece9; color: var(--teal);
+  background: #EEF3F2; border: 1px solid #80AAA5; color: var(--teal);
   display: grid; place-items: center; font-size: 1.2rem;
 }
 .cat-pill-card .cp-name { color: var(--ink); font-weight: 800; font-size: 0.84rem; line-height: 1.1; }
 .cat-pill-card .cp-count { color: var(--muted); font-size: 0.72rem; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
 .cat-pill-card .cp-badge {
-  width: 18px; height: 18px; border-radius: 50%; background: #2ec5b8; color: #fff;
+  width: 18px; height: 18px; border-radius: 50%; background: #2F746D; color: #fff;
   display: inline-grid; place-items: center; font-size: 0.68rem; font-weight: 800; flex-shrink: 0;
 }
 @media (max-width: 1080px) { .cat-pills { grid-template-columns: repeat(3, 1fr); } .cat-s { width: 64px; height: 64px; font-size: 2.6rem; } }
@@ -328,7 +328,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .reco-btn {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--teal); color: #fff; font-size: 0.82rem; font-weight: 800;
-  padding: 9px 18px; border-radius: 999px; box-shadow: 0 6px 14px rgba(64,128,126,0.28);
+  padding: 9px 18px; border-radius: 999px; box-shadow: 0 6px 14px rgba(22,91,84,0.28);
   transition: filter var(--t-fast), transform var(--t-fast);
 }
 .reco-btn:hover { filter: brightness(1.06); transform: translateY(-1px); }
@@ -342,7 +342,7 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 #menuGrid { gap: 16px; }
 #menuGrid .product-card { animation-delay: 0s; }
 .product-card {
-  border-radius: 18px; background: var(--surface); border: 1px solid #e8ecec;
+  border-radius: 18px; background: var(--surface); border: 1px solid #80AAA5;
   box-shadow: 0 8px 24px rgba(17,28,27,0.08), 0 2px 8px rgba(17,28,27,0.04);
   overflow: hidden; position: relative;
   transition: transform 0.32s cubic-bezier(0.34,1.56,0.64,1), box-shadow var(--t-med), border-color var(--t-fast);
@@ -353,16 +353,16 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .product-card:nth-child(3) { animation-delay: 0.14s; }
 .product-card:nth-child(4) { animation-delay: 0.19s; }
 @keyframes prodIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
-.product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(17,28,27,0.14), 0 8px 16px rgba(17,28,27,0.08); border-color: #c8ece9; }
+.product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(17,28,27,0.14), 0 8px 16px rgba(17,28,27,0.08); border-color: #80AAA5; }
 .product-media {
   height: 190px; position: relative; overflow: hidden;
   background: #fff; display: flex; align-items: center; justify-content: center; color: var(--teal-700); font-size: 3.9rem;
-  border-bottom: 1px solid #eef2f1;
+  border-bottom: 1px solid #EEF3F2;
 }
 .product-media::before, .product-media::after { display: none; } /* waves now via spans */
 .product-media .p-cat {
   position: absolute; top: 11px; left: 11px; z-index: 3;
-  background: #fff; border: 1px solid #d0ece9; color: #0e7a6e;
+  background: #fff; border: 1px solid #80AAA5; color: #0F4944;
   font-size: 0.62rem; font-weight: 800; letter-spacing: 0.05em; padding: 5px 11px; border-radius: 999px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.07); text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
 }
@@ -370,22 +370,22 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
 .product-card:hover .p-emoji { transform: scale(1.10) translateY(-2px); }
 .product-media .low-stock-tag {
   position: absolute; right: 10px; bottom: 10px; z-index: 2;
-  background: #fff; border: 1px solid #f0d9a8; color: #8a6a1f; font-size: 0.60rem; font-weight: 800;
+  background: #fff; border: 1px solid #80AAA5; color: #0F4944; font-size: 0.60rem; font-weight: 800;
   padding: 4px 9px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
 .product-body { padding: 16px 16px 16px; }
 .product-name { color: var(--ink); font-weight: 900; font-size: 1.02rem; line-height: 1.2; letter-spacing: -0.01em; }
-.product-desc { color: #6e7d7b; font-size: 0.82rem; margin: 6px 0 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.45em; }
+.product-desc { color: #2F746D; font-size: 0.82rem; margin: 6px 0 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.45em; }
 .product-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.product-price { color: #0e7a6e; font-weight: 900; font-size: 1.18rem; letter-spacing: -0.015em; }
-.product-price small { color: #8a9a99; font-weight: 600; font-size: 0.72rem; margin-right: 2px; }
-.prep-tag { background: #f1f5f4; color: #5a6b69; border: 1px solid #e2e8e7; border-radius: 999px; padding: 5px 10px; font-size: 0.66rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.product-price { color: #0F4944; font-weight: 900; font-size: 1.18rem; letter-spacing: -0.015em; }
+.product-price small { color: #2F746D; font-weight: 600; font-size: 0.72rem; margin-right: 2px; }
+.prep-tag { background: #EEF3F2; color: #2F746D; border: 1px solid #80AAA5; border-radius: 999px; padding: 5px 10px; font-size: 0.66rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
 .product-card .btn { border-radius: 11px; font-weight: 800; font-size: 0.84rem; padding: 9px 14px; }
-.product-card .btn-primary { background: var(--teal); border-color: var(--teal); box-shadow: 0 8px 18px rgba(64,128,126,0.26); }
-.product-card .btn-primary:hover:not(:disabled) { background: var(--teal-600); border-color: var(--teal-600); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(64,128,126,0.32); }
-.product-card .btn-outline { color: var(--teal-700); border-color: #c8ddd9; background: #fff; }
-.product-card .btn-outline:hover:not(:disabled) { background: #f0fffe; color: var(--teal-700); border-color: #7fcfc8; }
-.sold-flag span { background: #1a2423; }
+.product-card .btn-primary { background: var(--teal); border-color: var(--teal); box-shadow: 0 8px 18px rgba(22,91,84,0.26); }
+.product-card .btn-primary:hover:not(:disabled) { background: var(--teal-600); border-color: var(--teal-600); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(22,91,84,0.32); }
+.product-card .btn-outline { color: var(--teal-700); border-color: #80AAA5; background: #fff; }
+.product-card .btn-outline:hover:not(:disabled) { background: #EEF3F2; color: var(--teal-700); border-color: #80AAA5; }
+.sold-flag span { background: #165B54; }
 .product-card.disabled { opacity: 0.62; }
 
 /* Fondo del menú — menos apagado, más vivo pero combina */
@@ -439,15 +439,15 @@ body.has-bottom-nav .cat-pill-card .cp-name {
 body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-hint,
 body.has-bottom-nav .cat-pill-card .cp-count {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.82);
   text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
 }
-body.has-bottom-nav .product-card .product-price { color: #d4fff0; text-shadow: 0 1px 2px rgba(0,0,0,0.24); }
+body.has-bottom-nav .product-card .product-price { color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.24); }
 body.has-bottom-nav .product-card .product-price small { color: rgba(255,255,255,0.82); }
 body.has-bottom-nav .product-card .bx,
 body.has-bottom-nav .product-card .product-media .bx,
 body.has-bottom-nav .capacity-card .bx,
-body.has-bottom-nav .order-card .bx { color: rgba(255,255,255,0.94); }
+body.has-bottom-nav .order-card .bx { color: #FFFFFF; }
 
 /* ============================================================
    MENÚ — NUEVO LAYOUT: sidebar de categorías siempre visible
@@ -459,7 +459,7 @@ body.has-bottom-nav .order-card .bx { color: rgba(255,255,255,0.94); }
 .menu-lead .ml-sub { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
 .ml-badge {
   background: var(--teal); color: #fff; font-weight: 850; font-size: 0.84rem;
-  padding: 8px 16px; border-radius: 999px; box-shadow: 0 6px 14px rgba(64,128,126,0.24);
+  padding: 8px 16px; border-radius: 999px; box-shadow: 0 6px 14px rgba(22,91,84,0.24);
   white-space: nowrap; align-self: center;
 }
 .menu-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
@@ -499,7 +499,7 @@ body.has-bottom-nav .order-card .bx { color: rgba(255,255,255,0.94); }
   padding-left: 42px; border-radius: 14px; background: #fff; border: 1px solid var(--line);
   box-shadow: 0 2px 10px rgba(17,28,27,0.05); font-size: 0.92rem;
 }
-.menu-toolbar .mt-search .input:focus { border-color: var(--teal-100); box-shadow: 0 0 0 3px rgba(64,128,126,0.12); }
+.menu-toolbar .mt-search .input:focus { border-color: var(--teal-100); box-shadow: 0 0 0 3px rgba(22,91,84,0.12); }
 .menu-toolbar .mt-search .leading-ico { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--teal); font-size: 0.95rem; }
 @media (max-width: 900px) {
   .menu-layout { grid-template-columns: 1fr; }
@@ -520,7 +520,7 @@ body.has-bottom-nav .order-card .bx { color: rgba(255,255,255,0.94); }
 .prod-detail .muted { color: var(--muted); }
 .prod-detail .qty-stepper { border-radius: 12px; border-color: var(--line-strong); }
 .prod-detail .qty-stepper button { color: var(--teal-700); }
-.prod-detail #btnAdd { background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(64,128,126,0.28); }
+.prod-detail #btnAdd { background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(22,91,84,0.28); }
 .prod-detail #btnAdd:disabled { background: var(--muted-2); box-shadow: none; }
 
 /* ---------- Textos generales cliente ----------
@@ -539,8 +539,8 @@ body.has-bottom-nav .grid-2 .card, body.has-bottom-nav .grid-3 .card, body.has-b
   box-shadow: var(--glass-shadow);
 }
 body.has-bottom-nav .card .card-title { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
-body.has-bottom-nav .card .card-sub { color: rgba(255, 255, 255, 0.85); }
-body.has-bottom-nav .card .kv dt { color: rgba(255, 255, 255, 0.72); }
+body.has-bottom-nav .card .card-sub { color: rgba(255, 255, 255, 0.82); }
+body.has-bottom-nav .card .kv dt { color: rgba(255, 255, 255, 0.82); }
 body.has-bottom-nav .card .kv dd { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30); }
 body.has-bottom-nav .card-header,
 body.has-bottom-nav .card-footer,
@@ -559,7 +559,7 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
 }
 
   /* Cristal: product media se integra con el panel glass */
-  body.has-bottom-nav .prod-detail .product-media { background: rgba(64, 128, 126, 0.38); }
+  body.has-bottom-nav .prod-detail .product-media { background: rgba(22, 91, 84, 0.38); }
 
   /* Pedidos: separación constante */
   body.has-bottom-nav #currentOrders,
@@ -571,11 +571,11 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   /* Cristal: iconos y tags priorizan contraste sobre el verde translúcido */
   body.has-bottom-nav .product-card .product-media { color: #ffffff; }
   body.has-bottom-nav .product-media .p-cat,
-  body.has-bottom-nav .product-media .p-cat i { color: #0e7a6e; }
+  body.has-bottom-nav .product-media .p-cat i { color: #0F4944; }
   body.has-bottom-nav .product-card .prep-tag { color: #ffffff; background: rgba(15, 45, 43, 0.52); border-color: rgba(255, 255, 255, 0.18); }
   body.has-bottom-nav .ci-media,
   body.has-bottom-nav .select-card .sc-ico,
-  body.has-bottom-nav .security-icon { color: #14464b; }
+  body.has-bottom-nav .security-icon { color: #0F4944; }
 
   /* Pills de categoría del menú: texto e interacción coherentes con el cristal */
   body.has-bottom-nav .menu-side-list .cat-pill { color: #ffffff; }
@@ -611,38 +611,38 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36);
   }
-  body.has-bottom-nav .card > .card-header .card-sub { color: rgba(255, 255, 255, 0.85); }
+  body.has-bottom-nav .card > .card-header .card-sub { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .card .muted,
-  body.has-bottom-nav .order-card .muted { color: rgba(255, 255, 255, 0.78); }
+  body.has-bottom-nav .order-card .muted { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .profile-hero > div > h2 { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
-  body.has-bottom-nav .order-card > .order-head .order-num { color: #eafff8; }
+  body.has-bottom-nav .order-card > .order-head .order-num { color: #FFFFFF; }
   body.has-bottom-nav .order-card > .order-glance .order-glance-label { color: #ffffff; }
-  body.has-bottom-nav .order-card .order-meta { color: rgba(255, 255, 255, 0.84); }
+  body.has-bottom-nav .order-card .order-meta { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .order-card .tl-label { color: #ffffff; }
   body.has-bottom-nav .order-card .tl-time,
-  body.has-bottom-nav .order-card .tl-step.done .tl-label { color: rgba(255, 255, 255, 0.76); }
-  body.has-bottom-nav .order-eta strong { color: #b6ffe9; }
+  body.has-bottom-nav .order-card .tl-step.done .tl-label { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .order-eta strong { color: #FFFFFF; }
   body.has-bottom-nav .cart-item .ci-name { color: #ffffff; }
-  body.has-bottom-nav .cart-item .ci-meta { color: rgba(255, 255, 255, 0.84); }
-  body.has-bottom-nav .summary-row { color: rgba(255, 255, 255, 0.84); }
+  body.has-bottom-nav .cart-item .ci-meta { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .summary-row { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .summary-row.total { color: #ffffff; border-color: rgba(255, 255, 255, 0.28); }
-  body.has-bottom-nav .summary-row.total span:last-child { color: #d4fff0; }
+  body.has-bottom-nav .summary-row.total span:last-child { color: #FFFFFF; }
   body.has-bottom-nav .capacity-head h3,
-  body.has-bottom-nav .capacity-num { color: rgba(255, 255, 255, 0.88); }
+  body.has-bottom-nav .capacity-num { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .capacity-num b { color: #ffffff; }
   body.has-bottom-nav .select-card .sc-desc { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .select-card .sc-name { color: #ffffff; }
   body.has-bottom-nav .select-card.active { background: rgba(255, 255, 255, 0.30); border-color: rgba(255, 255, 255, 0.62); }
   body.has-bottom-nav .file-drop { color: #ffffff; }
   body.has-bottom-nav .file-drop:hover { color: var(--teal-700); background: rgba(255, 255, 255, 0.55); border-color: rgba(255, 255, 255, 0.70); }
-  body.has-bottom-nav .file-drop.success { color: var(--success-strong); background: rgba(230, 246, 238, 0.85); }
+  body.has-bottom-nav .file-drop.success { color: var(--success-strong); background: rgba(238, 243, 242, 0.85); }
 
   /* Resumen de pedidos sobre cristal */
   body.has-bottom-nav .orders-overview-num { color: #ffffff; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
   body.has-bottom-nav .orders-overview .muted { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .card .empty-state,
   body.has-bottom-nav .card .empty-state h3,
-  body.has-bottom-nav .card .empty-state p { color: rgba(255, 255, 255, 0.88); }
+  body.has-bottom-nav .card .empty-state p { color: rgba(255, 255, 255, 0.82); }
   body.has-bottom-nav .card .empty-state h3 { text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
 
   /* Detalle de producto dentro del panel glass */
@@ -650,18 +650,18 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   body.has-bottom-nav .prod-detail .label { color: #ffffff; }
   body.has-bottom-nav .prod-detail h1 { text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36); }
   body.has-bottom-nav .prod-detail .muted { color: rgba(255, 255, 255, 0.82); }
-  body.has-bottom-nav .prod-detail .checkbox-row { color: rgba(255, 255, 255, 0.90); }
-  body.has-bottom-nav .prod-detail span[style*="primary-strong"] { color: #d4fff0 !important; }
+  body.has-bottom-nav .prod-detail .checkbox-row { color: rgba(255, 255, 255, 0.82); }
+  body.has-bottom-nav .prod-detail span[style*="primary-strong"] { color: #FFFFFF !important; }
 
   /* Separa el aviso de demanda del panel de capacidad en Mi carrito. */
   body.has-bottom-nav #cartCapacity { margin-top: var(--sp-4); }
 
   /* Historial: número destacado y fecha en una etiqueta visible. */
   body.has-bottom-nav .order-card-history > div:first-child .order-num {
-    color: #d4fff0;
+    color: #FFFFFF;
     text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
   }
-  body.has-bottom-nav .order-card-history .order-history-meta .bold { color: #d4fff0 !important; }
+  body.has-bottom-nav .order-card-history .order-history-meta .bold { color: #FFFFFF !important; }
   body.has-bottom-nav .security-row b { color: #ffffff; }
   body.has-bottom-nav .order-card-history > div:first-child .badge-outline {
     background: var(--teal);
@@ -672,13 +672,13 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
 
   /* Notificaciones: mismo cristal verde del resto del Panel Cliente. */
   body.has-bottom-nav .toast {
-    background: rgba(64, 128, 126, 0.50);
+    background: rgba(22, 91, 84, 0.50);
     backdrop-filter: blur(14px) saturate(150%);
     -webkit-backdrop-filter: blur(14px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.30);
     border-left-width: 4px;
     border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(17, 28, 27, 0.18), 0 2px 10px rgba(64, 128, 126, 0.20);
+    box-shadow: 0 8px 30px rgba(17, 28, 27, 0.18), 0 2px 10px rgba(22, 91, 84, 0.20);
     color: #FFFFFF;
   }
   body.has-bottom-nav .toast .t-ico,
@@ -701,12 +701,12 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   }
   body.has-bottom-nav .qty-stepper > button:disabled {
     background: var(--teal-600);
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.82);
   }
   body.has-bottom-nav .qty-stepper .qty-val {
     min-height: 34px;
     background: #fff;
-    color: #111c1b;
+    color: #0F4944;
   }
 
   /* Pedidos y perfil: botones visibles con la paleta existente. */
@@ -808,7 +808,7 @@ body.is-adminbar .drawer .detail-total,
 body.is-admin .drawer .detail-total { color: var(--text-on-glass) !important; border-color: rgba(255,255,255,0.22) !important; }
 body.has-bottom-nav .drawer .detail-total b,
 body.is-adminbar .drawer .detail-total b,
-body.is-admin .drawer .detail-total b { color: #d4fff0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }
+body.is-admin .drawer .detail-total b { color: #FFFFFF !important; text-shadow: 0 1px 2px rgba(0,0,0,0.35) !important; }
 body.has-bottom-nav .drawer .detail-facts > div > span,
 body.is-adminbar .drawer .detail-facts > div > span,
 body.is-admin .drawer .detail-facts > div > span { color: var(--text-secondary-on-glass) !important; }
@@ -835,7 +835,7 @@ body.is-adminbar .drawer .drawer-header .modal-close { color: var(--text-on-glas
 /* Bloque rosado de cancelación: fondo claro → texto oscuro (no blanco global) */
 body.has-bottom-nav .drawer .alert.danger,
 body.is-adminbar .drawer .alert.danger,
-body.is-admin .drawer .alert.danger { background: var(--danger-soft) !important; color: var(--danger-strong) !important; border-color: #f3cfcf !important; text-shadow: none !important; }
+body.is-admin .drawer .alert.danger { background: var(--danger-soft) !important; color: var(--danger-strong) !important; border-color: #80AAA5 !important; text-shadow: none !important; }
 body.has-bottom-nav .drawer .alert.danger .a-title,
 body.is-adminbar .drawer .alert.danger .a-title,
 body.is-admin .drawer .alert.danger .a-title,
@@ -845,9 +845,9 @@ body.is-admin .drawer .alert.danger .a-ico,
 body.has-bottom-nav .drawer .alert.danger .a-ico .bx,
 body.is-adminbar .drawer .alert.danger .a-ico .bx { color: var(--danger-strong) !important; filter: none !important; }
 body.has-bottom-nav .drawer .alert.warning,
-body.is-adminbar .drawer .alert.warning { background: var(--warning-soft) !important; color: #8a5c05 !important; border-color: #f0dfb0 !important; text-shadow: none !important; }
+body.is-adminbar .drawer .alert.warning { background: var(--warning-soft) !important; color: #0F4944 !important; border-color: #80AAA5 !important; text-shadow: none !important; }
 body.has-bottom-nav .drawer .alert.info,
-body.is-adminbar .drawer .alert.info { background: var(--info-soft) !important; color: var(--info) !important; border-color: #cfe0f7 !important; text-shadow: none !important; }
+body.is-adminbar .drawer .alert.info { background: var(--info-soft) !important; color: var(--info) !important; border-color: #80AAA5 !important; text-shadow: none !important; }
 /* Badges de estado/pago dentro del drawer sobre glass: mantener paleta pero con contraste correcto */
 body.has-bottom-nav .drawer .badge,
 body.is-adminbar .drawer .badge,
@@ -888,7 +888,7 @@ img, .product-media, .cat-pill-card .cp-ico { max-width: 100%; object-fit: conta
    Únicamente color/sombra de texto; no se cambian fondos,
    estructura, tamaños ni el estilo glass. Se acota con la clase
    .checkout-view que app.js añade al <main> del checkout.
-   Misma paleta del diseño (blanco glass y verde oscuro #14464b).
+   Misma paleta del diseño (blanco glass y verde oscuro #0F4944).
    ============================================================ */
 body.has-bottom-nav .checkout-view .card > .card-header .card-title,
 body.has-bottom-nav .checkout-view .alert .a-title,
@@ -907,21 +907,21 @@ body.has-bottom-nav .checkout-view .alert,
 body.has-bottom-nav .checkout-view .alert div,
 body.has-bottom-nav .checkout-view .alert p,
 body.has-bottom-nav .checkout-view .alert span:not(.a-ico) {
-  color: rgba(255, 255, 255, 0.97) !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
 }
 /* Texto plano dentro de las tarjetas: deja de heredar el gris oscuro
    del cuerpo y queda blanco legible sobre el cristal (misma paleta). */
 body.has-bottom-nav .checkout-view .card {
-  color: rgba(255, 255, 255, 0.97) !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42);
 }
 /* Iconos de los métodos de entrega/pago dentro de su cajón claro:
-   se pinchan sobre el <i> el verde oscuro del diseño (#14464b) que
+   se pinchan sobre el <i> el verde oscuro del diseño (#0F4944) que
    antes quedaba anulado por .card .bx blanco → iconos invisibles. */
 body.has-bottom-nav .checkout-view .select-card .sc-ico .bx,
 body.has-bottom-nav .checkout-view .select-card .sc-ico i {
-  color: #14464b !important;
+  color: #0F4944 !important;
   font-weight: 700;
 }
 /* Iconos de avisos/instrucciones sobre glass: blancos con sombra
@@ -951,14 +951,21 @@ body.has-bottom-nav .checkout-view #payDetail .alert.info .muted,
 body.has-bottom-nav .checkout-view #payDetail .alert.info .tiny,
 body.has-bottom-nav .checkout-view #payDetail .alert.info small,
 body.has-bottom-nav .checkout-view #payDetail .alert.info b {
-  color: var(--info) !important;
-  text-shadow: none !important;
+  color: var(--text-on-glass) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42) !important;
+}
+body.has-bottom-nav .checkout-view #payDetail .alert.info {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico .bx,
 body.has-bottom-nav .checkout-view #payDetail .alert.info .a-ico i {
-  color: var(--info) !important;
+  color: var(--text-on-glass) !important;
   font-weight: 700;
-  filter: none !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)) !important;
 }
 /* Tarjetas (QR, Titular, QR/Código) dentro del detalle:
    NADA de fondo aquí: el glass verde institucional (cafeteria.css
@@ -1005,7 +1012,7 @@ body.is-adminbar .sales-hour-chart {
    letras e iconos sobre el glass, con la paleta existente.
    ============================================================ */
 body.is-adminbar .bb .st-sub a {
-  color: #cdf4e4 !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 body.is-adminbar .bb .stat-ico {
@@ -1021,7 +1028,7 @@ body.is-adminbar .bb + .card > div:nth-of-type(2) i {
   color: var(--text-2) !important;
 }
 body.is-adminbar .bb + .card a.tiny {
-  color: #cdf4e4 !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
@@ -1037,11 +1044,11 @@ body.is-adminbar .config-hours-view div[style*="color:var(--primary)"] {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 body.is-adminbar .config-hours-view .tiny {
-  color: rgba(255, 255, 255, 0.94) !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
 }
 body.is-adminbar .config-hours-view .tiny.muted {
-  color: rgba(255, 255, 255, 0.90) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
 }
 body.is-adminbar .config-hours-view .label {
@@ -1049,11 +1056,11 @@ body.is-adminbar .config-hours-view .label {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32) !important;
 }
 body.is-adminbar .config-hours-view .checkbox-row {
-  color: rgba(255, 255, 255, 0.94) !important;
+  color: #FFFFFF !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28) !important;
 }
 body.is-adminbar .config-hours-view .checkbox-row .tiny.muted {
-  color: rgba(255, 255, 255, 0.88) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
 }
 /* Tarjeta Nota: fondo claro primary-soft → texto oscuro para contraste */
 body.is-adminbar .config-hours-view .card[style*="primary-soft"] div[style*="color:var(--primary-strong)"] {
@@ -1108,22 +1115,21 @@ body.is-adminbar .reports-download-btn:disabled {
 body.has-bottom-nav #currentOrders .badge.status-ready,
 body.has-bottom-nav #historyOrders .badge.status-ready,
 body.has-bottom-nav .drawer .badge.status-ready {
-  background: rgba(46, 155, 160, .28) !important;
-  border-color: rgba(130, 230, 230, .45) !important;
-  color: #d8ffff !important;
+  background: rgba(22, 91, 84, .72) !important;
+  border-color: rgba(255, 255, 255, .20) !important;
+  color: #FFFFFF !important;
 }
 body.has-bottom-nav #currentOrders .badge.status-delivered,
 body.has-bottom-nav #historyOrders .badge.status-delivered,
 body.has-bottom-nav .drawer .badge.status-delivered {
-  background: rgba(38, 150, 110, .30) !important;
-  border-color: rgba(120, 220, 180, .45) !important;
-  color: #e4fff5 !important;
+  background: rgba(22, 91, 84, .72) !important;
+  border-color: rgba(255, 255, 255, .20) !important;
+  color: #FFFFFF !important;
 }
 body.has-bottom-nav #currentOrders .badge.status-cancelled,
 body.has-bottom-nav #historyOrders .badge.status-cancelled,
 body.has-bottom-nav .drawer .badge.status-cancelled {
-  background: rgba(190, 75, 75, .28) !important;
-  border-color: rgba(255, 150, 150, .45) !important;
-  color: #ffeaea !important;
+  background: rgba(22, 91, 84, .72) !important;
+  border-color: rgba(255, 255, 255, .20) !important;
+  color: #FFFFFF !important;
 }
-

@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "python -m http.server 8080",
-    "test": "node ../tests/frontend/landing-smoke.test.js && node ../tests/frontend/checkout.test.js && node ../tests/frontend/menu-pagination.test.js && node ../tests/frontend/qa-regressions.test.js && node ../tests/frontend/appearance.test.js",
+    "test": "node ../tests/frontend/landing-smoke.test.js && node ../tests/frontend/checkout.test.js && node ../tests/frontend/menu-pagination.test.js && node ../tests/frontend/qa-regressions.test.js && node ../tests/frontend/appearance.test.js && node ../tests/frontend/ventas-regressions.test.js",
     "lint": "eslint js/*.js",
     "format": "prettier --write \"js/*.js\" \"css/*.css\" \"index.html\""
   },
