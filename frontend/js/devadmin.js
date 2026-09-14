@@ -216,8 +216,10 @@ async function devUsers(el) {
           <td class="small muted">${esc(u.profile?.last_access || '—')}</td>
           <td class="small muted">${u.date_joined ? u.date_joined.slice(0, 10) : '—'}</td>
           <td>
-            <button class="btn btn-outline btn-sm" data-edit="${u.id}">Editar</button>
-            <button class="btn btn-neutral btn-sm" data-toggle="${u.id}">${u.is_active ? 'Desactivar' : 'Activar'}</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" data-edit="${u.id}">Editar</button>
+              <button class="btn btn-neutral btn-sm" data-toggle="${u.id}">${u.is_active ? 'Desactivar' : 'Activar'}</button>
+            </div>
           </td>
         </tr>`).join('')}</tbody></table></div>`;
 

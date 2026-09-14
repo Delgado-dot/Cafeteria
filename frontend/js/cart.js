@@ -184,8 +184,8 @@ async function renderCart(el) {
   }
 
   app.innerHTML = `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Seguir comprando</button>
-    <div class="page-title"><h1>Mi carrito</h1><span class="badge badge-primary" id="cartTotalTop">${money(Cart.total())}</span></div>
+    <button class="btn btn-ghost btn-sm back-to-menu-btn" style="margin-bottom:16px" onclick="setRoute('menu')"><i class="bx bx-arrow-back"></i> Seguir comprando</button>
+    <div class="page-title"><h1 class="title-format">Mi <span class="title-format-color-2">carrito</span></h1><span class="badge badge-primary" id="cartTotalTop">${money(Cart.total())}</span></div>
     ${banner}
     <div style="margin-bottom:18px" id="cartCapacity"></div>
     <div class="cart-layout">
@@ -223,7 +223,7 @@ async function renderCart(el) {
             <button data-inc>+</button>
           </div>
           <button class="remove-link" data-del>Eliminar</button>
-          <span class="bold" style="margin-left:auto">${money(item.price * item.qty)}</span>
+          <span class="ci-subtotal"><small>Subtotal</small><b>${money(item.price * item.qty)}</b></span>
         </div>
       </div>`;
     const lineKey = Cart.lineKey(item);

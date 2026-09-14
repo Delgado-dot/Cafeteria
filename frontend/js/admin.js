@@ -566,10 +566,6 @@ async function barConfigTabs(el, initialTab) {
             <div class="tiny muted" style="margin-left:26px">Aviso sonoro/visual cuando entra un pedido.</div>
           </div>
         </div>
-        <div class="card" style="width:100%;max-width:none;margin:0;background:var(--primary-soft);border-color:var(--primary-glass)">
-          <div style="font-weight:700;color:var(--primary-strong);margin-bottom:6px"><i class="bx bx-info-circle"></i> Nota</div>
-          <div class="tiny" style="color:var(--text-2)">Solo se reorganizó lo existente. No se agregaron impuestos/tasas ni funcionalidades no implementadas.</div>
-        </div>
       </div>
     </div>
   `;
@@ -692,19 +688,19 @@ async function barReports(el) {
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
         <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
         <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
         <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
-        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px;color:#fff"></i>Descargar</button>
       </div>
     </div>
   `;
@@ -717,7 +713,7 @@ async function barReports(el) {
           <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
             <div>
               <div class="tiny muted" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Ventas totales</div>
-              <div style="font-size:2rem;font-weight:800;color:var(--primary-strong)">${money(totalVentas)}</div>
+              <div style="font-size:2rem;font-weight:800">${money(totalVentas)}</div>
               <div class="tiny muted">${orders.length} pedidos válidos · ${money(totalHoy)} hoy</div>
             </div>
             <svg width="120" height="48" viewBox="0 0 120 48" style="flex-shrink:0">
@@ -987,13 +983,13 @@ async function barDashboard(el) {
       </div>
       ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>{
         const img = product.image ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(product.image) : product.image) : '';
-        const thumb = img ? `<img src="${esc(img)}" alt="${esc(product.name)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>` : `<div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>`;
+        const thumb = img ? `<img src="${esc(img)}" alt="${esc(product.name)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,0.08)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.12);display:none;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;color:#fff">${productIcon(product)}</div>` : `<div style="width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;color:#fff">${productIcon(product)}</div>`;
         return `
-        <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
+        <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-md);background:rgba(255,255,255,0.06);backdrop-filter:blur(8px);color:#fff">
           <div style="flex-shrink:0;display:flex">${thumb}</div>
           <div style="min-width:0">
-            <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product.name)}</div>
-            <div class="tiny muted">${qty} unidades vendidas</div>
+            <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${esc(product.name)}</div>
+            <div class="tiny" style="color:rgba(255,255,255,0.55)">${qty} unidades vendidas</div>
           </div>
         </div>`;
       }).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
@@ -1311,7 +1307,7 @@ function queueOrderCard(o, tab) {
           return `<div style="display:flex;align-items:center;gap:8px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
         }).join('')}
       </div>
-      <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(d.userName)} · <b>Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b>Nota:</b> ${esc(d.note)}` : ''}</div>
+      <div class="tiny" style="color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:var(--r-sm);margin-top:6px"><b style="color:#fff">Cliente:</b> ${esc(d.userName)} · <b style="color:#fff">Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b style="color:#fff">Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b style="color:#fff">Nota:</b> ${esc(d.note)}` : ''}</div>
       ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(d.payment)}: ${d.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(d.paymentStatus)}</div></div>` : ''}
       <div class="queue-actions">${actionBtns}</div>
     </div>`;
@@ -1886,7 +1882,9 @@ async function barStock(el) {
       <div id="lowStockList" style="display:flex;flex-direction:column;gap:10px">
         ${lowStock.length ? lowStock.slice(0,4).map((p)=>`
           <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer" data-low="${p.id}">
-            <div style="width:36px;height:36px;border-radius:8px;background:var(--warning-soft);display:flex;align-items:center;justify-content:center;color:var(--warning-strong)"><i class="bx bx-error"></i></div>
+            <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${p.image ? `<img src="${resolveMediaUrl(p.image)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<i class=\\'bx bx-error\\' style=\\'color:var(--warning-strong)\\'></i>'">` : `<i class="bx bx-error" style="color:var(--warning-strong)"></i>`}
+            </div>
             <div style="flex:1;min-width:0"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
             <span class="badge ${p.stock <= 2 ? 'badge-danger' : 'badge-warning'}">${p.stock <= 2 ? 'Muy bajo' : 'Bajo'}</span>
             <span class="bold tabular-nums">${p.stock}</span>
@@ -1899,7 +1897,9 @@ async function barStock(el) {
       <div id="outStockList" style="display:flex;flex-direction:column;gap:10px">
         ${outOfStock.length ? outOfStock.slice(0,4).map((p)=>`
           <div style="display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-md)">
-            <div style="width:36px;height:36px;border-radius:8px;background:var(--danger-soft);display:flex;align-items:center;justify-content:center;color:var(--danger)"><i class="bx bx-x-circle"></i></div>
+            <div style="width:36px;height:36px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              ${p.image ? `<img src="${resolveMediaUrl(p.image)}" alt="${esc(p.name)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<i class=\\'bx bx-x-circle\\' style=\\'color:var(--danger)\\'></i>'">` : `<i class="bx bx-x-circle" style="color:var(--danger)"></i>`}
+            </div>
             <div style="flex:1"><div class="bold" style="font-size:14px">${esc(p.name)}</div><div class="tiny muted">${esc(p.category)}</div></div>
             <span class="badge badge-danger">Agotado</span>
           </div>
@@ -2176,12 +2176,13 @@ async function barPayments(el) {
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-credit-card"></span> Pagos</h1></div>
     ${review.length ? `<div class="status-banner info"><span class="ico"><i class="bx bx-info-circle"></i></span><div><b>${review.length} pago(s) en revisión.</b> Revisa los comprobantes de transferencia.</div></div>` : ''}
-    <div class="card" style="margin-bottom:16px;background:var(--primary);color:#fff;position:relative;overflow:hidden;padding:20px 18px;border:none">
-      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.14;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
+    <div class="card" style="margin-bottom:16px;background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);color:#fff;position:relative;overflow:hidden;padding:20px 18px">
+      <div style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:5.5rem;opacity:0.08;color:#fff;pointer-events:none"><i class="bx bx-wallet"></i></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(64,128,126,0.25) 0%,rgba(64,128,126,0.08) 100%);pointer-events:none;border-radius:inherit"></div>
       <div style="position:relative;z-index:1">
-        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.9;font-weight:600">Total recaudado</div>
-        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px">${money(totalToday)}</div>
-        <div style="font-size:13px;opacity:0.9">en ${validToday.length} transacciones · hoy ${today}</div>
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;font-weight:600">Total recaudado</div>
+        <div style="font-size:2.6rem;font-weight:800;line-height:1;margin:6px 0 4px;color:#fff">${money(totalToday)}</div>
+        <div style="font-size:13px;opacity:0.7">en ${validToday.length} transacciones · hoy ${today}</div>
       </div>
     </div>
     <div class="card" style="margin-bottom:16px;padding:16px">
@@ -2906,7 +2907,7 @@ async function barDelivery(el) {
           <label class="label">Capacidad máxima simultánea</label>
           <input class="input" type="number" id="dlMax" value="${cfg.deliveryMax}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Pedidos de delivery que pueden atenderse simultáneamente.</div>
         </div>
-        <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <div style="margin-top:6px;padding:10px 0;border-top:1px solid var(--border);display:flex;justify-content:flex-end;align-items:center">
           <button class="btn btn-primary" id="dlSave">Guardar configuración</button>
         </div>
       </div>

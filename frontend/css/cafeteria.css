@@ -80,7 +80,7 @@ body.has-bottom-nav .app::before {
   inset: -14px;
   z-index: -1;
   background: var(--dashboard-background) center / cover no-repeat;
-  filter: blur(7px);
+  filter: blur(7px) brightness(0.5);
   transform: scale(1.03);
 }
 body.has-bottom-nav .app > * { position: relative; }
@@ -208,11 +208,32 @@ body.has-bottom-nav .app { padding-bottom: 76px; }
   color: #fff; font-size: clamp(1.9rem, 4.4vw, 3.2rem); font-weight: 900;
   line-height: 0.98; margin: 10px 0 12px; letter-spacing: -0.03em; text-shadow: 0 2px 18px rgba(0,0,0,0.28);
 }
-.home-hero h1 .hl { color: #FFFFFF; font-weight: 900; }
-.home-hero .hh-sub {
-  color: rgba(255,255,255,0.82); font-size: clamp(0.94rem, 1.7vw, 1.05rem);
-  line-height: 1.55; max-width: 500px;
+.home-hero h1 .hl { color: #8fe0d8; font-weight: 900; }
+.home-hero h1,
+.home-hero h1 .hl{
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+  paint-order: stroke fill;
 }
+body.has-bottom-nav .title-format{
+  color: #fff;
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+  paint-order: stroke fill;
+}
+body.has-bottom-nav .title-format .title-format-color-2{
+  color: #8fe0d8;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.72);
+}
+.home-hero .hh-sub {
+  color: rgba(255,255,255,0.86); font-size: clamp(0.9rem, 1.7vw, 0.9rem); font-family: "Sekuya", system-ui, sans-serif;
+  line-height: 1.55; max-width: 600px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.82);
+}
+.home-sub .hh-sub { text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82); }
 .home-hero .hh-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
 .home-hero .hh-btn {
   display: inline-flex; align-items: center; gap: 9px;
@@ -429,6 +450,11 @@ body.has-bottom-nav .cat-pill-card .cp-ico,
 body.has-bottom-nav .menu-side-list .cat-pill .cp-ico {
   background: rgba(255, 255, 255, 0.42);
   border-color: rgba(255, 255, 255, 0.45);
+  color: #fff !important;
+}
+body.has-bottom-nav .cat-pill-card .cp-ico i,
+body.has-bottom-nav .cat-pill-card .cp-ico .bx {
+  color: #fff !important;
 }
 body.has-bottom-nav .product-card .product-name,
 body.has-bottom-nav .menu-side .menu-side-title,
@@ -438,10 +464,19 @@ body.has-bottom-nav .cat-pill-card .cp-name {
 }
 body.has-bottom-nav .product-card .product-desc,
 body.has-bottom-nav .menu-side .menu-side-hint,
-body.has-bottom-nav .cat-pill-card .cp-count {
-  color: rgba(255, 255, 255, 0.82);
+body.has-bottom-nav .cat-pill-card .cp-count,
+body.has-bottom-nav .cat-pill-card .cp-count .cp-badge {
+  color: rgba(255, 255, 255, 0.85) !important;
   text-shadow: 0 1px 2px rgba(16, 36, 34, 0.30);
 }
+body.has-bottom-nav .summary-card .card-title { color: #ffffff !important; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36) !important; }
+body.has-bottom-nav .ml-sub { color: rgba(255, 255, 255, 0.86) !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.42) !important; }
+body.has-bottom-nav .cat-banner .cat-title { color: #fff; }
+body.has-bottom-nav .cat-banner .cat-sub { color: rgba(255, 255, 255, 0.85); }
+body.has-bottom-nav .empty-state { color: rgba(255, 255, 255, 0.88) !important; }
+body.has-bottom-nav .empty-state h3 { color: #ffffff !important; text-shadow: 0 1px 2px rgba(16, 36, 34, 0.36) !important; }
+body.has-bottom-nav .empty-state p { color: rgba(255, 255, 255, 0.72) !important; }
+body.has-bottom-nav .empty-state .es-ico { color: #ffffff !important; opacity: 0.92 !important; }
 body.has-bottom-nav .product-card .product-price { color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.24); }
 body.has-bottom-nav .product-card .product-price small { color: rgba(255,255,255,0.82); }
 body.has-bottom-nav .product-card .bx,
@@ -454,9 +489,29 @@ body.has-bottom-nav .order-card .bx { color: #FFFFFF; }
    Todas las categorías a la vista, estética en cualquier tamaño
    ============================================================ */
 .menu-lead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.menu-lead .ml-title { font-size: clamp(1.65rem, 3.2vw, 2.15rem); font-weight: 900; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+.menu-lead .ml-title { font-size: clamp(2.5rem, 3.2vw, 2.5rem); font-family: "Playfair Display", system-ui, sans-serif; font-weight: 900; color: var(--ink); letter-spacing: -0.03em; line-height: 1; }
+body.has-bottom-nav .menu-title-format {
+  font-size: clamp(2.5rem, 3.2vw, 2.5rem);
+  font-family: "Playfair Display", system-ui, sans-serif;
+}
 .menu-lead .ml-title span { color: var(--teal); }
-.menu-lead .ml-sub { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
+.menu-lead .ml-sub{
+    font-family: "Sekuya", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    margin-top: 6px;
+}
+.menu-lead .ml-sub{ text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82); }
+body.has-bottom-nav .doodle-subtext{
+    font-family: "Sekuya", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 0.95rem;
+    text-shadow: 4px 2px 4px rgba(0, 0, 0, 0.82);
+}
+body.has-bottom-nav .doodle-subtext .doodle-teal{ color: #8fe0d8 !important; }
+body.has-bottom-nav .doodle-subtext .doodle-white{ color: #fff !important; }
+.menu-lead .ml-sub-white { color: #8fe0d8;; }
+.menu-lead .ml-sub-teal { color: #fff; }
 .ml-badge {
   background: var(--teal); color: #fff; font-weight: 850; font-size: 0.84rem;
   padding: 8px 16px; border-radius: 999px; box-shadow: 0 6px 14px rgba(22,91,84,0.24);
@@ -522,6 +577,51 @@ body.has-bottom-nav .order-card .bx { color: #FFFFFF; }
 .prod-detail .qty-stepper button { color: var(--teal-700); }
 .prod-detail #btnAdd { background: var(--teal); border-radius: 12px; font-weight: 850; box-shadow: 0 10px 22px rgba(22,91,84,0.28); }
 .prod-detail #btnAdd:disabled { background: var(--muted-2); box-shadow: none; }
+body.has-bottom-nav .back-to-menu-btn {
+  border: 1px solid var(--teal-700);
+  color: var(--teal-700);
+  background: rgba(255, 255, 255, 0.82);
+}
+body.has-bottom-nav .back-to-menu-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(23, 52, 50, 0.28);
+}
+body.has-bottom-nav .cart-summary-title { color: #fff; }
+body.has-bottom-nav .change-pass-title,
+body.has-bottom-nav .change-pass-label { color: #fff; }
+body.has-bottom-nav .change-pass-save { border: 1px solid var(--teal); }
+body.has-bottom-nav .change-pass-save:disabled {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
+}
+body.has-bottom-nav .edit-profile-title,
+body.has-bottom-nav .edit-profile-label { color: #fff; }
+body.has-bottom-nav .edit-profile-save { border: 1px solid var(--teal); }
+body.has-bottom-nav .edit-profile-save:disabled {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
+}
+.ci-subtotal {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 76px;
+  color: #fff;
+  line-height: 1.15;
+}
+.ci-subtotal small {
+  color: #fff;
+  font-size: var(--fs-xs);
+  padding-bottom: 4px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+}
+.ci-subtotal b { color: #fff; font-weight: var(--fw-bold); }
 
 /* ---------- Textos generales cliente ----------
    (Prefijados con body.has-bottom-nav para NO alterar el panel admin) */
@@ -588,7 +688,7 @@ body.has-bottom-nav .cart-item { border-color: rgba(255, 255, 255, 0.22); }
   body.has-bottom-nav .badge-danger,
   body.has-bottom-nav .badge-info,
   body.has-bottom-nav .badge-neutral,
-  body.has-bottom-nav .badge-outline { color: #ffffff; }
+  body.has-bottom-nav .badge-outline { color: #000; }
   /* Historial — badges de estado solo aquí con fondo sólido para contraste sobre glass */
   body.has-bottom-nav #historyOrders .order-card-history .badge-success { background: var(--success) !important; color: #ffffff !important; border-color: var(--success-strong) !important; }
   body.has-bottom-nav #historyOrders .order-card-history .badge-danger { background: var(--danger) !important; color: #ffffff !important; border-color: var(--danger-strong) !important; }
