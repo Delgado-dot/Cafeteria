@@ -42,6 +42,63 @@ function getPendingPayments(orders = []) {
   return orders.filter(isPendingPayment);
 }
 
+// Helpers fecha local Ecuador (no UTC) — evita que toISOString adelante el día
+function localDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+function apiDateToLocalKey(apiStr) {
+  if (!apiStr) return "";
+  const dt = new Date(apiStr);
+  if (isNaN(dt.getTime())) return apiStr.slice(0, 10);
+  return localDateKey(dt);
+}
+function apiDateToLocalTime(apiStr) {
+  if (!apiStr) return "";
+  const dt = new Date(apiStr);
+  if (isNaN(dt.getTime())) return "";
+  return String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0");
+}
+
+// Sistema uniforme de mensajes para Administrador del Bar — usa nombre real del usuario autenticado
+function getBarAdminName() {
+  try {
+    const u = currentUser();
+    if (u && u.name) {
+      const first = u.name.trim().split(/\s+/)[0];
+      if (first) return first;
+    }
+    if (u && u.username) {
+      const first = u.username.trim().split(/[\s._-]+/)[0];
+      if (first) return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+  } catch(e) { /* La notificación puede mostrarse sin personalización. */ }
+  return null;
+}
+function barNotify(message, type='info') {
+  const name = getBarAdminName();
+  let msg = String(message || '').trim();
+  if (!msg || /undefined/i.test(msg)) {
+    msg = name ? `${name}, ocurrió un problema al procesar la solicitud.` : 'Ocurrió un problema al procesar la solicitud.';
+    toast(msg, type);
+    return;
+  }
+  if (name) {
+    if (msg.toLowerCase().startsWith(name.toLowerCase() + ',')) {
+      toast(msg, type);
+      return;
+    }
+    const lower = msg.charAt(0).toLowerCase() + msg.slice(1);
+    const finalMsg = /^[A-ZÁÉÍÓÚ]/.test(message) ? `${name}, ${lower}` : `${name}, ${msg}`;
+    toast(finalMsg, type);
+  } else {
+    const neutral = msg.charAt(0).toUpperCase() + msg.slice(1);
+    toast(neutral, type);
+  }
+}
+
 // Track last visited payment order ID for highlight-on-return
 let lastVisitedPaymentId = null;
 
@@ -114,6 +171,13 @@ function ensureAdminbarPresentationStyles() {
     /* Modals - fade + scale */
     .modal-overlay .modal { animation: adminbarModalIn var(--t-med) both; }
 
+    /* Fix superposición menú acciones sobre badge Disponible/Inactivo */
+    .product-actions-menu { position: absolute !important; z-index: 1000 !important; }
+    .admin-table td[data-label="Acciones"] { overflow: visible !important; position: relative; z-index: 5; }
+    .admin-table tr:has(.product-actions-menu[style*="block"]) { position: relative; z-index: 20; }
+    .table-wrap, .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { overflow: visible !important; }
+    .admin-table .badge { position: relative; z-index: 1; }
+
     @media (prefers-reduced-motion: reduce) {
       .sales-summary-grid .sales-summary-card,
       .grid-3 .stat-card,
@@ -148,51 +212,52 @@ function animateSalesMetrics(el) {
 async function renderBarAdmin(page, params) {
   const app = $('#app');
   if (!currentUser() || currentUser().role !== 'adminbar') return route('login');
+  const requestedHash = window.location.hash;
+  const requestedUserId = currentUser().id;
   const requestedPage = { sales: 'sales-dashboard', config: 'config-status' }[page] || page;
   const sec = BAR_PAGES[requestedPage] ? requestedPage : 'dashboard';
   const activeSidebarSection = { 'sales-history': 'sales-dashboard', 'config-status': 'config-hours' }[sec] || sec;
   syncBodyClass();
 
-  let queueCount = 0, prepCount = 0, readyCount = 0;
+  let pendingCount = 0;
   try {
-    const r = await ApiClient.get(API_ENDPOINTS.orders.all);
+    const r = await ApiClient.getAll(API_ENDPOINTS.orders.all);
     if (r.ok) {
       const orders = apiList(r.data);
-      queueCount = orders.filter((o) => o.status === 'queue').length;
-      prepCount = orders.filter((o) => o.status === 'prep').length;
-      readyCount = orders.filter((o) => o.status === 'ready').length;
+      pendingCount = orders.filter((o) => o.status === 'confirmed' || o.status === 'queue').length;
     }
-  } catch(e) {}
+  } catch(e) { /* Dashboard se renderiza sin métricas si falla la carga */ }
+  if (window.location.hash !== requestedHash || currentUser()?.id !== requestedUserId) return;
 
   app.innerHTML = `
     <div class="admin-layout">
-      <aside class="admin-sidebar">
-        <div class="sb-brand"><span style="font-size:1.5rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span></div>
+      <aside class="admin-sidebar" id="adminSidebar" aria-label="Menú principal">
+        <div class="sb-brand"><span style="font-size:1.5rem"><i class="bx bx-coffee-togo"></i></span> <span class="brand-name">Cafetería INTESUD</span><button class="sb-close" id="sbClose" aria-label="Cerrar menú"><i class="bx bx-x"></i></button></div>
         <nav class="sb-nav">
 ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
             <a class="sb-link ${k === activeSidebarSection ? 'active' : ''}" href="#" data-bar="${k}">
               <span class="sb-ico bx ${v.icon}"></span><span class="sb-label">${v.label}</span>
-              ${k === 'orders' && queueCount ? `<span class="sb-badge">${queueCount}</span>` : ''}
+              ${k === 'orders' && pendingCount ? `<span class="sb-badge">${pendingCount}</span>` : ''}
             </a>`).join('')}
         </nav>
         <div class="sb-footer">
           <div class="bold small">${esc(currentUser().name)}</div>
-          <div class="tiny muted">Administradora de cafetería</div>
+          <div class="tiny muted">Administradora Bar</div>
         </div>
       </aside>
       <div class="admin-main">
         <div class="admin-topbar">
+          <button class="admin-menu-toggle" id="adminMenuToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="adminSidebar"><i class="bx bx-menu"></i></button>
           <span style="font-size:1.3rem"><i class="bx ${BAR_PAGES[sec].icon}"></i></span>
           <span class="page-name">${BAR_PAGES[sec].label}</span>
           <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
-            <span id="cafePill"></span>
             <div class="profile-chip" id="barUserMenu">
               <div class="avatar sm" style="${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? `background-image:url('${currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')}');background-size:cover;background-position:center;color:transparent` : ''}">${(currentUser().photo || Store.load('int_admin_photo_' + currentUser().id, '')) ? '' : esc(initials(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name))}</div>
-              <span class="pname">${esc(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name)}</span> ▾
+              <span class="pname">${esc(Store.load('int_admin_name_' + currentUser().id, null) || currentUser().name)}</span> <i class="bx bx-chevron-down"></i>
               <div class="dropdown-menu" id="barUserDropdown" style="display:none">
-                <a class="dropdown-item" href="#" data-link="profile"><span class="ico">👤</span>Mi perfil</a>
+                <a class="dropdown-item" href="#" data-link="profile"><span class="ico"><i class="bx bx-user"></i></span>Mi perfil</a>
                 <div class="dropdown-sep"></div>
-                <a class="dropdown-item danger" href="#" id="btnBarLogout"><span class="ico">⏻</span>Cerrar sesión</a>
+                <a class="dropdown-item danger" href="#" id="btnBarLogout"><span class="ico"><i class="bx bx-log-out"></i></span>Cerrar sesión</a>
               </div>
             </div>
           </div>
@@ -205,7 +270,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
           ${[
             { id: 'dashboard', label: 'Inicio', icon: 'bx-grid-alt' },
             { id: 'products', label: 'Productos', icon: 'bx-food-menu' },
-            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: queueCount, center: true },
+            { id: 'orders', label: 'Pedidos', icon: 'bx-receipt', badge: pendingCount, center: true },
             { id: 'stock', label: 'Stock', icon: 'bx-box' },
             { id: 'more', label: 'Más', icon: 'bx-dots-horizontal-rounded' },
           ].map((item, idx) => {
@@ -231,18 +296,54 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       <div id="adminMoreModal" style="display:none"></div>
     </div>`;
 
-  renderCafePill($('#cafePill'));
-
-  // Limpieza: elimina toggle/flecha huérfano de arquitecturas anteriores (ya no se usa)
+  // Limpieza legacy
   document.querySelectorAll('.sidebar-toggle').forEach((el) => el.remove());
   document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
 
-  const sidebar = $('.admin-sidebar', app);
-  const layout = $('.admin-layout', app);
-  const closeSidebar = () => {
-    // Arquitectura híbrida: sidebar móvil oculto, desktop siempre visible → no hay drawer que cerrar, solo limpia scrims huérfanos
-    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+  // Drawer móvil: hamburguesa + scrim + Escape + autocierre al navegar
+  const sidebar = $('#adminSidebar', app);
+  const menuToggle = $('#adminMenuToggle', app);
+  const sbClose = $('#sbClose', app);
+  let sbScrim = null;
+  let escHandler = null;
+  const ensureScrim = () => {
+    if (sbScrim || !sidebar) return;
+    sbScrim = document.createElement('div');
+    sbScrim.className = 'sb-scrim';
+    sbScrim.setAttribute('aria-hidden', 'true');
+    sbScrim.style.display = 'none';
+    document.body.appendChild(sbScrim);
+    sbScrim.addEventListener('click', closeSidebar);
   };
+  const removeScrim = () => {
+    if (sbScrim) { sbScrim.remove(); sbScrim = null; }
+    document.querySelectorAll('.sb-scrim').forEach((el) => { if (el !== sbScrim) el.remove(); });
+  };
+  function openSidebar() {
+    if (!sidebar) return;
+    ensureScrim();
+    sidebar.classList.add('open');
+    if (sbScrim) sbScrim.style.display = 'block';
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    if (!escHandler) {
+      escHandler = (e) => { if (e.key === 'Escape') closeSidebar(); };
+      document.addEventListener('keydown', escHandler);
+    }
+  }
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    if (sbScrim) sbScrim.style.display = 'none';
+    if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    if (escHandler) { document.removeEventListener('keydown', escHandler); escHandler = null; }
+  }
+  window._adminCloseSidebar = closeSidebar;
+  if (menuToggle) menuToggle.addEventListener('click', (e) => { e.preventDefault(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
+  if (sbClose) sbClose.addEventListener('click', (e) => { e.preventDefault(); closeSidebar(); });
+  // Cerrar si se hace clic en cualquier link del sidebar
+  const layout = $('.admin-layout', app);
   // Bottom nav - Más modal (móvil) - 5 ítems fijos + 6 en modal
   const moreModal = $('#adminMoreModal', app);
   const MORE_ITEMS = [
@@ -263,7 +364,7 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
       <div class="admin-more-sheet">
         <div class="admin-more-header">
           <span>Más opciones</span>
-          <button class="btn btn-ghost btn-sm" id="closeMoreBtn">✕</button>
+          <button class="btn btn-ghost btn-sm" id="closeMoreBtn"><i class="bx bx-x"></i></button>
         </div>
         ${MORE_ITEMS.map(item => `
           <a class="admin-more-item ${activeSidebarSection === item.id ? 'active' : ''}" href="#" data-more="${item.id}">
@@ -301,7 +402,18 @@ ${Object.entries(BAR_SECTIONS).map(([k, v]) => `
   $('#barUserMenu').onclick = (e) => { e.stopPropagation(); ud.style.display = ud.style.display === 'none' ? 'block' : 'none'; };
   document.body.onclick = () => { ud.style.display = 'none'; };
   $$('[data-link]', ud).forEach((a) => a.onclick = (e) => { e.preventDefault(); const t = a.dataset.link; if (t === 'profile') { setRoute('adminbar/profile'); ud.style.display = 'none'; } else setRoute(t); });
-  $('#btnBarLogout').onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); route('login'); };
+  $('#btnBarLogout').onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    ud.style.display = 'none';
+    const logoutRequest = Auth.logout();
+    // Desmontar inmediatamente el layout admin para evitar que quede visible si hay un render pendiente con guard.
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    barNotify('has cerrado sesión correctamente.', 'info');
+    setRoute('login');
+    await logoutRequest;
+  };
 
   const content = $('#barContent');
 const renderers = {
@@ -321,18 +433,26 @@ const renderers = {
     'config-status': (target) => barConfigTabs(target, 'status'),
     profile: barAdminProfile,
   };
-  // Skeleton loading al cambiar de pantalla (200-300ms) para transición suave
-  content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
-  setTimeout(() => renderers[sec](content, params), 260);
+  // Skeleton outer solo para secciones sin skeleton propio; Pedidos gestiona su propio ciclo con finally
+  if (sec === 'orders') {
+    renderers[sec](content, params);
+  } else {
+    content.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="grid grid-4" style="margin-bottom:16px"><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div><div class="skeleton" style="height:92px"></div></div><div class="skeleton" style="height:180px"></div></div>`;
+    setTimeout(() => {
+      // Evita skeleton duplicado si el usuario ya cambió de sección durante el delay
+      if (content.getAttribute('data-loading') === 'true') return;
+      renderers[sec](content, params);
+    }, 260);
+  }
 }
 
 async function renderCafePill(el) {
   try {
     const res = await ApiClient.get(API_ENDPOINTS.config.get);
     const isOpen = res.ok ? !!res.data.is_open : true;
-    el.innerHTML = `<span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${isOpen ? '🟢' : '🔴'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
+    el.innerHTML = `<span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico">${isOpen ? '<i class="bx bx-circle" style="color:var(--success)"></i>' : '<i class="bx bx-circle" style="color:var(--danger)"></i>'}</span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>`;
   } catch (e) {
-    el.innerHTML = `<span class="badge badge-success"><span class="ico">🟢</span> ABIERTA</span>`;
+    el.innerHTML = `<span class="badge badge-success"><span class="ico"><i class="bx bx-circle" style="color:var(--success)"></i></span> ABIERTA</span>`;
   }
 }
 
@@ -365,12 +485,13 @@ function barSalesTabs(el, initialTab) {
 
 async function barConfigTabs(el, initialTab) {
   el.innerHTML = `<div style="padding:4px"><div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div></div>`;
-  const [configRes, productsRes] = await Promise.all([
+  const [configRes, productsRes, categoriesList] = await Promise.all([
     ApiClient.get(API_ENDPOINTS.config.get),
-    ApiClient.get(API_ENDPOINTS.products.list),
+    ApiClient.getAll(API_ENDPOINTS.products.list),
+    fetchCategories().catch(() => []),
   ]);
   if (!configRes.ok) {
-    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudo cargar la configuración');
+    el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudo cargar la configuración');
     return;
   }
   const raw = configRes.data || {};
@@ -383,10 +504,10 @@ async function barConfigTabs(el, initialTab) {
     cafeOpen: !!raw.is_open,
     name: raw.name || 'Cafetería INTESUD',
     description: raw.description || '',
-    enabledPayments: raw.enabledPayments || { deuna: true, transferencia: true, efectivo: true },
     _raw: raw,
   };
   const products = productsRes.ok ? apiList(productsRes.data).map(normalizeApiProduct) : [];
+  const displayCats = Array.isArray(categoriesList) && categoriesList.length ? categoriesList.map(c => c.name) : CATEGORIES;
   const isOpen = cfg.cafeOpen;
   const originalValues = {
     orderOpen: cfg.orderOpen,
@@ -397,35 +518,28 @@ async function barConfigTabs(el, initialTab) {
   };
   let hasUnsavedChanges = false;
 
-  if (!cfg.enabledPayments) cfg.enabledPayments = { deuna: true, transferencia: true, efectivo: true };
   el.innerHTML = `
     <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración</h1></div>
-    <div class="grid grid-2" style="align-items:start;gap:16px">
+    <div class="grid grid-2 config-hours-view" style="align-items:start;gap:16px">
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="card" style="width:100%;max-width:none;margin:0">
           <div style="margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">General — Horarios y Estado</div></div>
-          <div style="margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de pedidos</div></div>
+          <div style="margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Horario de pedidos</div></div>
           <div class="grid grid-2">
             <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
             <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
           </div>
-          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Horario de receso</div></div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Horario de receso</div></div>
           <div class="grid grid-2">
             <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
             <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
           </div>
-          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Capacidad</div></div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Capacidad</div></div>
           <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos.</div></div>
-          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Estado</div></div>
+          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Estado</div></div>
           <div style="display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px">
             <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
             <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'} btn-sm" id="btnToggleCafeStatus" style="margin-left:auto">${isOpen ? 'Cerrar cafetería' : 'Abrir cafetería'}</button>
-          </div>
-          <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Métodos de pago habilitados</div></div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <label class="checkbox-row"><input type="checkbox" id="payDeuna" ${cfg.enabledPayments.deuna ? 'checked' : ''}> DEUNA</label>
-            <label class="checkbox-row"><input type="checkbox" id="payTrans" ${cfg.enabledPayments.transferencia ? 'checked' : ''}> Transferencia</label>
-            <label class="checkbox-row"><input type="checkbox" id="payEfect" ${cfg.enabledPayments.efectivo ? 'checked' : ''}> Efectivo</label>
           </div>
           <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
             <span id="unsavedIndicator" class="unsaved-indicator" style="display:none"><span class="pulse-dot"></span></span>
@@ -439,7 +553,7 @@ async function barConfigTabs(el, initialTab) {
           <div style="margin-bottom:14px">
             <div style="font-weight:700;margin-bottom:8px">Categorías de productos</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              ${CATEGORIES.map((c) => {
+              ${displayCats.map((c) => {
                 const cnt = products.filter((p) => p.category === c).length;
                 return `<span class="badge badge-primary" style="font-size:13px;padding:6px 10px">${esc(c)} · ${cnt}</span>`;
               }).join('')}
@@ -492,9 +606,9 @@ async function barSuppliers(el) {
     const wrap = $('#suppliersListPage', el);
     if (!wrap) return;
     wrap.innerHTML = `<div class="skeleton" style="height:80px"></div>`;
-    const res = await ApiClient.get(API_ENDPOINTS.suppliers.list);
+    const res = await ApiClient.getAll(API_ENDPOINTS.suppliers.list);
     if (!res.ok) {
-      wrap.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los proveedores');
+      wrap.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los proveedores');
       return;
     }
     const list = res.data.results || res.data || [];
@@ -526,8 +640,8 @@ async function barSuppliers(el) {
       confirmDialog('Eliminar proveedor', `¿Eliminar proveedor?`, 'Eliminar', true).then(async ok => {
         if (!ok) return;
         const res = await ApiClient.delete(API_ENDPOINTS.suppliers.detail(b.dataset.delSupplier));
-        if (!res.ok) { toast(res.data?.detail || 'No se pudo eliminar', 'error'); return; }
-        toast('Proveedor eliminado', 'success');
+        if (!res.ok) { console.error('[Proveedor] error al eliminar', res.status, res.data); barNotify('no pudimos eliminar el proveedor. Inténtalo nuevamente.', 'error'); return; }
+        barNotify('el proveedor fue eliminado correctamente.', 'success');
         renderSuppliersPage();
       });
     });
@@ -538,7 +652,7 @@ async function barSuppliers(el) {
 
 async function barReports(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [ordersRes, paymentsRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.payments.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
+  const [ordersRes, paymentsRes, productsRes, stockRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.payments.all), ApiClient.getAll(API_ENDPOINTS.products.list), ApiClient.getAll(API_ENDPOINTS.stock.movements).catch(() => ({ ok: false, data: [] })) ]);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
   const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || []}));
   const orders = ordersNorm.filter(isValidSale);
@@ -548,7 +662,7 @@ async function barReports(el) {
   const totalVentas = orders.reduce((s, o) => s + o.total, 0);
   const totalHoy = todayOrders.reduce((s, o) => s + o.total, 0);
   const byMethod = { deuna: 0, transferencia: 0, efectivo: 0 };
-  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (byMethod.hasOwnProperty(k)) byMethod[k] += o.total; });
+  orders.forEach((o) => { const k=(o.payment||'').toLowerCase(); if (Object.prototype.hasOwnProperty.call(byMethod, k)) byMethod[k] += o.total; });
   const totalMetodo = byMethod.deuna + byMethod.transferencia + byMethod.efectivo || 1;
   const pct = (v) => Math.round((v / totalMetodo) * 100);
   // Ventas por hora hoy
@@ -577,19 +691,19 @@ async function barReports(el) {
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-line-chart"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Ventas</div>
         <div class="tiny muted" style="margin-bottom:14px">Resumen de ventas por período</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadVentas" title="Descargar reporte de ventas"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-box"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Stock</div>
         <div class="tiny muted" style="margin-bottom:14px">Movimientos y existencias</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadStock" title="Descargar reporte de stock"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
       <div class="stat-card" style="padding:18px;text-align:center">
         <div style="font-size:2.2rem;color:var(--primary);margin-bottom:10px"><i class="bx bx-credit-card"></i></div>
         <div style="font-weight:700;margin-bottom:4px">Reporte de Pagos</div>
         <div class="tiny muted" style="margin-bottom:14px">Estado de pagos y cobros</div>
-        <button class="btn btn-outline btn-sm" disabled title="Próximamente" style="opacity:0.6;cursor:not-allowed"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
+        <button class="btn btn-outline btn-sm reports-download-btn" id="btnDownloadPagos" title="Descargar reporte de pagos"><i class="bx bx-download" style="margin-right:4px"></i>Descargar</button>
       </div>
     </div>
   `;
@@ -639,11 +753,11 @@ async function barReports(el) {
         </div>
         <div class="card" style="margin-top:16px">
           <div style="font-weight:700;margin-bottom:12px">Ventas por hora (hoy)</div>
-          <div style="display:flex;align-items:flex-end;gap:8px;height:140px;padding:8px 8px 0;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md)">
+          <div class="sales-hour-chart" style="display:flex;align-items:flex-end;gap:8px;height:140px;padding:8px 8px 0;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md)">
             ${hours.map((h, i) => {
               const v = hourTotals[i];
               const hPct = (v / maxHour) * 100;
-              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${money(v)}</div><div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;height:${Math.max(6, hPct)}%;background:var(--primary);border-radius:6px 6px 0 0"></div></div><div style="font-size:11px;font-weight:700;color:var(--text-2)">${h}h</div></div>`;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div class="tiny" style="font-size:10px;font-weight:600">${money(v)}</div><div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;height:${Math.max(6, hPct)}%;background:var(--primary);border-radius:6px 6px 0 0"></div></div><div style="font-size:11px;font-weight:700">${h}h</div></div>`;
             }).join('')}
           </div>
         </div>
@@ -652,7 +766,7 @@ async function barReports(el) {
       const prodSales = {};
       orders.forEach((o) => (o.items||[]).forEach((i) => { const pid=i.productId ?? i.product_id ?? i.product; prodSales[pid] = (prodSales[pid] || 0) + (i.qty ?? i.quantity ?? 0); }));
       const top = Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,qty])=> ({ product: productsList.find((p)=> String(p.id)===String(id)), qty})).filter(x=>x.product);
-      rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px">${product.emoji||'📦'}</div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
+      rptContent.innerHTML = `<div class="card"><div style="font-weight:700;margin-bottom:12px">Productos más vendidos</div>${top.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">${top.map(({product,qty})=>`<div class="stat-card" style="padding:14px;text-align:center"><div style="font-size:2rem;margin-bottom:6px">${productIcon(product)}</div><div class="bold" style="font-size:var(--fs-sm)">${esc(product.name)}</div><div class="st-value primary" style="font-size:1.3rem">${qty} uds</div></div>`).join('')}</div>` : '<div class="tiny muted">Sin ventas aún</div>'}</div>`;
     } else if (tab === 'pagos') {
       rptContent.innerHTML = `
         <div class="grid grid-3" style="gap:12px">
@@ -678,6 +792,57 @@ async function barReports(el) {
     renderTab(btn.dataset.rpt);
   });
   renderTab('ventas');
+
+  // ——— Descargas reales (frontend, datos ya cargados) ———
+  const downloadCSV = (filename, rows) => {
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  $('#btnDownloadVentas', el)?.addEventListener('click', () => {
+    console.log('[reports] Descargar Ventas', {count: orders.length});
+    const rows = [['Fecha','Hora','Total','Metodo','Estado','Productos']];
+    orders.forEach(o => rows.push([o.date, o.time, o.total.toFixed(2), o.payment, o.paymentStatus, (o.items||[]).map(i=>`${i.productName||i.name} x${i.quantity||i.qty}`).join('; ')]));
+    if (rows.length===1) rows.push(['Sin datos','','0.00','','','']);
+    downloadCSV(`reporte_ventas_${today}.csv`, rows);
+    barNotify('el reporte de ventas se descargó correctamente.', 'success');
+  });
+  $('#btnDownloadStock', el)?.addEventListener('click', async () => {
+    console.log('[reports] Descargar Stock');
+    const stockData = stockRes.ok ? (stockRes.data.results || stockRes.data || []) : [];
+    let rows;
+    if (Array.isArray(stockData) && stockData.length && stockData[0].product !== undefined) {
+      rows = [['Producto','Movimiento','Cantidad','Stock previo','Stock nuevo','Fecha']];
+      stockData.forEach(m => rows.push([m.product_name||m.product, m.movement_type||m.type, m.quantity||'', m.previous_stock||'', m.new_stock||'', (m.created_at||'').slice(0,16)]));
+    } else {
+      rows = [['Producto','Categoria','Stock','Minimo','Estado']];
+      productsList.forEach(p => {
+        const estado = p.stock===0 ? 'Agotado' : p.stock<=p.min_stock ? 'Bajo' : 'OK';
+        rows.push([p.name, p.category||'', p.stock, p.min_stock||'', estado]);
+      });
+    }
+    if (rows.length===1) rows.push(['Sin datos','','','','','']);
+    downloadCSV(`reporte_stock_${today}.csv`, rows);
+    barNotify('el reporte de stock se descargó correctamente.', 'success');
+  });
+  $('#btnDownloadPagos', el)?.addEventListener('click', () => {
+    console.log('[reports] Descargar Pagos', {count: (paymentsRes.ok ? (paymentsRes.data.results||paymentsRes.data||[]).length : 0)});
+    const pays = paymentsRes.ok ? (paymentsRes.data.results || paymentsRes.data || []) : [];
+    const rows = [['Pedido','Metodo','Estado','Monto','Fecha']];
+    const list = Array.isArray(pays) ? pays : [];
+    if (list.length) {
+      list.forEach(p => rows.push([p.order_number||p.order||'', p.payment_method||p.method||'', p.status||'', p.amount||p.total||'', (p.created_at||'').slice(0,16)]));
+    } else {
+      Object.entries(byMethod).forEach(([k,v]) => rows.push([k, '', '', v.toFixed(2), '']));
+    }
+    if (rows.length===1) rows.push(['Sin datos','','','','']);
+    downloadCSV(`reporte_pagos_${today}.csv`, rows);
+    barNotify('el reporte de pagos se descargó correctamente.', 'success');
+  });
 }
 
 function supplierFormModal(supplier, onSave) {
@@ -699,7 +864,7 @@ function supplierFormModal(supplier, onSave) {
     const contact_name = $('#supContact', ov).value.trim();
     const phone = $('#supPhone', ov).value.trim();
     const email = $('#supEmail', ov).value.trim();
-    if (!name) { toast('El nombre es obligatorio', 'warning'); return; }
+    if (!name) { barNotify('el nombre del proveedor es obligatorio.', 'warning'); return; }
     const payload = { name, contact_name, phone, email, active: true };
     let res;
     if (isEdit) {
@@ -708,10 +873,11 @@ function supplierFormModal(supplier, onSave) {
       res = await ApiClient.post(API_ENDPOINTS.suppliers.list, payload);
     }
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.name?.[0] || 'Error al guardar proveedor', 'error');
+      console.error('[Proveedor] error al guardar', res.status, res.data);
+      barNotify('no pudimos guardar el proveedor. Inténtalo nuevamente.', 'error');
       return;
     }
-    toast(isEdit ? 'Proveedor actualizado' : 'Proveedor agregado', 'success');
+    barNotify(isEdit ? 'la información del proveedor se actualizó correctamente.' : 'el proveedor fue agregado correctamente.', 'success');
     ov.remove();
     if (onSave) onSave();
   };
@@ -723,9 +889,9 @@ function supplierFormModal(supplier, onSave) {
 async function barDashboard(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="grid grid-4" style="margin-top:12px"><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div><div class="skeleton" style="height:90px"></div></div>`;
   const [ordersRes, productsRes, paymentsRes, configRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.orders.all),
-    ApiClient.get(API_ENDPOINTS.products.list),
-    ApiClient.get(API_ENDPOINTS.payments.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.products.list),
+    ApiClient.getAll(API_ENDPOINTS.payments.all),
     ApiClient.get(API_ENDPOINTS.config.get),
   ]);
   const rawOrders = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
@@ -749,7 +915,7 @@ async function barDashboard(el) {
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
   const rawCap = configRes.ok ? configRes.data : null;
-  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : capacityInfo();
+  const cap = rawCap ? (()=>{ const total=rawCap.total_capacity??10; const used=Math.min(rawCap.current_capacity??0,total); const pct= total? Math.round(used/total*100):0; let state='DISPONIBLE',stateCls='success',warnMsg=''; if(pct>=100){state='CAPACIDAD LLENA';stateCls='danger';} else if(pct>=70){state='ALTA DEMANDA';stateCls='warning'; warnMsg='Alta demanda';} return {pct,used,total,state,stateCls,warnMsg};})() : await fetchCapacityInfo();
   const payPending = getPendingPayments(orders).length;
   const deliveries = orders.filter((o) => o.delivery === 'delivery' && ['queue', 'confirmed', 'prep', 'ready'].includes(o.status));
   const salesToday = todayOrders.filter(isValidSale).reduce((s, o) => s + o.total, 0);
@@ -783,11 +949,11 @@ async function barDashboard(el) {
     <p class="page-sub">Visión rápida para preparar pedidos durante el receso 10:00 - 10:15.</p>
 
     <div class="status-banners-wrap">
-      ${outStock.length ? `<div class="status-banner danger"><span class="ico">⛔</span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
-      ${lowStock.length ? `<div class="status-banner warning"><span class="ico">⚠️</span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${outStock.length ? `<div class="status-banner danger"><span class="ico"><i class="bx bx-block"></i></span><div><b>Productos agotados:</b> ${outStock.map((p) => p.name).join(', ')}</div></div>` : ''}
+      ${lowStock.length ? `<div class="status-banner warning"><span class="ico"><i class="bx bx-error-circle"></i></span><div><b>Stock bajo:</b> ${lowStock.map((p) => p.name).join(', ')}</div></div>` : ''}
     </div>
 
-    <div class="grid grid-4" style="margin-bottom:20px">
+    <div class="grid grid-4 bb" style="margin-bottom:20px">
       <div class="stat-card ${queue.length >= 5 ? 'danger-card' : ''}"><span class="stat-ico bx bx-time ${queue.length >= 5 ? 'danger' : 'primary'}"></span><div class="st-label">Pedidos en cola</div><div class="st-value ${queue.length >= 5 ? 'danger' : 'primary'}">${queue.length}</div><div class="st-sub">esperando confirmación</div></div>
       <div class="stat-card"><span class="stat-ico bx bx-restaurant warning"></span><div class="st-label">En preparación</div><div class="st-value warning">${prep.length}</div><div class="st-sub">preparándose ahora</div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-check-double success"></span><div class="st-label">Listos</div><div class="st-value">${ready.length}</div><div class="st-sub">listos para retirar</div></div>
@@ -798,16 +964,16 @@ async function barDashboard(el) {
 
     <div class="card" style="margin-bottom:20px;${hasPriority ? 'border-left:4px solid var(--primary)' : ''}">
       <div class="card-header">
-        <div><div class="card-title">⚡ Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
+        <div><div class="card-title"><i class="bx bx-bolt"></i> Pedidos prioritarios</div><div class="card-sub">Atiende primero los pedidos urgentes, de prioridad o delivery</div></div>
         ${hasPriority ? `<span class="badge badge-primary">${priorityOrders.length} a atender</span>` : ''}
       </div>
       <div class="card-body">
         ${hasPriority ? `<div class="order-queue" style="grid-template-columns:1fr">${priorityOrders.map((o) => priorityMiniCard(o)).join('')}</div>`
-          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico">✅</div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
+          : `<div class="empty-state" style="padding:12px 0"><div class="es-ico"><i class="bx bx-check-circle"></i></div><h3>Sin pedidos prioritarios</h3><p>No hay pedidos urgentes ni de entrega esperando por ahora.</p></div>`}
       </div>
     </div>
 
-    <div class="grid grid-4">
+    <div class="grid grid-4 bb">
       <div class="stat-card"><span class="stat-ico bx bx-credit-card warning"></span><div class="st-label">Por cobrar</div><div class="st-value warning">${payPending}</div><div class="st-sub"><a href="#" data-goto="adminbar/payments">Revisar</a></div></div>
       <div class="stat-card"><span class="stat-ico bx bx-cycling primary"></span><div class="st-label">Delivery activo</div><div class="st-value primary">${deliveries.length}</div><div class="st-sub"><a href="#" data-goto="adminbar/orders">Ver pedidos</a></div></div>
       <div class="stat-card success-card"><span class="stat-ico bx bx-line-chart success"></span><div class="st-label">Ventas del día</div><div class="st-value">${money(salesToday)}</div><div class="st-sub"><a href="#" data-goto="adminbar/sales-dashboard">Detalle</a></div></div>
@@ -816,17 +982,20 @@ async function barDashboard(el) {
     <div class="card" style="margin-top:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-weight:700">Productos más vendidos</div>
-        <a href="#" class="tiny" data-goto="adminbar/products" style="color:var(--primary);font-weight:600">Ver todos los productos →</a>
+        <a href="#" class="tiny" data-goto="adminbar/products" style="color:var(--primary);font-weight:600">Ver todos los productos <i class="bx bx-right-arrow-alt"></i></a>
       </div>
-      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>`
+      ${topProductsDash.length ? `<div style="display:flex;gap:12px;flex-wrap:wrap">${topProductsDash.map(({product,qty})=>{
+        const img = product.image ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(product.image) : product.image) : '';
+        const thumb = img ? `<img src="${esc(img)}" alt="${esc(product.name)}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>` : `<div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${productIcon(product)}</div>`;
+        return `
         <div style="flex:1;min-width:140px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)">
-          <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${product.emoji||productIcon(product)}</div>
+          <div style="flex-shrink:0;display:flex">${thumb}</div>
           <div style="min-width:0">
             <div class="bold" style="font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(product.name)}</div>
             <div class="tiny muted">${qty} unidades vendidas</div>
           </div>
-        </div>
-      `).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
+        </div>`;
+      }).join('')}</div>` : `<div class="tiny muted" style="text-align:center;padding:12px">Aún no hay ventas registradas</div>`}
     </div>`;
 
   renderCapacityCard(el.querySelector('#dashCap'));
@@ -837,8 +1006,8 @@ async function barDashboard(el) {
 /* Tarjeta compacta para el panel de "Pedidos prioritarios" del dashboard */
 function priorityMiniCard(o) {
   const priTag = o.priority === 'urgent'
-    ? `<span class="priority-tag urgent">⚡ Urgente</span>`
-    : o.priority === 'priority' ? `<span class="priority-tag priority">⭐ Prioridad</span>` : '';
+    ? `<span class="priority-tag urgent"><i class="bx bx-bolt"></i> Urgente</span>`
+    : o.priority === 'priority' ? `<span class="priority-tag priority"><i class="bx bx-star"></i> Prioridad</span>` : '';
   return `
     <div class="queue-order pri-${o.priority === 'normal' ? 'normal' : o.priority}" style="cursor:pointer" data-pri="${o.id}">
       <div class="queue-head">
@@ -849,12 +1018,17 @@ function priorityMiniCard(o) {
           ${statusMeta(o.status)}
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          ${o.delivery === 'delivery' ? `<span class="badge badge-info">🛵 P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪</span>`}
+          ${o.delivery === 'delivery' ? `<span class="badge badge-info"><i class="bx bx-cycling"></i> P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral"><i class="bx bx-store"></i></span>`}
           <span class="small bold">${money(o.total)}</span>
         </div>
       </div>
       <div class="queue-items">
-        ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
+        ${o.items.map((i) => {
+          const img = i.product_image || i.image || i.product?.image || '';
+          const url = img ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img) : '';
+          const thumb = url ? `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:28px;height:28px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem" title="${esc(i.name)}"><i class="bx bx-restaurant"></i></span>`;
+          return `<div style="display:flex;align-items:center;gap:6px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
+        }).join('')}
       </div>
       <div class="tiny muted" style="color:var(--text-2)"><b>${esc(o.userName)}</b> · ${paymentMethodLabel(o.payment)} ${paymentMeta(o.paymentStatus)} · est. ${o.prepMin} min</div>
     </div>`;
@@ -862,49 +1036,105 @@ function priorityMiniCard(o) {
 
 /* ============================================================
    PEDIDOS (cola) - Con API real
-   ============================================================ */
+  ============================================================ */
 async function barOrders(el) {
-  // Show skeleton
+  // Estado de carga único — se limpia siempre vía finally (éxito, vacío o error)
+  el.setAttribute('data-loading', 'true');
   el.innerHTML = `
     <div class="page-title"><h1>Pedidos</h1></div>
     <div class="skeleton" style="height:40px;width:200px;margin-bottom:16px"></div>
     <div class="skeleton" style="height:100px;width:100%"></div>
     <div class="adv-tabs">
-      <button class="category-chip active" data-tab="queue">En cola</button>
+      <button class="category-chip active" data-tab="confirmed">Confirmados</button>
+      <button class="category-chip" data-tab="queue">En cola</button>
       <button class="category-chip" data-tab="prep">En preparación</button>
       <button class="category-chip" data-tab="ready">Listos</button>
       <button class="category-chip" data-tab="delivered">Entregados</button>
     </div>
     <div id="queueArea"></div>`;
 
-  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
-  if (!ordersRes.ok) {
-    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos');
+  let orders = [];
+  let shouldRender = true;
+  try {
+    const ordersRes = await ApiClient.getAll(API_ENDPOINTS.orders.all);
+    if (!ordersRes.ok) throw new Error(ordersRes.data?.detail || 'Error al cargar pedidos');
+    // Soporte paginado DRF {count, results} y array plano
+    orders = apiList(ordersRes.data);
+    if (!orders.length && Array.isArray(ordersRes.data)) orders = [];
+    // Si la API devuelve array directo, apiList ya lo maneja; si es paginado, usa results
+  } catch (err) {
+    // Error de red o API — reemplaza skeletons por estado de error profesional
+    el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error al cargar', 'No se pudieron cargar los pedidos. Verifica tu conexión e intenta recargar.');
+    shouldRender = false;
+    console.error('[barOrders] load failed', err);
+  } finally {
+    // Limpieza garantizada del estado de carga (skeletons, blur, shimmer, pointer-events)
+    el.removeAttribute('data-loading');
+    el.classList.remove('is-loading', 'loading', 'shimmer');
+    // Si vamos a renderizar contenido real, eliminamos skeletons restantes antes de reconstruir
+    if (shouldRender) {
+      el.querySelectorAll('.skeleton').forEach(s => s.remove());
+      // Elimina cualquier overlay/blur huérfano que pudiera quedar por CSS
+      el.style.filter = '';
+      el.style.pointerEvents = '';
+      el.style.opacity = '';
+    }
+  }
+  if (!shouldRender) return;
+
+  // Vacío profesional — sin bloques blancos (glass card, no skeleton)
+  if (!orders.length) {
+    el.innerHTML = `
+      <div class="page-title"><h1>Pedidos</h1><span class="badge badge-neutral">0 activos</span></div>
+      <div class="adv-tabs">
+        <button class="category-chip active" data-tab="confirmed">Confirmados (0)</button>
+        <button class="category-chip" data-tab="queue">En cola (0)</button>
+        <button class="category-chip" data-tab="prep">En preparación (0)</button>
+        <button class="category-chip" data-tab="ready">Listos (0)</button>
+        <button class="category-chip" data-tab="delivered">Entregados (0)</button>
+      </div>
+      <div id="queueArea"></div>`;
+    const qa = el.querySelector('#queueArea');
+    if (qa) qa.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', 'Cuando entren pedidos aparecerán aquí organizados por estado.')}</div>`;
     return;
   }
+  const today = localDateKey();
+  const yesterdayKey = localDateKey(new Date(Date.now() - 86400000));
+  const weekStartKey = localDateKey(new Date(Date.now() - 6 * 86400000));
+  const monthPrefix = today.slice(0, 7);
+  const toLocalKey = (o) => apiDateToLocalKey(o.created_at);
 
-  const orders = ordersRes.data.results || ordersRes.data || [];
-  const today = new Date().toISOString().slice(0, 10);
-  
+  const confirmed = orders.filter((o) => o.status === 'confirmed');
   const queue = orders.filter((o) => o.status === 'queue');
   const prep = orders.filter((o) => o.status === 'prep');
   const ready = orders.filter((o) => o.status === 'ready');
-  const delivered = orders.filter((o) => o.status === 'delivered');
-  const todayOrders = orders.filter((o) => o.created_at && o.created_at.slice(0, 10) === today);
-  const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
+  const deliveredAll = orders.filter((o) => o.status === 'delivered');
+  let deliveredFilter = 'hoy';
+  const getDeliveredFiltered = () => {
+    if (deliveredFilter === 'todos') return deliveredAll;
+    if (deliveredFilter === 'hoy') return deliveredAll.filter((o) => toLocalKey(o) === today);
+    if (deliveredFilter === 'ayer') return deliveredAll.filter((o) => toLocalKey(o) === yesterdayKey);
+    if (deliveredFilter === 'semana') return deliveredAll.filter((o) => { const k = toLocalKey(o); return k >= weekStartKey && k <= today; });
+    if (deliveredFilter === 'mes') return deliveredAll.filter((o) => toLocalKey(o).slice(0, 7) === monthPrefix);
+    return deliveredAll.filter((o) => toLocalKey(o) === today);
+  };
+  let delivered = getDeliveredFiltered();
+  const todayOrders = orders.filter((o) => toLocalKey(o) === today);
   const confirmedToday = todayOrders.filter((o) => o.status === 'confirmed').length;
+  const queueToday = todayOrders.filter((o) => o.status === 'queue').length;
   const prepToday = todayOrders.filter((o) => o.status === 'prep').length;
   const readyToday = todayOrders.filter((o) => o.status === 'ready').length;
   const deliveredToday = todayOrders.filter((o) => o.status === 'delivered').length;
-  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.payment_status === 'rejected' || o.status === 'refunded').length;
-  const actives = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
+  const cancelledToday = todayOrders.filter((o) => o.status === 'cancelled' || o.payment_status === 'rejected').length;
+  const actives = orders.filter((o) => !['delivered', 'cancelled', 'nopickup'].includes(o.status));
 
   // Update tab counts
   const tabButtons = $$('[data-tab]', el);
-  if (tabButtons[0]) tabButtons[0].textContent = `En cola (${queue.length})`;
-  if (tabButtons[1]) tabButtons[1].textContent = `En preparación (${prep.length})`;
-  if (tabButtons[2]) tabButtons[2].textContent = `Listos (${ready.length})`;
-  if (tabButtons[3]) tabButtons[3].textContent = `Entregados (${delivered.length})`;
+  if (tabButtons[0]) tabButtons[0].textContent = `Confirmados (${confirmed.length})`;
+  if (tabButtons[1]) tabButtons[1].textContent = `En cola (${queue.length})`;
+  if (tabButtons[2]) tabButtons[2].textContent = `En preparación (${prep.length})`;
+  if (tabButtons[3]) tabButtons[3].textContent = `Listos (${ready.length})`;
+  if (tabButtons[4]) tabButtons[4].textContent = `Entregados (${delivered.length})`;
 
   // Update page title with active count
   const titleEl = $('#mainContent') || $('#app');
@@ -923,25 +1153,63 @@ async function barOrders(el) {
   summaryCard.style.cssText = 'margin-bottom:16px; padding:14px';
   summaryCard.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-weight:700; font-size:var(--fs-sm); color:var(--text-2); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
+      <div style="font-weight:700; font-size:var(--fs-sm); text-transform:uppercase; letter-spacing:0.04em">Resumen de hoy — ${today}</div>
       <span class="badge badge-neutral">${todayOrders.length} pedidos hoy</span>
     </div>
     <div class="grid grid-3" style="gap:10px">
-      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-time muted" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
       <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check primary" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check" style="margin-right:4px"></i>Confirmados</div><div class="st-value primary" style="font-size:1.5rem">${confirmedToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-time muted" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-time" style="margin-right:4px"></i>En cola</div><div class="st-value" style="font-size:1.5rem">${queueToday}</div></div>
       <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-restaurant warning" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-restaurant" style="margin-right:4px"></i>En preparación</div><div class="st-value warning" style="font-size:1.5rem">${prepToday}</div></div>
-      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check-double success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value" style="font-size:1.5rem;color:var(--success)">${readyToday}</div></div>
+      <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-check-double success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-check-double" style="margin-right:4px"></i>Listos</div><div class="st-value success" style="font-size:1.5rem">${readyToday}</div></div>
       <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-package success" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-package" style="margin-right:4px"></i>Entregados</div><div class="st-value success" style="font-size:1.5rem">${deliveredToday}</div></div>
       <div class="stat-card" style="padding:12px;text-align:center;position:relative;overflow:hidden"><span class="stat-ico bx bx-x-circle danger" style="font-size:2.6rem"></span><div class="st-label"><i class="bx bx-x-circle" style="margin-right:4px"></i>Cancelados</div><div class="st-value danger" style="font-size:1.5rem">${cancelledToday}</div></div>
     </div>`;
   pageTitle?.parentElement?.insertBefore(summaryCard, actionsDiv);
 
-  let tab = 'queue';
+  let tab = 'confirmed';
   const queueArea = $('#queueArea');
 
+  const updateDeliveredTabCount = () => {
+    if (tabButtons[4]) tabButtons[4].textContent = `Entregados (${getDeliveredFiltered().length})`;
+  };
+
+  const renderDeliveredFilter = () => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;align-items:center';
+    wrap.innerHTML = `<span class="tiny muted" style="margin-right:4px">Historial:</span>` + ['hoy','ayer','semana','mes','todos'].map(f => {
+      const label = {hoy:'Hoy', ayer:'Ayer', semana:'Semana', mes:'Mes', todos:'Todos'}[f];
+      return `<button class="category-chip ${deliveredFilter===f?'active':''}" data-delivered-filter="${f}" style="padding:6px 12px;font-size:12px">${label}</button>`;
+    }).join('');
+    $$('[data-delivered-filter]', wrap).forEach(btn => {
+      btn.onclick = () => {
+        deliveredFilter = btn.dataset.deliveredFilter;
+        delivered = getDeliveredFiltered();
+        updateDeliveredTabCount();
+        render();
+      };
+    });
+    return wrap;
+  };
+
   const render = () => {
-    const list = tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
-    if (!list.length) { queueArea.innerHTML = emptyState('🧾', 'Sin pedidos', 'No hay pedidos en esta sección.'); return; }
+    if (tab === 'delivered') delivered = getDeliveredFiltered();
+    const list = tab === 'confirmed' ? confirmed : tab === 'queue' ? queue : tab === 'prep' ? prep : tab === 'ready' ? ready : delivered;
+    if (tab === 'delivered') {
+      queueArea.innerHTML = '';
+      const filterEl = renderDeliveredFilter();
+      queueArea.appendChild(filterEl);
+      const listWrap = document.createElement('div');
+      if (!list.length) {
+        const msg = deliveredFilter==='hoy' ? 'No hay entregados hoy. Prueba con otro filtro.' : 'No hay pedidos en esta sección.';
+        listWrap.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', msg)}</div>`;
+      } else {
+        listWrap.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
+        bindQueueActions(listWrap);
+      }
+      queueArea.appendChild(listWrap);
+      return;
+    }
+    if (!list.length) { queueArea.innerHTML = `<div class="card">${emptyState('<i class="bx bx-receipt"></i>', 'No hay pedidos disponibles', 'No hay pedidos en esta sección.')}</div>`; return; }
     queueArea.innerHTML = `<div class="order-queue">${list.map((o) => queueOrderCard(o, tab)).join('')}</div>`;
     bindQueueActions(queueArea);
   };
@@ -967,10 +1235,11 @@ async function barOrders(el) {
     
     if (successCount > 0) {
       logAudit('Entrega en lote', `${successCount} pedidos marcados como entregados`);
-      toast(`${successCount} pedidos marcados como entregados`, 'success');
+      barNotify(successCount === 1 ? 'el pedido fue marcado como entregado correctamente.' : `${successCount} pedidos fueron marcados como entregados correctamente.`, 'success');
       renderBarAdmin('orders');
     } else {
-      toast('Error al confirmar entregas', 'error');
+      console.error('[Pedidos] error al confirmar entregas en lote');
+      barNotify('no pudimos confirmar las entregas. Inténtalo nuevamente.', 'error');
     }
   });
 
@@ -978,43 +1247,71 @@ async function barOrders(el) {
 }
 
 function queueOrderCard(o, tab) {
-  const isDelivery = o.delivery === 'delivery';
-  const needsPayment = o.paymentStatus === 'pending' || o.paymentStatus === 'review';
+  // Normaliza los nombres reales que devuelve la API (OrderSerializer):
+  // delivery_method, delivery_info, payment_status, estimated_time, user_name,
+  // order_number e items[].{product_name, quantity}. Sin esto la tarjeta lee
+  // propiedadas camelCase que no existen y muestra "undefined".
+  const d = {
+    id: o.id,
+    orderNumber: o.order_number || o.id,
+    status: o.status,
+    priority: o.priority,
+    total: o.total,
+    note: o.note || '',
+    time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '',
+    delivery: o.delivery_method || o.delivery,
+    deliveryInfo: o.delivery_info || o.deliveryInfo || null,
+    paymentStatus: o.payment_status || o.paymentStatus || null,
+    payment: o.payment_method || o.payment || null,
+    prepMin: o.estimated_time ?? o.prepMin,
+    userName: o.user_name || o.userName || '',
+    items: (o.items || o.order_items || []).map((i) => ({
+      name: i.product_name ?? i.name,
+      qty: i.quantity ?? i.qty,
+    })),
+  };
+  const isDelivery = d.delivery === 'delivery';
+  const needsPayment = d.paymentStatus === 'pending' || d.paymentStatus === 'review';
   let extraCls = '';
   let priTag = '';
-  if (o.priority === 'urgent') { extraCls += ' pri-urgent'; priTag = `<span class="priority-tag urgent">⚡ Urgente</span>`; }
-  else if (o.priority === 'priority') { extraCls += ' pri-priority'; priTag = `<span class="priority-tag priority">⭐ Prioridad</span>`; }
+  if (d.priority === 'urgent') { extraCls += ' pri-urgent'; priTag = `<span class="priority-tag urgent"><i class="bx bx-bolt"></i> Urgente</span>`; }
+  else if (d.priority === 'priority') { extraCls += ' pri-priority'; priTag = `<span class="priority-tag priority"><i class="bx bx-star"></i> Prioridad</span>`; }
   else { extraCls += ' pri-normal'; }
-  if (o.status === 'ready') extraCls += ' state-ready';
-  if (o.status === 'prep') extraCls += ' state-prep';
-  if (o.status === 'queue' && (needsPayment || isDelivery)) extraCls += ' priority';
+  if (d.status === 'ready') extraCls += ' state-ready';
+  if (d.status === 'prep') extraCls += ' state-prep';
+  if (['confirmed', 'queue'].includes(d.status) && (needsPayment || isDelivery)) extraCls += ' priority';
 
   let actionBtns = '';
-  if (o.status === 'queue') actionBtns = `<button class="btn btn-success btn-sm" data-act="confirm">Confirmar</button>`;
-  else if (o.status === 'confirmed') actionBtns = `<button class="btn btn-warning btn-sm" data-act="prep">Iniciar preparación</button>`;
-  else if (o.status === 'prep') actionBtns = `<button class="btn btn-success btn-sm" data-act="ready">Marcar listo</button>`;
-  else if (o.status === 'ready') actionBtns = `<button class="btn btn-success btn-sm" data-act="delivered">Entregar</button>`;
-  if (['queue', 'confirmed'].includes(o.status)) actionBtns += `<button class="btn btn-danger-outline btn-sm" data-act="cancel">Cancelar</button>`;
+  if (d.status === 'confirmed') actionBtns = `<button class="btn btn-warning btn-sm" data-act="queue">Pasar a cola</button>`;
+  else if (d.status === 'queue') actionBtns = `<button class="btn btn-success btn-sm" data-act="prep">Iniciar preparación</button>`;
+  else if (d.status === 'prep') actionBtns = `<button class="btn btn-success btn-sm" data-act="ready">Marcar listo</button>`;
+  else if (d.status === 'ready') actionBtns = `<button class="btn btn-success btn-sm" data-act="delivered">Entregar</button>`;
+  if (['confirmed', 'queue'].includes(d.status)) actionBtns += `<button class="btn btn-danger-outline btn-sm" data-act="cancel">Cancelar</button>`;
 
   return `
-    <div class="queue-order${extraCls}" data-id="${o.id}">
+    <div class="queue-order${extraCls}" data-id="${d.id}">
       <div class="queue-head">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
-          <span class="tiny muted">${o.time}</span>
+          <span class="bold" style="color:var(--primary-strong)">#${esc(d.orderNumber)}</span>
+          <span class="tiny muted">${esc(d.time)}</span>
           ${priTag}
-          ${statusMeta(o.status)}
+          ${statusMeta(d.status)}
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          ${isDelivery ? `<span class="badge badge-info">🛵 Delivery · P${o.deliveryInfo?.piso} ${o.deliveryInfo?.aula}</span>` : `<span class="badge badge-neutral">🏪 Retiro</span>`}
-          <span class="small bold">${money(o.total)}</span>
+          ${isDelivery ? `<span class="badge badge-info"><i class="bx bx-cycling"></i> Delivery · P${esc(d.deliveryInfo?.piso ?? '—')} ${esc(d.deliveryInfo?.aula ?? '—')}</span>` : `<span class="badge badge-neutral"><i class="bx bx-store"></i> Retiro</span>`}
+          <span class="small bold">${money(d.total)}</span>
         </div>
       </div>
       <div class="queue-items">
-        ${o.items.map((i) => `<div><span>${esc(i.name)}</span><span class="muted">× ${i.qty}</span></div>`).join('')}
+        ${d.items.map((i) => {
+          const img = i.product_image || i.image || '';
+          const url = img ? (typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img) : '';
+          const thumb = url ? `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:32px;height:32px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem" title="${esc(i.name)}"><i class="bx bx-restaurant"></i></span>`;
+          return `<div style="display:flex;align-items:center;gap:8px"><div style="flex-shrink:0;display:flex">${thumb}</div><span>${esc(i.name)}</span><span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></div>`;
+        }).join('')}
       </div>
-      <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(o.userName)} · <b>Entrega:</b> ${o.delivery === 'delivery' ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${o.prepMin} min${o.note ? ` · <b>Nota:</b> ${esc(o.note)}` : ''}</div>
-      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(o.payment)}: ${o.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(o.paymentStatus)}</div></div>` : ''}
+      <div class="tiny muted" style="color:var(--text-2)"><b>Cliente:</b> ${esc(d.userName)} · <b>Entrega:</b> ${isDelivery ? 'Delivery' : 'Retiro'} · <b>Tiempo est.:</b> ${d.prepMin ?? '—'} min${d.note ? ` · <b>Nota:</b> ${esc(d.note)}` : ''}</div>
+      ${needsPayment ? `<div class="alert warning" style="margin-top:10px;padding:8px 12px"><span class="a-ico"><i class="bx bx-credit-card"></i></span><div>Pago ${paymentMethodLabel(d.payment)}: ${d.paymentStatus === 'review' ? 'en revisión' : 'pendiente'} ${paymentMeta(d.paymentStatus)}</div></div>` : ''}
       <div class="queue-actions">${actionBtns}</div>
     </div>`;
 }
@@ -1032,25 +1329,33 @@ function bindQueueActions(area) {
         
         const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: 'cancelled' });
         if (!res.ok) {
-          toast(res.data?.detail || 'No se pudo cancelar el pedido.', 'error');
+          console.error('[Pedidos] error al cancelar', res.status, res.data);
+          barNotify('no pudimos cancelar el pedido. Inténtalo nuevamente.', 'error');
           return;
         }
-        toast('Pedido cancelado.', 'success');
+        barNotify('el pedido fue cancelado correctamente.', 'success');
         logAudit('Canceló pedido', orderId);
         renderBarAdmin('orders');
         return;
       }
       
-      const nextStatus = { confirm: 'confirmed', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
+      const nextStatus = { queue: 'queue', prep: 'prep', ready: 'ready', delivered: 'delivered' }[act];
       const res = await ApiClient.patch(API_ENDPOINTS.orders.detail(orderId), { status: nextStatus });
       if (!res.ok) {
-        toast(res.data?.detail || 'Error al cambiar estado', 'error');
+        console.error('[Pedidos] error al cambiar estado', res.status, res.data);
+        barNotify('no pudimos cambiar el estado del pedido. Inténtalo nuevamente.', 'error');
         return;
       }
       
-      const label = { confirm: 'Confirmado', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
-      toast('#' + orderId + ' ' + label + '.', 'success');
-      logAudit('Cambió estado de pedido', `${orderId} → ${label}`);
+      const successMsg = {
+        queue: 'el pedido fue confirmado correctamente.',
+        prep: 'el pedido pasó a preparación.',
+        ready: 'el pedido está listo para entregar.',
+        delivered: 'el pedido fue marcado como entregado.'
+      }[act] || 'el pedido se actualizó correctamente.';
+      barNotify(successMsg, 'success');
+      const label = { queue: 'Puesto en cola', prep: 'En preparación', ready: 'Marcado listo', delivered: 'Entregado' }[act];
+      logAudit('Cambió estado de pedido', `${orderId} <i class="bx bx-right-arrow-alt"></i> ${label}`);
       renderBarAdmin('orders');
     };
   });
@@ -1070,14 +1375,11 @@ async function barProducts(el) {
     <div class="adv-tabs">
       <button class="category-chip active" data-cat="Todas">Todas</button>
     </div>
-    <div class="table-wrap"><table class="admin-table">
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="prodRows"></tbody>
-    </table></div>`;
+    <div class="prod-grid" id="prodCards"><div class="skeleton" style="height:220px;width:100%"></div></div>`;
 
-  const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
+  const productsRes = await ApiClient.getAll(API_ENDPOINTS.products.list);
   if (!productsRes.ok) {
-    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los productos');
+    el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los productos');
     return;
   }
 
@@ -1110,10 +1412,7 @@ async function barProducts(el) {
         return `<button class="category-chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:0.7;font-weight:400">(${cnt})</span></button>`;
       }).join('')}
     </div>
-    <div class="table-wrap"><table class="admin-table">
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Prep</th><th>Estado</th><th></th></tr></thead>
-      <tbody id="prodRows"></tbody>
-    </table></div>`;
+    <div class="prod-grid" id="prodCards"></div>`;
 
   const renderRows = () => {
     let list = cat === 'Todas' ? products : products.filter((p) => (p.category || 'Sin categoría') === cat);
@@ -1121,48 +1420,75 @@ async function barProducts(el) {
       const term = searchTerm.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(term) || (p.category || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term));
     }
-    const tbody = $('#prodRows', el);
+    const grid = $('#prodCards', el);
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></td></tr>';
+      grid.innerHTML = '<div class="prod-empty"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-search-alt"></i></div><div style="font-weight:600">No encontramos productos que coincidan</div><div class="tiny muted" style="margin-top:4px">Prueba con otro nombre o ajusta los filtros de categoría</div></div>';
       return;
     }
-    tbody.innerHTML = list.map((p) => `
-      <tr>
-        <td data-label="Producto"><div style="display:flex;align-items:center;gap:12px;min-width:0"><img style="width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:54px;height:54px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem;${p.image ? 'display:none' : ''}">${productIcon(p)}</div><div style="min-width:0;max-width:190px"><div class="bold" style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.name)}">${esc(p.name)}</div><div class="tiny" style="color:var(--primary);font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.category || 'Sin categoría')}">${esc(p.category || 'Sin categoría')}</div><div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(p.description || '')}">${esc(p.description || '')}</div></div></div></td>
-        <td data-label="Categoría"><span>${esc(p.category || 'Sin categoría')}</span></td>
-        <td data-label="Precio"><span class="bold tabular-nums">${money(p.price)}</span></td>
-        <td data-label="Stock"><span class="badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.min_stock ? 'badge-warning' : 'badge-success'}">${p.stock} ${p.stock === 0 ? '· agotado' : p.stock <= p.min_stock ? '· bajo' : ''}</span></td>
-        <td data-label="Prep"><span>${p.prepMin} min</span></td>
-        <td data-label="Estado">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
-        <td data-label="Acciones">
+    grid.innerHTML = list.map((p) => `
+      <div class="prod-card">
+        <div class="prod-card-media">
+          ${p.image ? `<img loading="lazy" src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="prod-card-media-fallback" style="${p.image ? 'display:none' : 'display:flex'}">${productIcon(p)}</div>
+        </div>
+        <div class="prod-card-body">
+          <div class="prod-card-head">
+            <div class="prod-card-title" title="${esc(p.name)}">${esc(p.name)}</div>
             <div style="position:relative">
               <button class="btn btn-ghost btn-icon" data-menu="${p.id}" style="width:32px;height:32px" title="Más acciones"><i class="bx bx-dots-vertical-rounded" style="font-size:18px"></i></button>
-              <div class="dropdown-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:10">
+              <div class="dropdown-menu product-actions-menu" id="prodMenu-${p.id}" style="display:none;position:absolute;right:0;top:36px;min-width:150px;z-index:1000">
                 <a class="dropdown-item" href="#" data-edit="${p.id}"><i class="bx bx-edit-alt"></i> Editar</a>
                 <a class="dropdown-item" href="#" data-toggle="${p.id}"><i class="bx ${p.available ? 'bx-hide' : 'bx-show'}"></i> ${p.available ? 'Desactivar' : 'Activar'}</a>
               </div>
             </div>
-          </td>
-      </tr>
+          </div>
+          <div class="prod-card-cat">${esc(p.category || 'Sin categoría')}</div>
+          <div class="prod-card-price">${money(p.price)}</div>
+          <div class="prod-card-meta">
+            <span class="prod-meta-chip"><i class="bx bx-package"></i> <span>Stock ${p.stock}</span></span>
+            <span class="prod-meta-chip"><i class="bx bx-time"></i> <span>${p.prepMin} min</span></span>
+          </div>
+          <div class="prod-card-status">${p.available ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</div>
+        </div>
+      </div>
     `).join('');
-    $$('[data-edit]', tbody).forEach((b) => b.onclick = () => productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit))));
-    $$('[data-toggle]', tbody).forEach((b) => {
-      b.onclick = async () => {
+    $$('[data-edit]', grid).forEach((b) => b.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      productFormModal(products.find((p) => p.id === parseInt(b.dataset.edit)));
+    });
+    $$('[data-toggle]', grid).forEach((b) => {
+      b.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const productId = b.dataset.toggle;
         const product = products.find((x) => x.id === parseInt(productId));
-        if (!product) return;
-        const newAvailable = !product.available;
-        const res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
-        if (!res.ok) {
-          toast('Error al cambiar estado: ' + (res.data?.detail || 'Error desconocido'), 'error');
+        if (!product) {
+          console.error('[toggle] producto no encontrado', productId, products);
           return;
         }
-        toast(product.name + (newAvailable ? ' activado.' : ' desactivado.'), 'success');
+        const newAvailable = !product.available;
+        console.log('[toggle] PATCH', API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        let res;
+        try {
+          res = await ApiClient.patch(API_ENDPOINTS.products.detail(productId), { available: newAvailable });
+        } catch (err) {
+          console.error('[toggle] fetch exception', err);
+          barNotify('no pudimos cambiar el estado del producto. Inténtalo nuevamente.', 'error');
+          return;
+        }
+        if (!res.ok) {
+          console.error('[toggle] error', res.status, res.data, res.error);
+          barNotify('no pudimos guardar los cambios. Inténtalo nuevamente.', 'error');
+          return;
+        }
+        barNotify(newAvailable ? 'el producto fue activado correctamente.' : 'el producto fue desactivado correctamente.', 'success');
         logAudit(newAvailable ? 'Activó producto' : 'Desactivó producto', product.name);
-        renderBarAdmin('products');
+        const contentEl = document.getElementById('barContent');
+        if (contentEl) barProducts(contentEl);
       };
     });
-    $$('[data-menu]', tbody).forEach((btn) => btn.onclick = (e) => {
+    $$('[data-menu]', grid).forEach((btn) => btn.onclick = (e) => {
       e.stopPropagation();
       const menu = document.getElementById('prodMenu-' + btn.dataset.menu);
       if (!menu) return;
@@ -1190,9 +1516,14 @@ async function barProducts(el) {
   renderRows();
 }
 
-function productFormModal(p) {
+async function productFormModal(p) {
   const isEdit = !!p;
-  const cats = CATEGORIES;
+  let cats = [];
+  try {
+    const apiCats = await fetchCategories();
+    if (Array.isArray(apiCats) && apiCats.length) cats = apiCats.map(c => c.name);
+  } catch(e) { /* Se usan las categorías locales si falla la API. */ }
+  if (!cats.length) cats = CATEGORIES;
   const originalValues = isEdit ? {
     name: p.name,
     category: p.category,
@@ -1206,6 +1537,8 @@ function productFormModal(p) {
     image: p.image || ''
   } : null;
   let hasUnsavedChanges = false;
+  let imageReplaced = false;
+  let imageRemoved = false;
 
   function setFieldError(fieldId, msg) {
     const field = $('#' + fieldId, ov);
@@ -1227,7 +1560,7 @@ function productFormModal(p) {
           <div class="pf-header-title">${isEdit ? 'Editar producto' : 'Nuevo producto'}</div>
           <div class="tiny" style="color:rgba(255,255,255,.8)">${isEdit ? 'Actualiza la información del producto' : 'Registra un nuevo producto'}</div>
         </div>
-        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar">×</button>
+        <button class="modal-close" data-mclose style="color:#fff;background:rgba(255,255,255,.12);width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border-radius:var(--r-sm);border:none;cursor:pointer" aria-label="Cerrar"><i class="bx bx-x"></i></button>
       </div>
     </div>
     <div class="pf-cols">
@@ -1291,7 +1624,7 @@ function productFormModal(p) {
             <div id="pfDropPlaceholder" style="${p?.image ? 'display:none' : ''}">
               <div style="font-size:2.4rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-cloud-upload"></i></div>
               <div style="font-weight:600;color:var(--text-2)">Arrastra una imagen o haz clic para seleccionar</div>
-              <div class="tiny muted" style="margin-top:4px">PNG, JPG — se guarda en base64 local</div>
+              <div class="tiny muted" style="margin-top:4px">PNG, JPG, WEBP — máximo 2 MB</div>
             </div>
             <img id="pfImagePreview" src="${p?.image || ''}" style="max-width:200px;max-height:200px;border-radius:10px;margin:0 auto;${p?.image ? 'display:block' : 'display:none'};object-fit:cover;box-shadow:var(--shadow-sm)" onload="if(this.getAttribute('src')) this.style.display='block'">
             <button type="button" id="pfRemoveImage" title="Quitar imagen" aria-label="Quitar imagen" style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);${p?.image ? 'display:flex' : 'display:none'};align-items:center;justify-content:center;color:var(--text-2);box-shadow:var(--shadow-sm)"><i class="bx bx-x" style="font-size:1.1rem"></i></button>
@@ -1327,6 +1660,7 @@ function productFormModal(p) {
       if (key === 'stock' || key === 'prepMin' || key === 'minStock') return currentValues[key] !== originalValues[key];
       return currentValues[key] !== originalValues[key];
     });
+    hasUnsavedChanges = hasUnsavedChanges || imageReplaced || (imageRemoved && !!originalValues.image);
     btnSave.disabled = !hasUnsavedChanges;
     btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
   };
@@ -1357,15 +1691,23 @@ function productFormModal(p) {
     pfImagePreview.style.display = 'none';
     if (pfDropPlaceholder) pfDropPlaceholder.style.display = '';
     if (pfRemoveImage) pfRemoveImage.style.display = 'none';
+    if (originalValues) {
+      imageReplaced = false;
+      imageRemoved = true;
+      checkChanges();
+    }
   };
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) { barNotify('la imagen no puede superar los 2 MB.', 'warning'); return; }
+    imageReplaced = true;
+    imageRemoved = false;
     const reader = new FileReader();
     reader.onload = (e) => showPreview(e.target.result);
     reader.readAsDataURL(file);
   };
   if (pfImage && pfImagePreview && pfDropZone) {
-    pfImage.addEventListener('change', (e) => handleFile(e.target.files?.[0]));
+    pfImage.addEventListener('change', (e) => { handleFile(e.target.files?.[0]); checkChanges(); });
     pfDropZone.addEventListener('click', (e) => { if (e.target.closest('#pfRemoveImage')) return; pfImage.click(); });
     pfDropZone.addEventListener('dragover', (e) => { e.preventDefault(); pfDropZone.style.borderColor = 'var(--primary)'; pfDropZone.style.background = 'var(--primary-soft)'; });
     pfDropZone.addEventListener('dragleave', () => { pfDropZone.style.borderColor = 'var(--border-strong)'; pfDropZone.style.background = 'var(--surface-2)'; });
@@ -1379,6 +1721,9 @@ function productFormModal(p) {
     if (field) {
       field.addEventListener('input', () => clearFieldError(id));
       field.addEventListener('change', () => clearFieldError(id));
+      if (field.type === 'number') {
+        field.addEventListener('wheel', (e) => { if (document.activeElement === field) { e.preventDefault(); field.blur(); } }, { passive: false });
+      }
     }
   });
 
@@ -1401,11 +1746,12 @@ function productFormModal(p) {
     if (!ok) return;
 
     const originalText = btnSave.innerHTML;
+    if (btnSave.dataset.saving === '1') return;
+    btnSave.dataset.saving = '1';
     btnSave.disabled = true;
     btnSave.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2.5px;margin-right:8px"></span>Guardando...';
 
-    // Small delay for UI feedback, then process
-    setTimeout(async () => {
+    try {
       const allowExtras = $('#pfExtras', ov).checked;
       const available = isEdit ? ($('#pfActive', ov)?.checked ?? true) : (stock > 0);
       const catName = $('#pfCat', ov).value;
@@ -1423,7 +1769,7 @@ function productFormModal(p) {
           const createCat = await ApiClient.post(API_ENDPOINTS.products.categories, { name: catName });
           if (createCat.ok) categoryId = createCat.data.id;
         }
-      } catch(e) {}
+      } catch(e) { /* La categoría se asocia cuando el usuario la ingrese */ }
       const productData = {
         name,
         category: categoryId,
@@ -1435,46 +1781,65 @@ function productFormModal(p) {
         available,
       };
       if (!productData.category) {
-        toast('Categoría no válida', 'error');
-        btnSave.disabled = false;
-        btnSave.innerHTML = originalText;
+        barNotify('la categoría seleccionada no es válida.', 'error');
         return;
       }
-      
+      const newFile = imageReplaced ? (pfImage?.files?.[0] || null) : null;
+      const shouldSendMultipart = !!newFile;
+      const payload = shouldSendMultipart ? new FormData() : null;
+      if (shouldSendMultipart) {
+        Object.entries(productData).forEach(([k, v]) => payload.append(k, v));
+        payload.append('image', newFile);
+      }
+      const sendData = shouldSendMultipart ? payload : productData;
+
       let res;
+      let successMsg = null;
+      let successType = 'success';
       if (isEdit) {
-        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), productData);
+        console.log('[Producto] PATCH', API_ENDPOINTS.products.detail(p.id), shouldSendMultipart ? 'multipart' : 'json', productData);
+        res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), sendData);
+        console.log('[Producto] PATCH response', res.status, res.data, res.error);
         if (!res.ok) {
-          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al actualizar';
-          toast('Error: ' + msg, 'error');
-          btnSave.disabled = false;
-          btnSave.innerHTML = originalText;
+          console.error('[Producto] error al actualizar', res.status, res.data, res.error);
+          barNotify('no pudimos actualizar el producto.', 'error');
           return;
         }
         logAudit('Editó producto', name);
-        toast('Producto actualizado en PostgreSQL.', 'success');
+        if (shouldSendMultipart) logAudit('Cambió imagen de producto', name);
+        successMsg = 'producto actualizado correctamente.';
       } else {
-        res = await ApiClient.post(API_ENDPOINTS.products.list, productData);
+        console.log('[Producto] POST', API_ENDPOINTS.products.list, shouldSendMultipart ? 'multipart' : 'json', productData);
+        res = await ApiClient.post(API_ENDPOINTS.products.list, sendData);
+        console.log('[Producto] POST response', res.status, res.data, res.error);
         if (!res.ok) {
-          const msg = res.data?.detail || JSON.stringify(res.data) || 'Error al crear';
-          toast('Error: ' + msg, 'error');
-          btnSave.disabled = false;
-          btnSave.innerHTML = originalText;
+          console.error('[Producto] error al crear', res.status, res.data, res.error);
+          barNotify('no pudimos guardar el nuevo producto. Inténtalo nuevamente.', 'error');
           return;
         }
         logAudit('Creó producto', name);
-        toast('Producto creado en PostgreSQL.', 'success');
+        successMsg = 'el nuevo producto fue agregado correctamente.';
       }
 
-      btnSave.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (isEdit ? 'Guardado' : 'Creado');
-      btnSave.classList.add('btn-success');
-      btnSave.classList.remove('btn-primary');
-
-      setTimeout(() => {
-        ov.remove();
-        renderBarAdmin('products');
-      }, 600);
-    }, 500);
+      ov.remove();
+      const contentEl = document.getElementById('barContent');
+      if (contentEl) {
+        try {
+          await barProducts(contentEl);
+        } catch (refreshError) {
+          console.error('[Producto] no se pudo refrescar la lista', refreshError);
+        }
+      }
+      // El toast vive en document.body y se crea después de actualizar la lista.
+      if (successMsg) barNotify(successMsg, successType);
+    } catch (err) {
+      console.error('[Producto] excepción no controlada', err);
+      barNotify('ocurrió un problema al procesar la solicitud.', 'error');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = originalText;
+      delete btnSave.dataset.saving;
+    }
   };
 }
 
@@ -1490,8 +1855,8 @@ function stockBadge(p) {
 async function barStock(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [productsRes, historyRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.products.list), ApiClient.get(API_ENDPOINTS.stock.movements) ]);
-  if (!productsRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar stock'); return; }
+  const [productsRes, historyRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.products.list), ApiClient.getAll(API_ENDPOINTS.stock.movements) ]);
+  if (!productsRes.ok) { el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>','Error','No se pudo cargar stock'); return; }
   const rawProducts = apiList(productsRes.data);
   const products = rawProducts.map(p=>({ ...normalizeApiProduct(p), stockHistory: p.stock }));
   const rawHist = historyRes.ok ? (historyRes.data.results || historyRes.data || []) : [];
@@ -1568,7 +1933,7 @@ async function barStock(el) {
               <button class="btn btn-success btn-icon" title="Aumentar stock" aria-label="Aumentar stock" data-inc="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--success);border-color:var(--success)">
                 <span class="ico bx bx-plus" style="font-size:18px;color:#fff;line-height:1"></span>
               </button>
-              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0">
+              <button class="btn btn-neutral btn-icon" title="Disminuir stock" aria-label="Disminuir stock" data-dec="${p.id}" ${p.stock === 0 ? 'disabled' : ''} style="width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0;${p.stock === 0 ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : ''}">
                 <span class="ico bx bx-minus" style="font-size:18px;color:var(--danger);line-height:1"></span>
               </button>
             </div>
@@ -1576,8 +1941,8 @@ async function barStock(el) {
         </td>
       </tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
   };
   $$('[data-stock-cat]', el).forEach((btn) => btn.onclick = () => {
     $$('[data-stock-cat]', el).forEach((x) => x.classList.remove('active'));
@@ -1599,13 +1964,13 @@ async function barStock(el) {
         const fillCls = 'background:var(--warning)';
         return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado"><span class="badge badge-warning">Bajo</span></td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
       }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin bajo stock</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+      $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
     } else if (tab === 'agotados') {
       const out = products.filter((p) => p.stock === 0);
       const tbody = $('#stockRows', el);
       tbody.innerHTML = out.map((p) => `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><b>0</b></td><td data-label="Estado"><span class="badge badge-danger">Agotado</span></td><td data-label="Acciones"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px" class="tiny muted">Sin agotados</td></tr>';
-      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
+      $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1, b, null); });
     } else {
       renderRows();
     }
@@ -1619,10 +1984,10 @@ async function barStock(el) {
       const h = history.find((x) => x.productId === p.id);
       const pct = p.minStock ? Math.min(100, Math.round((p.stock / (p.minStock * 3)) * 100)) : 100;
       const fillCls = p.stock === 0 ? 'background:var(--danger)' : p.stock <= p.minStock ? 'background:var(--warning)' : 'background:var(--success)';
-      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}"><i class="bx bx-minus"></i></button></div></td></tr>`;
+      return `<tr><td data-label="Producto"><div class="bold" style="font-size:15px">${esc(p.name)}</div></td><td data-label="Stock actual"><div class="stock-line"><b>${p.stock}</b><div class="stock-bar"><div class="fill" style="width:${pct}%;${fillCls}"></div></div></div></td><td data-label="Estado">${stockBadge(p)}</td><td data-label="Acciones"><div style="display:flex;gap:8px"><button class="btn btn-success btn-icon" data-inc="${p.id}"><i class="bx bx-plus"></i></button><button class="btn btn-neutral btn-icon" data-dec="${p.id}" ${p.stock === 0 ? 'disabled' : ''} style="${p.stock === 0 ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : ''}"><i class="bx bx-minus"></i></button></div></td></tr>`;
     }).join('');
-    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); adjust(p, 1); });
-    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); adjust(p, -1); });
+    $$('[data-inc]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.inc); const decBtn = tbody.querySelector(`[data-dec="${p.id}"]`); adjust(p, 1, b, decBtn); });
+    $$('[data-dec]', tbody).forEach((b) => b.onclick = () => { const p = products.find((x) => String(x.id) === b.dataset.dec); const incBtn = tbody.querySelector(`[data-inc="${p.id}"]`); adjust(p, -1, incBtn, b); });
   });
   $$('[data-low]', el).forEach((item) => item.onclick = () => {
     const p = products.find((x) => x.id === item.dataset.low);
@@ -1632,14 +1997,52 @@ async function barStock(el) {
   const histWrap = $('#stockHist');
   if (!history.length) histWrap.innerHTML = emptyState('<i class="bx bx-history"></i>', 'Aún no hay movimientos', 'Cuando ajustes el stock, verás aquí el historial con cariño.');
 
-  const adjust = async (p, delta) => {
+  const adjust = async (p, delta, btnInc = null, btnDec = null) => {
+    if (!p) { console.error('[Stock] producto no encontrado'); return; }
     const newVal = p.stock + delta;
-    if (newVal < 0) { toast('El stock no puede ser negativo.', 'warning'); return; }
-    const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
-    if (!res.ok) { toast(res.data?.detail || 'No se pudo ajustar stock', 'error'); return; }
-    logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
-    toast(p.name + ' ' + (delta > 0 ? '+' : '') + delta + ' unidades. (PostgreSQL)', 'success');
-    renderBarAdmin('stock');
+    if (newVal < 0) { barNotify('el stock no puede ser negativo.', 'warning'); return; }
+    const buttons = [btnInc, btnDec].filter(Boolean);
+    buttons.forEach(b => { if (b) { b.disabled = true; b.style.opacity = '0.6'; b.style.pointerEvents = 'none'; } });
+    try {
+      const res = await ApiClient.patch(API_ENDPOINTS.products.detail(p.id), { stock: newVal });
+      if (!res.ok) { console.error('[Stock] error al ajustar', res.status, res.data); barNotify('no pudimos actualizar el stock. Inténtalo nuevamente.', 'error'); return; }
+      p.stock = newVal;
+      const row = document.querySelector(`#stockRows tr:has([data-inc="${p.id}"])`) || document.querySelector(`#stockRows tr:has([data-dec="${p.id}"])`);
+      if (row) {
+        const stockCell = row.querySelector('[data-label="Stock actual"] b');
+        if (stockCell) stockCell.textContent = newVal;
+        const badgeCell = row.querySelector('[data-label="Estado"]');
+        if (badgeCell) badgeCell.innerHTML = stockBadge({ ...p, stock: newVal });
+        const fill = row.querySelector('.stock-bar .fill');
+        if (fill) {
+          const pct = p.minStock ? Math.min(100, Math.round((newVal / (p.minStock * 3)) * 100)) : 100;
+          fill.style.width = pct + '%';
+          fill.style.background = newVal === 0 ? 'var(--danger)' : newVal <= p.minStock ? 'var(--warning)' : 'var(--success)';
+        }
+        const decBtn = row.querySelector(`[data-dec="${p.id}"]`);
+        if (decBtn) {
+          const shouldDisable = newVal === 0;
+          decBtn.disabled = shouldDisable;
+          decBtn.style.opacity = shouldDisable ? '0.5' : '';
+          decBtn.style.cursor = shouldDisable ? 'not-allowed' : '';
+          decBtn.style.pointerEvents = shouldDisable ? 'none' : '';
+        }
+      }
+      logAudit(`${delta > 0 ? 'Aumentó' : 'Disminuyó'} stock`, p.name);
+      barNotify('el stock fue actualizado correctamente.', 'success');
+    } finally {
+      buttons.forEach(b => { if (b) { b.disabled = false; b.style.opacity = ''; b.style.pointerEvents = ''; } });
+      const row2 = document.querySelector(`#stockRows tr:has([data-inc="${p.id}"])`);
+      if (row2) {
+        const decBtn2 = row2.querySelector(`[data-dec="${p.id}"]`);
+        if (decBtn2 && p.stock === 0) {
+          decBtn2.disabled = true;
+          decBtn2.style.opacity = '0.5';
+          decBtn2.style.cursor = 'not-allowed';
+          decBtn2.style.pointerEvents = 'none';
+        }
+      }
+    }
   };
 
   // Skeleton + render
@@ -1658,7 +2061,7 @@ async function barStock(el) {
 
   histWrap.innerHTML = history.slice(0, 15).map((h) => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.88rem">
-      <span>${esc(h.name)} <span class="badge ${h.delta > 0 ? 'badge-success' : 'badge-danger'}">${h.delta > 0 ? '+' + h.delta : h.delta}</span> → <b>${h.newVal}</b></span>
+      <span>${esc(h.name)} <span class="badge ${h.delta > 0 ? 'badge-success' : 'badge-danger'}">${h.delta > 0 ? '+' + h.delta : h.delta}</span> <i class="bx bx-right-arrow-alt"></i> <b>${h.newVal}</b></span>
       <span class="tiny muted">${h.time} · ${h.date}</span>
     </div>`).join('');
 }
@@ -1679,7 +2082,7 @@ async function barStockHistory(el) {
       <thead><tr><th>Fecha/hora</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock resultante</th></tr></thead>
       <tbody id="stockHistoryRows"><tr><td colspan="5"><div class="skeleton" style="height:40px"></div></td></tr></tbody></table></div>
   `;
-  const res = await ApiClient.get(API_ENDPOINTS.stock.movements);
+  const res = await ApiClient.getAll(API_ENDPOINTS.stock.movements);
   if (!res.ok) { $('#stockHistoryRows',el).innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">No se pudo cargar historial</td></tr>`; return; }
   const raw = res.data.results || res.data || [];
   const history = raw.map(h=>({ date:(h.created_at||'').slice(0,10), time: h.created_at? new Date(h.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', name: h.product_name, delta: (h.movement_type==='purchase'||h.movement_type==='return'||(h.movement_type==='adjustment' && h.new_stock>h.previous_stock) ? h.quantity : -h.quantity), newVal: h.new_stock, productId: h.product }));
@@ -1707,7 +2110,7 @@ async function barStockHistory(el) {
       ${entries.map((h) => {
         const type = h.delta > 0 ? 'entrada' : 'salida';
         const typeBadge = h.delta > 0 ? 'badge-success' : 'badge-danger';
-        const typeIcon = h.delta > 0 ? '⬆️' : '⬇️';
+        const typeIcon = h.delta > 0 ? '<i class="bx bx-up-arrow-alt"></i>' : '<i class="bx bx-down-arrow-alt"></i>';
         const deltaClass = h.delta > 0 ? 'stock-delta-positive' : 'stock-delta-negative';
         return `
           <tr>
@@ -1731,11 +2134,11 @@ async function barStockHistory(el) {
 async function barPayments(el) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
   const [paymentsRes, ordersRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.payments.all),
-    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.payments.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
   ]);
   if (!paymentsRes.ok) {
-    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pagos');
+    el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los pagos');
     return;
   }
   const payments = paymentsRes.data.results || paymentsRes.data || [];
@@ -1763,7 +2166,7 @@ async function barPayments(el) {
   const validToday = orders.filter((o) => o.date === today && isValidSale(o));
   const totalToday = validToday.reduce((s, o) => s + o.total, 0);
   const byMethod = { efectivo: 0, deuna: 0, transferencia: 0 };
-  validToday.forEach((o) => { if (byMethod.hasOwnProperty(o.payment)) byMethod[o.payment] += o.total; });
+  validToday.forEach((o) => { if (Object.prototype.hasOwnProperty.call(byMethod, o.payment)) byMethod[o.payment] += o.total; });
   const pct = (v) => totalToday ? Math.round((v / totalToday) * 100) : 0;
 
   // Últimas transacciones para lista compacta
@@ -1819,7 +2222,7 @@ async function barPayments(el) {
       <a href="#" data-quick="history" style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:var(--r-md);transition:background var(--t-fast)">
         <span style="width:36px;height:36px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center"><i class="bx bx-history"></i></span>
         <span style="flex:1;font-weight:600">Historial de pagos</span>
-        <span style="color:var(--text-3)">›</span>
+        <span style="color:var(--text-3)"><i class="bx bx-chevron-right"></i></span>
       </a>
     </div>
     <div class="adv-tabs" style="display:none">
@@ -1836,11 +2239,12 @@ async function barPayments(el) {
     const paymentId = target ? target.id : id;
     const res = await ApiClient.patch(API_ENDPOINTS.payments.review(paymentId), { status });
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.status?.[0] || 'No se pudo actualizar el pago', 'error');
+      console.error('[Pago] error al actualizar', res.status, res.data);
+      barNotify('no pudimos actualizar el pago. Inténtalo nuevamente.', 'error');
       return;
     }
-    logAudit('Actualizó pago', `${paymentId} → ${status}`);
-    toast('Pago #' + paymentId + ' ' + (status === 'approved' ? 'aprobado.' : status === 'rejected' ? 'rechazado.' : status), status === 'approved' ? 'success' : 'error');
+    logAudit('Actualizó pago', `${paymentId} <i class="bx bx-right-arrow-alt"></i> ${status}`);
+    barNotify('el pago fue actualizado correctamente.', 'success');
     renderBarAdmin('payments');
   };
 
@@ -1877,6 +2281,7 @@ async function barPayments(el) {
             ${o.paymentStatus === 'review' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button> <button class="btn btn-danger-outline btn-sm" data-rj="${o.id}">Rechazar</button>` : ''}
             ${o.paymentStatus === 'pending' && o.payment === 'deuna' ? `<button class="btn btn-success btn-sm" data-ap="${o.id}">Aprobar</button>` : ''}
             ${['transferencia', 'deuna'].includes(o.payment) ? `<button class="btn btn-outline btn-sm" data-voucher="${o.id}" title="Ver comprobante" aria-label="Ver comprobante"><i class="bx bx-receipt"></i></button>` : ''}
+            ${['transferencia', 'deuna'].includes(o.payment) && o.paymentStatus === 'approved' ? `<button class="btn btn-primary btn-sm" data-paid="${o.id}">Marcar pagado</button>` : ''}
             ${o.paymentStatus === 'refunded' ? '<span class="badge badge-info">Reembolso aplicado</span>' : ''}
           </td>
         </tr>
@@ -1885,6 +2290,7 @@ async function barPayments(el) {
     $$('[data-voucher]', el).forEach((b) => b.onclick = () => showVoucherModal(b.dataset.voucher));
     $$('[data-ap]', el).forEach((b) => b.onclick = () => setPay(b.dataset.ap, 'approved'));
     $$('[data-rj]', el).forEach((b) => b.onclick = () => setPay(b.dataset.rj, 'rejected'));
+    $$('[data-paid]', el).forEach((b) => b.onclick = () => setPay(b.dataset.paid, 'paid'));
     
     // Trigger highlight animation for visited row
     if (lastVisitedPaymentId) {
@@ -1912,12 +2318,12 @@ async function barPayments(el) {
       selectedFilter = 'all';
       $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'all'));
       renderSkeletonRows(); setTimeout(renderRows, 350);
-      toast('Historial completo de pagos', 'info');
+      barNotify('aquí tienes el historial completo de pagos.', 'info');
     } else if (q === 'refunded') {
       selectedFilter = 'refunded';
       $$('[data-payment-filter]', el).forEach((item) => item.classList.toggle('active', item.dataset.paymentFilter === 'refunded'));
       renderSkeletonRows(); setTimeout(renderRows, 350);
-      if (!orders.some((o) => o.paymentStatus === 'refunded')) toast('No hay reembolsos registrados', 'info');
+      if (!orders.some((o) => o.paymentStatus === 'refunded')) barNotify('no hay reembolsos registrados.', 'info');
     }
   });
   $$('[data-configure]', el).forEach(btn => btn.onclick = () => openPaymentMethodConfig(btn.dataset.configure));
@@ -1925,14 +2331,14 @@ async function barPayments(el) {
 
 async function openPaymentMethodConfig(code) {
   const listRes = await ApiClient.get(API_ENDPOINTS.payments.methodsAdmin);
-  if (!listRes.ok) { toast('No se pudo cargar métodos de pago', 'error'); return; }
+  if (!listRes.ok) { barNotify('no pudimos cargar los métodos de pago. Inténtalo nuevamente.', 'error'); return; }
   const methods = listRes.data.results || listRes.data || [];
   const m = methods.find(x => x.code === code);
-  if (!m) { toast('Método no encontrado', 'error'); return; }
+  if (!m) { barNotify('no pudimos encontrar el método de pago.', 'error'); return; }
   const isTransfer = code === 'transferencia';
   const isDeuna = code === 'deuna';
-  const isEfectivo = code === 'efectivo';
   const ov = modal(`
+    <div class="pm-config-modal">
     <h3>Configurar ${esc(m.name)}</h3>
     <div class="field"><label class="label">Activo</label><label class="checkbox-row"><input type="checkbox" id="pmActive" ${m.active ? 'checked' : ''}> Habilitado</label></div>
     ${isTransfer ? `
@@ -1947,7 +2353,12 @@ async function openPaymentMethodConfig(code) {
       <div class="field"><label class="label">Teléfono / Identificador</label><input class="input" id="pmPhone" value="${esc(m.phone || '')}" placeholder="0991234567"></div>
       <div class="field"><label class="label">QR / Código</label><textarea class="input" id="pmQr" rows="2" placeholder="Información QR">${esc(m.qr_info || '')}</textarea></div>
     ` : ''}
-    ${isEfectivo ? `` : ''}
+    <div class="field">
+      <label class="label">Imagen QR</label>
+      <input type="file" id="pmQrImage" accept="image/png,image/jpeg,image/webp">
+      <div id="pmQrImagePreview" style="margin-top:8px"></div>
+      <div class="tiny muted">PNG, JPG o WEBP — máx 2 MB. Se guarda en el servidor y persiste al reiniciar.</div>
+    </div>
     <div class="field"><label class="label">Instrucciones</label><textarea class="input" id="pmInstr" rows="3" placeholder="Instrucciones para el cliente">${esc(m.instructions || '')}</textarea></div>
     <div class="field"><label class="label">Descripción</label><input class="input" id="pmDesc" value="${esc(m.description || '')}"></div>
     <div class="field"><label class="checkbox-row"><input type="checkbox" id="pmVoucher" ${m.requires_voucher ? 'checked' : ''}> Requiere comprobante</label></div>
@@ -1955,8 +2366,31 @@ async function openPaymentMethodConfig(code) {
       <button class="btn btn-neutral" data-cancel>Cancelar</button>
       <button class="btn btn-primary" id="btnSavePm">Guardar</button>
     </div>
+    </div>
   `, { wide: false });
   $('[data-cancel]', ov).onclick = () => ov.remove();
+  const qrImageInput = $('#pmQrImage', ov);
+  const qrImagePreview = $('#pmQrImagePreview', ov);
+  const renderQrPreview = () => {
+    if (!qrImagePreview) return;
+    if (m.qr_image_url) {
+      qrImagePreview.innerHTML = `<img src="${esc(m.qr_image_url)}" alt="QR actual" style="max-width:200px;height:auto;border-radius:10px;border:1px solid var(--border)"><div class="tiny muted" style="margin-top:4px">Imagen actual guardada</div>`;
+    } else {
+      qrImagePreview.innerHTML = `<div class="tiny muted" style="padding:10px;border:1px dashed var(--border);border-radius:10px">QR no configurado</div>`;
+    }
+  };
+  renderQrPreview();
+  qrImageInput.addEventListener('change', () => {
+    const file = qrImageInput.files?.[0];
+    if (!file) { renderQrPreview(); return; }
+    if (file.size > 2 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      qrImageInput.value = '';
+      renderQrPreview();
+      barNotify('selecciona una imagen PNG, JPG o WEBP de máximo 2 MB.', 'warning');
+      return;
+    }
+    qrImagePreview.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Vista previa" style="max-width:200px;height:auto;border-radius:10px;border:1px solid var(--border)"><div class="tiny muted" style="margin-top:4px">Vista previa del nuevo QR · ${esc(file.name)}</div>`;
+  });
   $('#btnSavePm', ov).onclick = async () => {
     const payload = {
       active: $('#pmActive', ov).checked,
@@ -1975,9 +2409,18 @@ async function openPaymentMethodConfig(code) {
       payload.phone = $('#pmPhone', ov).value.trim();
       payload.qr_info = $('#pmQr', ov).value.trim();
     }
-    const res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), payload);
-    if (!res.ok) { toast(res.data?.detail || 'Error al guardar', 'error'); return; }
-    toast('Método actualizado en PostgreSQL', 'success');
+    const qrImageFile = $('#pmQrImage', ov).files?.[0];
+    let res;
+    if (qrImageFile) {
+      const fd = new FormData();
+      Object.entries(payload).forEach(([key, value]) => fd.append(key, String(value)));
+      fd.append('qr_image', qrImageFile, qrImageFile.name);
+      res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), fd);
+    } else {
+      res = await ApiClient.patch(API_ENDPOINTS.payments.methodDetail(m.id), payload);
+    }
+    if (!res.ok) { console.error('[Método pago] error al guardar', res.status, res.data); barNotify('no pudimos guardar el método de pago. Inténtalo nuevamente.', 'error'); return; }
+    barNotify('el método de pago se guardó correctamente.', 'success');
     ov.remove();
     renderBarAdmin('payments');
   };
@@ -1985,7 +2428,7 @@ async function openPaymentMethodConfig(code) {
 
 async function showVoucherModal(orderId) {
   let order = null;
-  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  const payAll = await ApiClient.getAll(API_ENDPOINTS.payments.all);
   if (payAll.ok) {
     const p=apiList(payAll.data).find(x=> String(x.id)===String(orderId) || String(x.order_number)===String(orderId));
     if (p) order={ id:p.order_number||p.order, userName:p.user_name, date:(p.created_at||'').slice(0,10), time: p.created_at? new Date(p.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'', paymentStatus:p.status, total:parseFloat(p.amount||0), payment:p.payment_method_code };
@@ -2016,7 +2459,7 @@ async function showVoucherModal(orderId) {
       <button class="btn btn-primary" id="voucherCloseBtn">Cerrar</button>
     </div>`, { wide: true, title: 'Comprobante de pago', sub: `Pedido #${order.id} · ${esc(order.userName)}` });
   
-  // Attach close handler to footer button (modal() only binds the header × button)
+  // Attach close handler to footer button (modal() only binds the header <i class="bx bx-x"></i> button)
   $('#voucherCloseBtn', overlay).onclick = () => overlay.remove();
   
   // Handle Escape key
@@ -2039,7 +2482,7 @@ async function showVoucherModal(orderId) {
 async function barPaymentDetail(el, id) {
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px"></div>`;
   let order = null;
-  const payAll = await ApiClient.get(API_ENDPOINTS.payments.all);
+  const payAll = await ApiClient.getAll(API_ENDPOINTS.payments.all);
   if (payAll.ok) {
     const foundPay = apiList(payAll.data).find(p=> String(p.id)===String(id) || String(p.order_number)===String(id));
     if (foundPay) {
@@ -2079,14 +2522,14 @@ async function barPaymentDetail(el, id) {
 async function barSalesDashboard(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:200px"></div><div class="skeleton" style="height:180px"></div>`;
-  const [ordersRes, productsRes] = await Promise.all([ ApiClient.get(API_ENDPOINTS.orders.all), ApiClient.get(API_ENDPOINTS.products.list) ]);
-  if (!ordersRes.ok) { el.innerHTML = emptyState('⚠️','Error','No se pudo cargar ventas'); return; }
+  const [ordersRes, productsRes] = await Promise.all([ ApiClient.getAll(API_ENDPOINTS.orders.all), ApiClient.getAll(API_ENDPOINTS.products.list) ]);
+  if (!ordersRes.ok) { el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>','Error','No se pudo cargar ventas'); return; }
   const raw = ordersRes.data.results || ordersRes.data || [];
-  const ordersNorm = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
+  const ordersNorm = raw.map(o=>({ ...o, date: apiDateToLocalKey(o.created_at), time: apiDateToLocalTime(o.created_at), paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0), items: o.items || o.order_items || [] }));
   const orders = ordersNorm;
   const productsRaw = productsRes.ok ? (productsRes.data.results || productsRes.data || []) : [];
   const products = productsRaw;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   const validSales = orders.filter(isValidSale);
   const todayOrders = validSales.filter((o) => o.date === today);
   const salesToday = todayOrders.reduce((s, o) => s + o.total, 0);
@@ -2105,7 +2548,7 @@ const prodSales = {};
 const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const date = d.toISOString().slice(0, 10);
+    const date = localDateKey(d);
     const total = validSales.filter((o) => o.date === date).reduce((sum, o) => sum + o.total, 0);
     days.push({ label: d.toLocaleDateString('es-EC', { weekday: 'short' }), total });
   }
@@ -2115,7 +2558,7 @@ const days = [];
   const currentMonthStart = new Date(today.slice(0, 7) + '-01');
   const prevMonthEnd = new Date(currentMonthStart);
   prevMonthEnd.setDate(0);
-  const prevMonthStr = prevMonthEnd.toISOString().slice(0, 7);
+  const prevMonthStr = `${prevMonthEnd.getFullYear()}-${String(prevMonthEnd.getMonth() + 1).padStart(2, '0')}`;
   const salesPrevMonth = validSales.filter((o) => o.date.startsWith(prevMonthStr)).reduce((s, o) => s + o.total, 0);
   const momChange = salesPrevMonth > 0 ? ((salesMonth - salesPrevMonth) / salesPrevMonth) * 100 : (salesMonth > 0 ? 100 : 0);
   const momPositive = momChange >= 0;
@@ -2127,7 +2570,7 @@ const days = [];
     const avgWeek = days.reduce((s, d) => s + d.total, 0) / 7;
     const bestDay = [...days].sort((a, b) => b.total - a.total)[0];
     if (avgWeek > 0 && salesToday > avgWeek * 1.1) {
-      microMsg = `Hoy vas mejor que el promedio de la semana ✨`;
+      microMsg = `Hoy vas mejor que el promedio de la semana <i class="bx bx-star"></i>`;
     } else if (bestDay && bestDay.total > 0 && bestDay.total > avgWeek * 1.2) {
       microMsg = `Tu día más fuerte esta semana fue ${esc(bestDay.label)} con ${money(bestDay.total)}`;
     } else if (avgWeek > 0 && salesToday > 0) {
@@ -2156,7 +2599,7 @@ const days = [];
 
     <div class="card" style="margin-bottom:24px">
       <h3 style="margin-bottom:16px">Ventas por hora (hoy)</h3>
-      <div id="salesHourChart" style="display:flex;align-items:flex-end;gap:8px;height:160px;padding:12px 8px 0;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)"></div>
+      <div id="salesHourChart" class="sales-hour-chart" style="display:flex;align-items:flex-end;gap:8px;height:160px;padding:12px 8px 0;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface-2)"></div>
       <div class="tiny muted" style="margin-top:8px;text-align:center">Agrupado por franja horaria del día actual</div>
     </div>
 
@@ -2166,7 +2609,7 @@ const days = [];
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
           ${topProducts.map(({ product, qty }) => `
             <div class="stat-card" style="padding:16px;text-align:center">
-              <div style="font-size:2.5rem;margin-bottom:8px">${product.emoji || productIcon(product)}</div>
+              <div style="font-size:2.5rem;margin-bottom:8px">${productIcon(product)}</div>
               <div class="bold" style="font-size:var(--fs-sm);margin-bottom:4px">${esc(product.name)}</div>
               <div class="stat-value primary tabular-nums" style="font-size:1.5rem">${qty}</div>
               <div class="tiny muted">unidades</div>
@@ -2282,11 +2725,11 @@ function renderSalesHourChart(el, todayOrders) {
     const pct = (val / max) * 100;
     const height = Math.max(8, pct);
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
-      <div style="font-size:10px;color:var(--text-3);font-weight:600">${money(val)}</div>
+      <div class="tiny" style="font-size:10px;font-weight:600">${money(val)}</div>
       <div style="width:100%;height:100px;background:var(--surface-3);border-radius:6px 6px 0 0;overflow:hidden;display:flex;align-items:flex-end">
         <div style="width:100%;height:${height}%;background:linear-gradient(180deg,var(--primary),var(--primary-hover));border-radius:6px 6px 0 0;transition:height 0.6s ease;min-height:${val ? '4px' : '0'}"></div>
       </div>
-      <div style="font-size:11px;font-weight:700;color:var(--text-2)">${h}h</div>
+      <div class="tiny" style="font-size:11px;font-weight:700">${h}h</div>
     </div>`;
   }).join('');
 }
@@ -2341,9 +2784,9 @@ function renderMomDonutChart(el, momChange, momAbsChange, momPositive, salesMont
    HISTORIAL DE VENTAS
    ============================================================ */
 async function barSalesHistory(el) {
-  const ordersRes = await ApiClient.get(API_ENDPOINTS.orders.all);
+  const ordersRes = await ApiClient.getAll(API_ENDPOINTS.orders.all);
   const raw = ordersRes.ok ? (ordersRes.data.results || ordersRes.data || []) : [];
-  const orders = raw.map(o=>({ ...o, date:(o.created_at||'').slice(0,10), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
+  const orders = raw.map(o=>({ ...o, date: apiDateToLocalKey(o.created_at), time: o.created_at? new Date(o.created_at).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}) : '', payment: o.payment_method_code || o.payment, paymentStatus: o.payment_status || o.paymentStatus, total: parseFloat(o.total||0)}));
   const tbody = $('#salesHistoryRows');
   if (!tbody) {
     el.innerHTML = `
@@ -2351,47 +2794,60 @@ async function barSalesHistory(el) {
       <div class="table-wrap"><table class="admin-table">
         <thead><tr><th>Fecha/hora</th><th>Número pedido</th><th>Monto</th><th>Método pago</th><th>Estado</th></tr></thead>
         <tbody id="salesHistoryRows"></tbody></table></div>
+      <div id="salesHistoryPagination" class="sales-history-pagination" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap"></div>
     `;
   } else {
     tbody.innerHTML = '';
+    let pag = $('#salesHistoryPagination', el);
+    if (!pag) {
+      pag = document.createElement('div');
+      pag.id = 'salesHistoryPagination';
+      pag.className = 'sales-history-pagination';
+      pag.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap';
+      tbody.closest('.table-wrap')?.after(pag);
+    }
   }
 
-  const renderSkeletonRows = (count = 5) => {
-    const tbodyEl = $('#salesHistoryRows', el);
-    if (tbodyEl) {
-      tbodyEl.innerHTML = Array.from({ length: count }, () => `
-        <tr>
-          <td><div class="skeleton" style="width:90px;height:14px"></div></td>
-          <td><div class="skeleton" style="width:60px;height:16px"></div></td>
-          <td><div class="skeleton" style="width:70px;height:16px"></div></td>
-          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
-          <td><div class="skeleton" style="width:80px;height:24px;border-radius:var(--r-pill)"></div></td>
-        </tr>
-      `).join('');
-    }
-  };
+  const PAGE_SIZE = 20;
+  let page = 1;
 
   const renderRows = () => {
     const tbodyEl = $('#salesHistoryRows', el);
     if (!tbodyEl) return;
-    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
-    tbodyEl.innerHTML = validSales.length ? validSales.map((o) => `
+    const validSales = orders.filter(isValidSale).sort((a, b) => b.date.localeCompare(a.date));
+    const pages = Math.max(1, Math.ceil(validSales.length / PAGE_SIZE));
+    if (page > pages) page = pages;
+    const start = (page - 1) * PAGE_SIZE;
+    const pageRows = validSales.slice(start, start + PAGE_SIZE);
+    tbodyEl.innerHTML = pageRows.length ? pageRows.map((o) => `
       <tr><td data-label="Fecha/hora"><span class="small">${o.date} ${o.time || '—'}</span></td><td data-label="Pedido"><span class="bold">#${o.id}</span></td><td data-label="Monto"><span class="bold tabular-nums">${money(o.total)}</span></td><td data-label="Método pago"><span>${paymentMethodLabel(o.payment)}</span></td><td data-label="Estado">${statusMeta(o.status)}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;padding:28px 20px"><div style="font-size:2rem;color:var(--primary);margin-bottom:8px"><i class="bx bx-history"></i></div><div style="font-weight:600">Aún no hay historial de ventas</div><div class="tiny muted" style="margin-top:4px">Tus ventas aparecerán aquí con mucho corazón</div></td></tr>';
+    const pagEl = $('#salesHistoryPagination', el);
+    if (pagEl) {
+      pagEl.innerHTML = `
+        <span class="tiny muted">${validSales.length} ventas · Página ${page} de ${pages}</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" data-shpage="prev" ${page <= 1 ? 'disabled' : ''}>Anterior</button>
+          <button class="btn btn-outline btn-sm" data-shpage="next" ${page >= pages ? 'disabled' : ''}>Siguiente</button>
+        </div>`;
+      const prevBtn = pagEl.querySelector('[data-shpage="prev"]');
+      const nextBtn = pagEl.querySelector('[data-shpage="next"]');
+      if (prevBtn) prevBtn.onclick = () => { if (page > 1) { page--; renderRows(); } };
+      if (nextBtn) nextBtn.onclick = () => { if (page < pages) { page++; renderRows(); } };
+    }
   };
 
-  renderSkeletonRows();
-  setTimeout(renderRows, 350);
+  renderRows();
 }
  
 async function barDelivery(el) {
   ensureAdminbarPresentationStyles();
   el.innerHTML = `<div class="skeleton" style="height:28px;width:160px;margin-bottom:18px"></div><div class="skeleton" style="height:180px"></div>`;
   const [ordersRes, deliveryConfigRes] = await Promise.all([
-    ApiClient.get(API_ENDPOINTS.orders.all),
+    ApiClient.getAll(API_ENDPOINTS.orders.all),
     ApiClient.get(API_ENDPOINTS.delivery.config),
   ]);
   if (!ordersRes.ok) {
-    el.innerHTML = emptyState('⚠️', 'Error', 'No se pudieron cargar los pedidos de delivery');
+    el.innerHTML = emptyState('<i class="bx bx-error-circle"></i>', 'Error', 'No se pudieron cargar los pedidos de delivery');
     return;
   }
   const allOrders = ordersRes.data.results || ordersRes.data || [];
@@ -2430,13 +2886,13 @@ async function barDelivery(el) {
           <label class="checkbox-row"><input type="checkbox" id="dlEnabled" ${cfg.deliveryEnabled ? 'checked' : ''}> <b>Habilitar delivery interno</b></label>
           <div class="tiny muted" style="margin-left:26px;margin-top:4px">Cobertura exclusiva dentro del edificio INTESUD.</div>
         </div>
-        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Pisos habilitados</div></div>
+        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Pisos habilitados</div></div>
         <div class="field" id="dlFloorsField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlFloors">
             ${floors.map((f) => `<label class="checkbox-row" style="margin-right:6px"><input type="checkbox" data-floor="${f}" ${cfg.deliveryFloors.includes(f) ? 'checked' : ''} style="margin-right:4px">${f}</label>`).join('')}
           </div>
         </div>
-        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-2)">Días y horario</div></div>
+        <div style="margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div class="tiny" style="font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Días y horario</div></div>
         <div class="field" id="dlDaysField" style="${cfg.deliveryEnabled ? '' : 'opacity:.5;pointer-events:none'}">
           <label class="label">Días de entrega</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="dlDays">
@@ -2456,7 +2912,7 @@ async function barDelivery(el) {
         </div>
       </div>
     </div>
-    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico">⚠️</span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
+    ${cfg.deliveryEnabled ? '' : '<div class="status-banner warning" style="margin-top:16px" id="dlWarning"><span class="ico"><i class="bx bx-error-circle"></i></span><div>Delivery interno deshabilitado. Habilítalo en Configuración.</div></div>'}
   `;
 
   let dtab = 'pendiente';
@@ -2476,23 +2932,45 @@ async function barDelivery(el) {
     }
     const list = dtab === 'pendiente' ? pending : dtab === 'encamino' ? enCamino : entregado;
     if (!list.length) {
-      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico">📦</div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
+      area.innerHTML = `<div class="empty-state" style="padding:24px"><div class="es-ico"><i class="bx bx-package"></i></div><h3>Sin pedidos ${dtab}</h3><p class="tiny muted">No hay deliveries en este estado por ahora.</p></div>`;
       return;
     }
-    area.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map((o) => `
+    area.innerHTML = `<div class="grid" style="gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${list.map((o) => {
+      const d = {
+        id: o.id,
+        status: o.status,
+        orderNumber: o.order_number || o.id,
+        userName: o.user_name || o.userName || '',
+        deliveryInfo: o.delivery_info || o.deliveryInfo || null,
+        items: (o.items || o.order_items || []).map((i) => ({ name: i.product_name ?? i.name, qty: i.quantity ?? i.qty })),
+        total: o.total,
+        time: o.created_at ? new Date(o.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '',
+        date: o.created_at ? o.created_at.slice(0, 10) : '',
+      };
+      const dStatus = d.status === 'queue' || d.status === 'confirmed' || d.status === 'prep' ? 'Pendiente'
+        : d.status === 'ready' ? 'En camino'
+        : d.status === 'delivered' ? 'Entregado'
+        : d.status === 'cancelled' ? 'Cancelado'
+        : d.status === 'nopickup' ? 'No retirado'
+        : (o.status_label || 'Pendiente');
+      const dCls = d.status === 'ready' ? 'badge-warning'
+        : d.status === 'delivered' ? 'badge-success'
+        : d.status === 'cancelled' || d.status === 'nopickup' ? 'badge-danger'
+        : 'badge-info';
+      return `
       <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="bold" style="color:var(--primary-strong)">#${o.id}</span>
-          <span class="badge ${o.status === 'ready' ? 'badge-warning' : o.status === 'delivered' ? 'badge-success' : 'badge-info'}">${o.status === 'queue' || o.status === 'confirmed' || o.status === 'prep' ? 'Pendiente' : o.status === 'ready' ? 'En camino' : 'Entregado'}</span>
+          <span class="bold" style="color:var(--primary-strong)">#${esc(d.orderNumber)}</span>
+          <span class="badge ${dCls}">${dStatus}</span>
         </div>
-        <div class="tiny muted"><b>Estudiante:</b> ${esc(o.userName)} · <b>Piso ${esc(o.deliveryInfo?.piso || '—')}</b> Aula ${esc(o.deliveryInfo?.aula || '—')}</div>
-        <div style="font-size:var(--fs-sm)">${o.items.map((i)=>`${esc(i.name)} ×${i.qty}`).join(', ')}</div>
+        <div class="tiny muted"><b>Estudiante:</b> ${esc(d.userName)} · <b>Piso ${esc(d.deliveryInfo?.piso || '—')}</b> Aula ${esc(d.deliveryInfo?.aula || '—')}</div>
+        <div style="font-size:var(--fs-sm)">${d.items.map((i)=>`${esc(i.name)} <i class="bx bx-x"></i>${i.qty}`).join(', ')}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-          <span class="bold tabular-nums">${money(o.total)}</span>
-          <span class="tiny muted">${o.time} · ${o.date}</span>
+          <span class="bold tabular-nums">${money(d.total)}</span>
+          <span class="tiny muted">${d.time} · ${d.date}</span>
         </div>
-      </div>
-    `).join('')}</div>`;
+      </div>`;
+    }).join('')}</div>`;
   };
   $$('[data-dtab]', el).forEach((btn) => btn.onclick = () => {
     $$('[data-dtab]', el).forEach((x) => x.classList.remove('active'));
@@ -2524,11 +3002,12 @@ async function barDelivery(el) {
     };
     const res = await ApiClient.patch(API_ENDPOINTS.delivery.config, payload);
     if (!res.ok) {
-      toast(res.data?.detail || res.data?.end_time?.[0] || 'Error al guardar delivery', 'error');
+      console.error('[Delivery] error al guardar', res.status, res.data);
+      barNotify('no pudimos guardar la configuración de delivery. Inténtalo nuevamente.', 'error');
       return;
     }
     logAudit('Actualizó configuración de delivery', payload.enabled ? 'Delivery habilitado' : 'Delivery deshabilitado');
-    toast('Configuración de delivery guardada en PostgreSQL.', 'success');
+    barNotify('la configuración de delivery se guardó correctamente.', 'success');
     renderBarAdmin('delivery');
   };
 }
@@ -2538,71 +3017,6 @@ async function barDelivery(el) {
    ============================================================ */
 async function barConfigHours(el) {
   return barConfigTabs(el, 'hours');
-  const cfg = null;
-  const originalValues = {
-    orderOpen: cfg.orderOpen,
-    orderClose: cfg.orderClose,
-    breakStart: cfg.breakStart,
-    breakEnd: cfg.breakEnd,
-    capacity: String(cfg.capacity)
-  };
-  let hasUnsavedChanges = false;
-  const btn = document.createElement('button');
-  btn.className = 'btn btn-primary';
-  btn.id = 'btnSaveConfigHours';
-  btn.innerHTML = 'Guardar cambios';
-  
-  el.innerHTML = `
-    <div class="page-title"><h1><span class="ico bx bx-time-five"></span> Configuración - Horarios</h1></div>
-    <div class="card" style="width:100%;max-width:none;margin:0">
-      <div style="margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de pedidos</div></div>
-      <div class="grid grid-2">
-        <div class="field"><label class="label">Pedidos desde</label><input class="input" type="time" id="ohOpen" value="${cfg.orderOpen}" style="max-width: 200px"></div>
-        <div class="field"><label class="label">Pedidos hasta</label><input class="input" type="time" id="ohClose" value="${cfg.orderClose}" style="max-width: 200px"></div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Horario de receso</div></div>
-      <div class="grid grid-2">
-        <div class="field"><label class="label">Receso desde</label><input class="input" type="time" id="brStart" value="${cfg.breakStart}" style="max-width: 200px"></div>
-        <div class="field"><label class="label">Receso hasta</label><input class="input" type="time" id="brEnd" value="${cfg.breakEnd}" style="max-width: 200px"></div>
-      </div>
-      <div style="margin:20px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)"><div style="font-size:var(--fs-xs);font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--primary)">Capacidad</div></div>
-      <div class="field"><label class="label">Capacidad de preparación (pedidos)</label><input class="input" type="number" id="cpCap" value="${cfg.capacity}" style="max-width: 150px"><div class="tiny muted" style="margin-top:6px">Máximo de pedidos simultáneos que la administradora puede preparar.</div></div>
-      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center">
-        <span id="unsavedIndicator" class="unsaved-indicator" style="display:none" aria-label="Cambios sin guardar">
-          <span class="pulse-dot"></span>
-        </span>
-        <button class="btn btn-primary" id="btnSaveConfigHours">Guardar cambios</button>
-      </div>
-    </div>
-  `;
-  
-  const btnSave = $('#btnSaveConfigHours', el);
-  const indicator = $('#unsavedIndicator', el);
-  const fields = ['ohOpen', 'ohClose', 'brStart', 'brEnd', 'cpCap'];
-  
-  const checkChanges = () => {
-    const currentValues = {
-      orderOpen: $('#ohOpen', el).value,
-      orderClose: $('#ohClose', el).value,
-      breakStart: $('#brStart', el).value,
-      breakEnd: $('#brEnd', el).value,
-      capacity: $('#cpCap', el).value
-    };
-    hasUnsavedChanges = Object.keys(originalValues).some(key => currentValues[key] !== originalValues[key]);
-    indicator.style.display = hasUnsavedChanges ? 'inline-flex' : 'none';
-    btnSave.disabled = !hasUnsavedChanges;
-    btnSave.style.opacity = hasUnsavedChanges ? '1' : '0.6';
-  };
-  
-  fields.forEach(id => {
-    const field = $('#' + id, el);
-    if (field) {
-      field.addEventListener('input', checkChanges);
-      field.addEventListener('change', checkChanges);
-    }
-  });
-  
-  btnSave.onclick = () => saveConfigHours(btnSave, indicator, originalValues);
 }
 
 async function saveConfigHours(btn, indicator, originalValues) {
@@ -2619,13 +3033,14 @@ async function saveConfigHours(btn, indicator, originalValues) {
   Object.keys(payload).forEach(k => payload[k] === '' && delete payload[k]);
   const res = await ApiClient.patch(API_ENDPOINTS.config.update, payload);
   if (!res.ok) {
-    toast(res.data?.detail || res.data?.order_open_time?.[0] || 'Error al guardar configuración', 'error');
+    console.error('[Config] error al guardar horarios', res.status, res.data);
+    barNotify('no pudimos guardar la configuración. Inténtalo nuevamente.', 'error');
     btn.disabled = false;
     btn.innerHTML = originalText;
     return;
   }
   logAudit('Actualizó horarios', 'Horario de pedidos y receso');
-  toast('Horarios guardados en PostgreSQL.', 'success');
+  barNotify('la configuración se actualizó correctamente.', 'success');
   btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>Guardado';
   btn.classList.add('btn-success');
   btn.classList.remove('btn-primary');
@@ -2638,25 +3053,6 @@ async function saveConfigHours(btn, indicator, originalValues) {
    ============================================================ */
 async function barConfigStatus(el) {
   return barConfigTabs(el, 'status');
-  const cfg = null;
-  const isOpen = false;
-  el.innerHTML = `
-    <div class="page-title"><h1><span class="ico bx bx-cog"></span> Configuración - Estado</h1></div>
-    <div class="card" style="width:100%;max-width:none;margin:0">
-      <div style="text-align:center;margin-bottom:24px">
-        <span class="badge ${isOpen ? 'badge-success' : 'badge-danger'}" style="font-size:1.5rem;margin-bottom:8px"><span class="ico bx ${isOpen ? 'bx-check-circle' : 'bx-lock-alt'}"></span> ${isOpen ? 'ABIERTA' : 'CERRADA'}</span>
-      </div>
-      <div style="text-align:center">
-        <button class="btn ${isOpen ? 'btn-secondary' : 'btn-primary'}" id="btnToggleCafeStatus" style="width:100%;padding:12px;font-size:var(--fs-lg)">
-          ${isOpen ? 'Cambiar a CERRADA' : 'Cambiar a ABIERTA'}
-        </button>
-      </div>
-      <div style="margin-top:16px;text-align:center;color:var(--text-2);font-size:var(--fs-sm)">
-        <b>Nota:</b> Si la cafetería está cerrada, los usuarios pueden ver el menú pero no realizar pedidos.
-      </div>
-    </div>
-  `;
-  $('#btnToggleCafeStatus', el).onclick = () => confirmToggleState(!isOpen, $('#btnToggleCafeStatus', el));
 }
 
 function barAdminProfile(el) {
@@ -2784,7 +3180,7 @@ function barAdminProfile(el) {
   photoInput.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes', 'warning'); return; }
+    if (!file.type.startsWith('image/')) { barNotify('solo se permiten imágenes.', 'warning'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       newPhotoBase64 = ev.target.result;
@@ -2803,20 +3199,20 @@ function barAdminProfile(el) {
 
   $('#btnSaveProfile', el).onclick = async () => {
     const newName = nameInput.value.trim();
-    if (!newName) { toast('El nombre no puede estar vacío', 'warning'); return; }
+    if (!newName) { barNotify('el nombre no puede estar vacío.', 'warning'); return; }
     const [first_name, ...rest] = newName.split(' ');
     const last_name = rest.join(' ');
     const res = await ApiClient.patch(API_ENDPOINTS.auth.me, { first_name, last_name });
-    if (!res.ok) { toast(res.data?.detail || 'No se pudo actualizar perfil', 'error'); return; }
-    const session = Store.load('int_session', null);
+    if (!res.ok) { console.error('[Perfil] error al actualizar', res.status, res.data); barNotify('no pudimos actualizar el perfil. Inténtalo nuevamente.', 'error'); return; }
+    const session = SessionStore.get('int_session', null);
     if (session) {
       session.name = newName;
       if (newPhotoBase64 !== undefined) session.photo = newPhotoBase64;
-      Store.save('int_session', session);
+      SessionStore.set('int_session', session);
     }
     Store.save('int_admin_name_' + user.id, newName);
     Store.save('int_admin_photo_' + user.id, newPhotoBase64 || '');
-    toast('Perfil actualizado en PostgreSQL', 'success');
+    barNotify('los cambios se guardaron correctamente.', 'success');
     renderBarAdmin('profile');
   };
 }
@@ -2835,13 +3231,14 @@ function confirmToggleState(toOpen, btn) {
     }
     const res = await ApiClient.patch(API_ENDPOINTS.config.update, { is_open: toOpen });
     if (!res.ok) {
-      toast(res.data?.detail || 'No se pudo cambiar el estado', 'error');
+      console.error('[Config] error al cambiar estado cafetería', res.status, res.data);
+      barNotify('no pudimos cambiar el estado de la cafetería. Inténtalo nuevamente.', 'error');
       btn.disabled = false;
       btn.innerHTML = originalText;
       return;
     }
     logAudit('Cambió estado de la cafetería', toOpen ? 'Abierta' : 'Cerrada');
-    toast('La cafetería está ' + (toOpen ? 'ABIERTA' : 'CERRADA') + ' (PostgreSQL).', toOpen ? 'success' : 'warning');
+    barNotify(toOpen ? 'la cafetería está abierta.' : 'la cafetería está cerrada.', toOpen ? 'success' : 'warning');
     btn.innerHTML = '<i class="bx bx-check" style="margin-right:6px"></i>' + (toOpen ? 'Abierta' : 'Cerrada');
     btn.classList.add('btn-success');
     btn.classList.remove('btn-primary', 'btn-secondary');
@@ -2867,24 +3264,23 @@ window.addEventListener('resize', () => {
     }
     const topbar = document.querySelector('.admin-topbar');
     if (topbar) {
-      const pill = document.getElementById('cafePill');
-      if (pill) {
-        pill.style.flexShrink = '0';
-        pill.style.whiteSpace = 'nowrap';
-      }
-      // Fuerza reflow para evitar badge cortado al rotar
+      // Fuerza reflow para evitar cortes al rotar
       topbar.style.display = 'none';
-      // eslint-disable-next-line no-unused-expressions
       topbar.offsetHeight;
       topbar.style.display = '';
     }
-    // Limpia estados de drawer huérfanos al cambiar breakpoint sin recargar
-    document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
-    document.querySelectorAll('.admin-layout.sidebar-push').forEach((el) => el.classList.remove('sidebar-push'));
+    // En desktop limpia drawer y restaura scroll
     if (!isMobile) {
       document.querySelectorAll('.admin-sidebar.open').forEach((el) => el.classList.remove('open'));
+      document.querySelectorAll('.sb-scrim').forEach((el) => el.remove());
+      document.body.style.overflow = '';
       const moreModal = document.getElementById('adminMoreModal');
       if (moreModal) { moreModal.style.display = 'none'; moreModal.innerHTML = ''; }
+    } else {
+      // En móvil asegura visibilidad de scrim según estado drawer
+      const sb = document.querySelector('.admin-sidebar');
+      const scrim = document.querySelector('.sb-scrim');
+      if (sb && scrim) scrim.style.display = sb.classList.contains('open') ? 'block' : 'none';
     }
   }, 180);
 });

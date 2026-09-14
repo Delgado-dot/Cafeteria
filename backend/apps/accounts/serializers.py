@@ -81,6 +81,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            "username",
             "first_name",
             "last_name",
             "email",
@@ -90,6 +91,15 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             "avatar",
             "is_active",
         ]
+
+    def validate_username(self, value):
+        # Unicidad case-insensitive: no puede existir otro usuario con el mismo username.
+        qs = User.objects.filter(username__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe otro usuario con ese nombre de usuario.")
+        return value
 
 
 class SelfUserUpdateSerializer(serializers.ModelSerializer):
@@ -127,4 +137,18 @@ class RolePermissionSerializer(serializers.ModelSerializer):
         model = RolePermission
         fields = ["id", "role", "code", "enabled", "updated_at"]
         read_only_fields = ["id", "updated_at"]
+
+    def validate_role(self, value):
+        from .constants import VALID_ROLES
+
+        if value not in VALID_ROLES:
+            raise serializers.ValidationError(f"Rol no válido. Permitidos: {', '.join(sorted(VALID_ROLES))}")
+        return value
+
+    def validate_code(self, value):
+        from .constants import PERMISSIONS_CATALOG
+
+        if value not in PERMISSIONS_CATALOG:
+            raise serializers.ValidationError(f"Código de permiso no existe: {value}")
+        return value
 

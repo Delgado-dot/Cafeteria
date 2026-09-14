@@ -16,6 +16,48 @@ class CafeConfig(models.Model):
     total_capacity = models.PositiveIntegerField("capacidad de preparacion", default=10)
     current_capacity = models.PositiveIntegerField("capacidad en uso", default=0)
     is_open = models.BooleanField("cafeteria abierta", default=True)
+    hero_background = models.ImageField(
+        "fondo de portada",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    barra_atencion_image = models.ImageField(
+        "imagen de barra de atencion",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    espacio_disfrutar_image = models.ImageField(
+        "imagen de espacio para disfrutar",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    cafe_snacks_image = models.ImageField(
+        "imagen de cafe y snacks",
+        upload_to="home/",
+        blank=True,
+        null=True,
+    )
+    login_background = models.ImageField(
+        "fondo de pantalla de login",
+        upload_to="site/login/",
+        blank=True,
+        null=True,
+    )
+    login_mascot = models.ImageField(
+        "mascota/panda de login",
+        upload_to="site/login/",
+        blank=True,
+        null=True,
+    )
+    system_logo = models.ImageField(
+        "logo del sistema",
+        upload_to="site/logo/",
+        blank=True,
+        null=True,
+    )
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 
     class Meta:
@@ -68,6 +110,12 @@ class PaymentMethod(models.Model):
     holder_id = models.CharField("identificacion", max_length=30, blank=True)
     phone = models.CharField("telefono/celular", max_length=25, blank=True)
     qr_info = models.TextField("info QR/codigo", blank=True)
+    qr_image = models.ImageField(
+        "imagen QR",
+        upload_to="payment_qr/",
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField("creado", auto_now_add=True)
     updated_at = models.DateTimeField("actualizado", auto_now=True)
 

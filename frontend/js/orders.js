@@ -2,8 +2,8 @@
    orders.js — Pedidos del usuario, seguimiento, cancelación
    ============================================================ */
 
-const ORDER_FLOW = ['queue', 'confirmed', 'prep', 'ready', 'delivered'];
-const ORDER_FLOW_LABEL = { queue: 'En cola', confirmed: 'Confirmado', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
+const ORDER_FLOW = ['confirmed', 'queue', 'prep', 'ready', 'delivered'];
+const ORDER_FLOW_LABEL = { confirmed: 'Confirmado', queue: 'En cola', prep: 'En preparación', ready: 'Listo', delivered: 'Entregado' };
 
 function myOrders() {
   const u = currentUser();
@@ -25,6 +25,8 @@ function mapApiOrder(order) {
       productId: item.product_id,
       qty: item.quantity,
       name: item.product_name,
+      image: item.product_image || '',
+      product_image: item.product_image || '',
       price: Number(item.unit_price),
       addons: item.addons || [],
     })),
@@ -33,6 +35,7 @@ function mapApiOrder(order) {
     priority: order.priority,
     delivery: order.delivery_method,
     deliveryInfo: order.delivery_info,
+    payment: order.payment_method,
     paymentStatus: order.payment_status,
     prepMin: order.estimated_time,
     note: order.note || '',
@@ -40,7 +43,7 @@ function mapApiOrder(order) {
 }
 
 async function loadMyOrders() {
-  const response = await ApiClient.get(API_ENDPOINTS.orders.list);
+  const response = await ApiClient.getAll(API_ENDPOINTS.orders.list);
   if (!response.ok) return { ok: false, orders: [], error: response.data?.detail || response.error };
   const rawOrders = Array.isArray(response.data) ? response.data : (response.data.results || []);
   const orders = rawOrders.map(mapApiOrder);
@@ -52,6 +55,7 @@ async function renderOrders(el) {
   const app = el || $('#mainContent') || $('#app');
   if (!currentUser()) return route('login');
   const response = await loadMyOrders();
+  if (!app.isConnected) return;
   if (!response.ok) {
     app.innerHTML = emptyState(clientIcon('danger'), 'No se pudieron cargar tus pedidos', 'Verifica la conexión con el servidor e inténtalo de nuevo.');
     return;
@@ -84,7 +88,7 @@ async function renderOrders(el) {
   const histWrap = $('#historyOrders');
   if (!history.length) histWrap.innerHTML = emptyState(clientIcon('orders'), 'Sin historial', 'No hay pedidos anteriores.');
   else {
-    histWrap.innerHTML = history.slice(0, 30).map((o) => historyCard(o)).join('');
+    histWrap.innerHTML = history.map((o) => historyCard(o)).join('');
     $$('[data-history-detail]', histWrap).forEach((button) => {
       button.onclick = () => showOrderDetail(history.find((o) => o.id === button.dataset.historyDetail));
     });
@@ -130,7 +134,16 @@ function orderTrackingCard(o) {
     <div class="order-glance">
       <div>
         <div class="order-glance-label">${orderStateMessage(o)}</div>
-        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} ×${i.qty}`).join(' · ')}</div>
+        <div class="small muted" style="margin-top:4px">${o.items.map((i) => `${esc(i.name)} <i class="bx bx-x"></i>${i.qty}`).join(' · ')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${o.items.map((i) => {
+          const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+          const img = i.image || i.product_image || prod?.image || '';
+          if (img) {
+            const url = typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img;
+            return `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`;
+          }
+          return `<span style="width:36px;height:36px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="${esc(i.name)}">${clientProductIcon(prod || { category: '' })}</span>`;
+        }).join('')}</div>
       </div>
       <div class="order-eta">
         <span class="tiny muted">TIEMPO ESTIMADO</span>
@@ -161,10 +174,20 @@ function orderTrackingCard(o) {
 }
 
 function historyCard(o) {
+  const histThumbs = o.items.slice(0, 4).map((i) => {
+    const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+    const img = i.image || i.product_image || prod?.image || '';
+    if (img) {
+      const url = typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img;
+      return `<img src="${esc(url)}" alt="${esc(i.name)}" title="${esc(i.name)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex-shrink:0" loading="lazy" onerror="this.style.display='none'">`;
+    }
+    return `<span style="width:32px;height:32px;border-radius:8px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="${esc(i.name)}">${clientProductIcon(prod || { category: '' })}</span>`;
+  }).join('');
   return `
     <div class="order-card order-card-history" data-order-detail="${esc(o.id)}">
       <div>
         <div class="order-num" style="font-size:var(--fs-md)">#${o.id} <span class="badge badge-outline">${fmtDate(o.date)} · ${o.time}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">${histThumbs}${o.items.length > 4 ? `<span class="tiny muted">+${o.items.length - 4} más</span>` : ''}</div>
         <div class="small muted" style="margin-top:6px">${o.items.slice(0, 3).map((i) => esc(i.name)).join(', ')}${o.items.length > 3 ? ` +${o.items.length - 3} más` : ''}</div>
       </div>
       <div class="order-history-meta">
@@ -205,8 +228,13 @@ function showOrderDetail(o) {
     <div class="detail-status"><div><span class="tiny muted">NÚMERO DE PEDIDO</span><div class="detail-number">#${esc(o.id)}</div></div>${statusMeta(o.status)}</div>
     <div class="detail-eta">${o.status === 'ready' ? `${clientIcon('check')} Retira tu pedido en cafetería` : `${clientIcon('clock')} ${orderEta(o)}`}</div>
     ${terminal}${progress}
-    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => `<div class="detail-item"><span>${esc(i.name)} <span class="muted">× ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
-    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
+    <div class="detail-section"><h4>Tu pedido</h4>${o.items.map((i) => {
+      const prod = (typeof Store !== 'undefined' && Store.products) ? Store.products.find((p) => String(p.id) === String(i.productId)) : null;
+      const img = i.image || i.product_image || prod?.image || '';
+      const thumb = img ? `<img src="${esc(typeof resolveMediaUrl !== 'undefined' ? resolveMediaUrl(img) : img)}" alt="${esc(i.name)}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none'">` : `<span style="width:40px;height:40px;border-radius:10px;background:var(--primary-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${clientProductIcon(prod || { category: '' })}</span>`;
+      return `<div class="detail-item" style="display:flex;align-items:center;gap:12px"><div style="flex-shrink:0">${thumb}</div><span style="flex:1">${esc(i.name)} <span class="muted"><i class="bx bx-x"></i> ${i.qty}</span></span><b>${money(i.price * i.qty)}</b></div>`;
+    }).join('')}<div class="detail-total"><span>Total</span><b>${money(o.total)}</b></div></div>
+    <div class="detail-section detail-facts"><h4>Entrega y pago</h4><div><span>Entrega</span><b>${deliveryMeta(o)}</b></div><div><span>Pago</span><b>${o.payment ? `${paymentMethodLabel(o.payment)} · ${paymentMeta(o.paymentStatus)}` : `Pago pendiente · ${paymentMeta(o.paymentStatus)}`}</b></div>${o.note ? `<div><span>Nota</span><b>${esc(o.note)}</b></div>` : ''}</div>
   `, { title: 'Detalle del pedido', footer: ['queue', 'confirmed'].includes(o.status) ? '<button class="btn btn-danger-outline btn-sm" data-detail-cancel>Cancelar pedido</button>' : '' });
   $('[data-detail-cancel]', d.overlay)?.addEventListener('click', async () => {
     const ok = await confirmDialog('Cancelar pedido', '¿Seguro que deseas cancelar este pedido?', 'Cancelar pedido', true);
@@ -217,8 +245,6 @@ function showOrderDetail(o) {
   });
 }
 window.showOrderDetail = showOrderDetail;
-
-function saveOrders() { Store.orders = Store.orders; }
 
 function fmtDate(d) {
   if (!d) return '';
@@ -271,10 +297,13 @@ function renderProfile(el) {
       </div>
     </div></div>`;
 
-  $('#btnLogout').onclick = () => {
-    Auth.logout();
+  $('#btnLogout').onclick = async () => {
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    await Auth.logout();
     toast('Sesión cerrada.', 'info');
-    route('login');
+    window.location.hash = 'login';
+    handleRoute();
   };
 
   $('#btnEditProfile').onclick = () => {
@@ -288,14 +317,26 @@ function renderProfile(el) {
         <button class="btn" data-save>Guardar</button>
       </div>`);
     $('[data-close]', ov).onclick = () => ov.remove();
-    $('[data-save]', ov).onclick = () => {
-      user.name = $('#epName', ov).value || user.name;
-      user.cargo = $('#epCargo', ov).value;
-      user.aula = $('#epAula', ov).value;
+    $('[data-save]', ov).onclick = async () => {
+      const fullName = ($('#epName', ov).value || '').trim() || u.name;
+      const [first_name, ...restTokens] = fullName.split(' ');
+      const body = {
+        first_name,
+        last_name: restTokens.join(' '),
+        cargo: $('#epCargo', ov).value || '',
+        aula: $('#epAula', ov).value || '',
+      };
+      const response = await ApiClient.patch(API_ENDPOINTS.auth.me, body);
+      if (!response.ok) {
+        const msg = response.data?.detail || response.data?.first_name?.[0] || response.data?.last_name?.[0] || 'No se pudo actualizar el perfil.';
+        toast(msg, 'error');
+        return;
+      }
+      user.name = fullName;
+      user.cargo = body.cargo;
+      user.aula = body.aula;
       const sess = Auth.current();
-      sess.name = user.name;
-      Auth.set(sess);
-      Store.users = Store.users;
+      if (sess) { sess.name = fullName; sess.cargo = body.cargo; sess.aula = body.aula; Auth.set(sess); }
       toast('Perfil actualizado.', 'success');
       ov.remove();
       renderProfile();
@@ -358,7 +399,15 @@ function renderProfileModal() {
       <button class="btn btn-danger-outline" id="pmLogout">Cerrar sesión</button>
     </div>`, { title: 'Mi perfil' });
   $('#pmChangePass', ov).onclick = () => changePasswordModal();
-  $('#pmLogout', ov).onclick = () => { Auth.logout(); toast('Sesión cerrada.', 'info'); location.hash = 'login'; handleRoute(); };
+  $('#pmLogout', ov).onclick = async () => {
+    ov.remove();
+    const appEl = document.getElementById('app');
+    if (appEl) appEl.innerHTML = '';
+    await Auth.logout();
+    toast('Sesión cerrada.', 'info');
+    window.location.hash = 'login';
+    handleRoute();
+  };
 }
 window.renderProfileModal = renderProfileModal;
 
@@ -366,4 +415,3 @@ function initials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 }
 window.initials = initials;
-

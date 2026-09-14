@@ -3,19 +3,19 @@
    ============================================================ */
 
 const Auth = {
-  // Obtener usuario actual desde localStorage
+  // Obtener usuario actual desde la sesión de esta pestaña (sessionStorage)
   current() {
-    return Store.load('int_session', null);
+    return SessionStore.get('int_session', null);
   },
   
   // Guardar usuario actual
   set(u) {
-    Store.save('int_session', u);
+    SessionStore.set('int_session', u);
   },
   
-  // Limpiar sesión
+  // Limpiar sesión (solo esta pestaña)
   clear() {
-    localStorage.removeItem('int_session');
+    SessionStore.remove('int_session');
     ApiClient.clearTokens();
   },
   
@@ -29,9 +29,27 @@ const Auth = {
       }, false); // No incluir autorización en login
       
       if (!response.ok) {
-        // Manejar errores del servidor
-        const errorMsg = response.data?.detail || response.data?.password?.[0] || response.data?.username?.[0] || response.error || 'Error al iniciar sesión';
-        return { ok: false, field: 'email', msg: errorMsg };
+        // Manejar errores del servidor sin culpar al campo de email cuando el
+        // problema son las credenciales (401 / detail / non_field_errors).
+        const passwordErr = response.data?.password?.[0];
+        const usernameErr = response.data?.username?.[0];
+        const detail = response.data?.detail || response.data?.non_field_errors?.[0];
+        let field = 'email';
+        let errorMsg;
+        if (passwordErr) {
+          field = 'password';
+          errorMsg = passwordErr;
+        } else if (usernameErr) {
+          field = 'email';
+          errorMsg = usernameErr;
+        } else if (detail || response.status === 401) {
+          field = 'password';
+          errorMsg = detail;
+        } else {
+          field = 'email';
+          errorMsg = response.error || 'Error al iniciar sesión';
+        }
+        return { ok: false, field, msg: errorMsg };
       }
       
       // Guardar tokens JWT
@@ -65,9 +83,23 @@ const Auth = {
     }
   },
   
-  // Logout
-  logout() {
+  // Logout: invalida el refresh token en el backend y limpia la sesión local
+  async logout() {
+    let revokeRequest = null;
+    try {
+      const refresh = ApiClient.getRefreshToken();
+      if (refresh) {
+        revokeRequest = ApiClient.post(API_ENDPOINTS.auth.logout, { refresh });
+      }
+    } catch (e) {
+      // La sesión local se limpia aunque no se pueda iniciar la revocación.
+    }
     this.clear();
+    try {
+      if (revokeRequest) await revokeRequest;
+    } catch (e) {
+      // Si el servidor no responde, la sesión local ya quedó cerrada.
+    }
   },
 };
 
@@ -86,41 +118,50 @@ window.AUTH_ICO = AUTH_ICO;
 
 /* ---------- Render login ---------- */
 function renderLogin() {
+  const cfg = Store.config || {};
+  const bg = cfg.login_background_url || assetUrl('images/image');
+  const mascot = cfg.login_mascot_url || assetUrl('images/panda-login');
+  const logo = cfg.system_logo_url || assetUrl('bar-intesud-logo');
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
-    <div class="login-section">
-      <div class="login-card">
-        <div class="login-head login-brand-head">
-          <img class="login-logo" src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD">
-          <h2>Iniciar sesión</h2>
-          <p>Ingresa con tu cuenta institucional</p>
-        </div>
+  <div class="login-screen login-screen--auth" style="--auth-background:url('${bg}')">
+    <div class="login-layout">
+      <div class="login-mascot" aria-hidden="true">
+        <img src="${mascot}" alt="">
+      </div>
+      <div class="login-section">
+        <div class="login-card">
+          <div class="login-head login-brand-head">
+            <img class="login-logo" src="${logo}" alt="Logo BAR INTESUD">
+            <h2>Iniciar sesión</h2>
+            <p>Ingresa con tu cuenta institucional</p>
+          </div>
 
-        <form id="loginForm" novalidate>
-          <div class="field">
-            <label class="label" for="li_email">Usuario o correo</label>
-            <div class="input-wrap">
-              <span class="leading-ico">${AUTH_ICO.user}</span>
-              <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
-              <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+          <form id="loginForm" novalidate>
+            <div class="field">
+              <label class="label" for="li_email">Usuario o correo</label>
+              <div class="input-wrap">
+                <span class="leading-ico">${AUTH_ICO.user}</span>
+                <input class="input" id="li_email" type="text" placeholder="usuario@intesud.edu.ec" autocomplete="username">
+                <button type="button" class="clear-ico" id="li_clear" title="Limpiar" aria-label="Limpiar">&times;</button>
+              </div>
+              <div class="input-err-msg" id="li_emailErr"></div>
             </div>
-            <div class="input-err-msg" id="li_emailErr"></div>
-          </div>
-          <div class="field">
-            <label class="label" for="li_pass">Contraseña</label>
-            <div class="input-group">
-              <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+            <div class="field">
+              <label class="label" for="li_pass">Contraseña</label>
+              <div class="input-group">
+                <input class="input" id="li_pass" type="password" placeholder="••••••••" autocomplete="current-password">
+                <button type="button" class="ig-btn" id="li_toggle" title="Mostrar/ocultar" aria-label="Mostrar u ocultar contraseña">${AUTH_ICO.eye}</button>
+              </div>
+              <div class="input-err-msg" id="li_passErr"></div>
             </div>
-            <div class="input-err-msg" id="li_passErr"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 18px">
-            <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
-            <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
-        </form>
+            <div class="login-options">
+              <label class="checkbox-row"><input type="checkbox" id="li_remember"> Recordar sesión</label>
+              <a class="small bold" style="color:var(--primary)" href="#" data-link="forgot">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="li_submit">Iniciar sesión</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>`;
@@ -129,7 +170,8 @@ function renderLogin() {
   if (remembered) { $('#li_email').value = remembered; $('#li_remember').checked = true; }
 
   const setErr = (field, msg) => {
-    const inp = $('#li_' + field); const err = $('#li_' + field + 'Err');
+    const id = field === 'password' ? 'pass' : field;
+    const inp = $('#li_' + id); const err = $('#li_' + id + 'Err');
     if (inp) inp.classList.toggle('err', !!msg);
     err.textContent = msg || '';
   };
@@ -173,6 +215,26 @@ function renderLogin() {
       btn.disabled = false; btn.textContent = 'Iniciar sesión';
     }
   });
+
+  // Si aún no conocemos la configuración, la buscamos y aplicamos la
+  // apariencia guardada (fondo/mascota/logo) sin re-renderizar el formulario.
+  if (!cfg.login_background_url && !cfg.login_mascot_url && !cfg.system_logo_url) {
+    ApiClient.get(API_ENDPOINTS.config.get).then((res) => {
+      if (res.ok && res.data) {
+        Store.config = res.data;
+        bindAssetCssVars(Store.config);
+        const screen = document.querySelector('.login-screen.login-screen--auth');
+        if (screen) {
+          const nextBg = Store.config.login_background_url || assetUrl('images/image');
+          screen.style.setProperty('--auth-background', `url('${nextBg}')`);
+          const mascotImg = screen.querySelector('.login-mascot img');
+          if (mascotImg) mascotImg.src = Store.config.login_mascot_url || assetUrl('images/panda-login');
+          const logoImg = screen.querySelector('.login-logo');
+          if (logoImg) logoImg.src = Store.config.system_logo_url || assetUrl('bar-intesud-logo');
+        }
+      }
+    });
+  }
 }
 
 /* ============================================================
@@ -180,11 +242,14 @@ function renderLogin() {
    ============================================================ */
 
 function renderForgot() {
+  const cfg = Store.config || {};
+  const bg = cfg.login_background_url || assetUrl('bar-intesud-login');
+  const logo = cfg.system_logo_url || assetUrl('bar-intesud-logo');
   const app = $('#app');
   app.innerHTML = `
-  <div class="login-screen">
+  <div class="login-screen" style="--login-background:url('${bg}')">
     <div class="login-brand">
-      <div class="brand-logo-badge"><img src="assets/bar-intesud-logo.png" alt="Logo BAR INTESUD"></div>
+      <div class="brand-logo-badge"><img src="${logo}" alt="Logo BAR INTESUD"></div>
       <h1>Recuperar contraseña</h1>
       <p>Funcionalidad en desarrollo</p>
     </div>

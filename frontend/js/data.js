@@ -3,9 +3,46 @@
    NOTA: Los datos de productos, usuarios, órdenes, config ahora vienen del API backend
    ============================================================ */
 
-const CATEGORIES = ['Hamburguesas', 'Hot Dogs', 'Sándwiches', 'Papas y Salchipapas', 'Bebidas', 'Snacks'];
+const CATEGORIES = ['Hamburguesas', 'Sándwiches', 'Snacks', 'Dulces y chocolates', 'Galletas y pastelería', 'Bebidas', 'Comida preparada'];
 
 const ROLE_LABELS = { user: 'Usuario institucional', adminbar: 'Administradora bar', admindev: 'Administrador desarrollador' };
+
+const PERMISSIONS_CATALOG = {
+  "products.view": "Ver catálogo",
+  "orders.create": "Crear pedidos",
+  "orders.view_own": "Ver pedidos propios",
+  "orders.cancel_own": "Cancelar pedidos propios",
+  "payments.create": "Crear pagos",
+  "payments.view_own": "Ver pagos propios",
+  "profile.view": "Ver perfil",
+  "profile.edit": "Editar perfil",
+  "products.create": "Crear productos",
+  "products.edit": "Editar productos",
+  "products.delete": "Eliminar productos",
+  "products.change_image": "Cambiar imagen de productos",
+  "orders.view_all": "Ver todos los pedidos",
+  "orders.change_status": "Cambiar estado pedidos",
+  "stock.view": "Ver stock",
+  "stock.edit": "Editar stock",
+  "payments.view_all": "Ver todos los pagos",
+  "payments.review": "Revisar pagos",
+  "delivery.view": "Ver delivery",
+  "delivery.edit": "Editar delivery",
+  "suppliers.view": "Ver proveedores",
+  "suppliers.create": "Crear proveedores",
+  "suppliers.edit": "Editar proveedores",
+  "suppliers.delete": "Eliminar proveedores",
+  "reports.view": "Ver reportes",
+  "config.view": "Ver configuración",
+  "config.edit": "Editar configuración",
+  "users.view": "Ver usuarios",
+  "users.create": "Crear usuarios",
+  "users.edit": "Editar usuarios",
+  "users.disable": "Desactivar usuarios",
+  "roles.view": "Ver roles",
+  "roles.edit": "Editar roles",
+  "audit.view": "Ver auditoría",
+};
 
 function normalizeApiProduct(product) {
   const categoryObject = product.category && typeof product.category === 'object' ? product.category : null;
@@ -21,6 +58,35 @@ function normalizeApiProduct(product) {
   };
 }
 window.normalizeApiProduct = normalizeApiProduct;
+
+function resolveMediaUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/media/')) return (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '') + path;
+  return path;
+}
+window.resolveMediaUrl = resolveMediaUrl;
+
+function productThumbHtml(product, size) {
+  const w = size === 'sm' ? 40 : size === 'lg' ? 56 : 48;
+  const img = product && product.image ? resolveMediaUrl(product.image) : '';
+  if (img) {
+    return `<img src="${esc(img)}" alt="${esc(product.name || '')}" style="width:${w}px;height:${w}px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:${w}px;height:${w}px;border-radius:10px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem">${clientProductIcon(product)}</div>`;
+  }
+  return `<div style="width:${w}px;height:${w}px;border-radius:10px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem">${clientProductIcon(product)}</div>`;
+}
+window.productThumbHtml = productThumbHtml;
+
+function cartItemThumbHtml(item, product) {
+  const img = (item && item.image) ? resolveMediaUrl(item.image) : (product && product.image ? resolveMediaUrl(product.image) : '');
+  const name = (item && item.name) || (product && product.name) || '';
+  const fallbackProduct = product || { name, category: item && item.category };
+  if (img) {
+    return `<img src="${esc(img)}" alt="${esc(name)}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--surface-2)" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:56px;height:56px;border-radius:12px;background:var(--primary-soft);display:none;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem">${clientProductIcon(fallbackProduct)}</div>`;
+  }
+  return `<div style="width:56px;height:56px;border-radius:12px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.6rem">${clientProductIcon(fallbackProduct)}</div>`;
+}
+window.cartItemThumbHtml = cartItemThumbHtml;
 
 const PERMISSION_MATRIX = [
   { fn: 'Inicio', user: '✓', adminbar: '✓', admindev: '✓' },
@@ -107,18 +173,51 @@ const Store = {
 
 /* ---------- Funciones para cargar datos del API ---------- */
 
+/* Carga TODAS las páginas de /api/products/ siguiendo el enlace "next" de la
+   paginación. Con esto el menú del usuario ve todos los productos reales, no
+   solo los primeros 20 de la página 1. */
+async function fetchAllProducts() {
+  const all = [];
+  let url = API_ENDPOINTS.products.list;
+  while (url) {
+    const res = await ApiClient.get(url);
+    if (!res.ok) break;
+    const data = res.data;
+    if (Array.isArray(data)) {
+      all.push(...data);
+      break;
+    }
+    if (Array.isArray(data?.results)) all.push(...data.results);
+    url = data?.next || null;
+  }
+  const products = all.map(normalizeApiProduct);
+  Store.products = products;
+  return products;
+}
+window.fetchAllProducts = fetchAllProducts;
+
+/* Carga las categorías reales desde la API (id, nombre y orden). */
+async function fetchCategories() {
+  const res = await ApiClient.get(API_ENDPOINTS.products.categories);
+  if (!res.ok) return [];
+  const data = res.data;
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.results) ? data.results : [];
+}
+window.fetchCategories = fetchCategories;
+
 async function loadInitialData() {
   try {
-    // Cargar productos
-    const productsRes = await ApiClient.get(API_ENDPOINTS.products.list);
-    if (productsRes.ok) {
-      Store.products = apiList(productsRes.data).map(normalizeApiProduct);
-    }
-    
-    // Cargar configuración
-    const configRes = await ApiClient.get(API_ENDPOINTS.config.get);
+    // Cargar configuración y productos (todas las páginas)
+    const [configRes] = await Promise.all([
+      ApiClient.get(API_ENDPOINTS.config.get),
+      fetchAllProducts(),
+    ]);
+
     if (configRes.ok && configRes.data) {
       Store.config = configRes.data;
+      // Aplicar la apariencia guardada (fondo login, logo, favicon).
+      bindAssetCssVars(Store.config);
     }
   } catch (error) {
     console.error('Error cargando datos iniciales:', error);

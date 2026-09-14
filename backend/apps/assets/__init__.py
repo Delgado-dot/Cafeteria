@@ -1,0 +1,1 @@
+"""Aplicación de activos visuales almacenados en PostgreSQL."""

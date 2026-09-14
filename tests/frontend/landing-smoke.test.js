@@ -3,16 +3,16 @@ const path = require('path');
 
 const root = path.join(__dirname, '..', '..', 'frontend');
 
-// jsdom es dev-dependency no persistente: si no está disponible este smoke
-// test se salta (no rompe `npm test`), si está presente ejecuta la verificación.
+// Una dependencia ausente debe fallar; no equivale a una prueba aprobada.
 let JSDOM;
 try {
   JSDOM = require(path.join(root, 'node_modules', 'jsdom')).JSDOM;
 } catch (e) {
-  console.log('SKIP: jsdom no disponible; landing-smoke.test.js omitido.');
-  process.exit(0);
+  console.error('ERROR: falta jsdom. Instala las dependencias del frontend antes de ejecutar las pruebas.');
+  process.exit(1);
 }
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const landingCss = fs.readFileSync(path.join(root, 'css', 'landing.css'), 'utf8');
 
 const scriptSrcs = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
 let js = scriptSrcs.map((s) => fs.readFileSync(path.join(root, s), 'utf8')).join('\n;\n');
@@ -24,6 +24,7 @@ const dom = new JSDOM(html, {
   url: 'http://localhost/',
   beforeParse(window) {
     window.scrollTo = () => {};
+    window.HTMLElement.prototype.scrollTo = function () {};
     window.HTMLElement.prototype.scrollIntoView = function () {};
     window.matchMedia = window.matchMedia || function () {
       return { matches: false, addListener() {}, removeListener() {} };
@@ -43,7 +44,13 @@ const mockProducts = [
   { id: 3, name: 'Jugo', price: '1.80', category_name: 'Bebidas', description: 'Jugo natural', prep_time: 2, stock: 15, min_stock: 5, available: true, addons: [] },
   { id: 4, name: 'Galleta', price: '0.80', category_name: 'Snacks', description: 'Galleta artesanal', prep_time: 1, stock: 20, min_stock: 5, available: true, addons: [] },
 ];
-const mockConfig = { orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15' };
+const mockConfig = {
+  orderOpen: '09:00', orderClose: '09:45', breakStart: '10:00', breakEnd: '10:15',
+  hero_background_url: 'http://127.0.0.1:8000/media/home/fododeledificio.png',
+  barra_atencion_image_url: 'http://127.0.0.1:8000/media/home/barra_atencion.webp',
+  espacio_disfrutar_image_url: 'http://127.0.0.1:8000/media/home/espacio_disfrutar.webp',
+  cafe_snacks_image_url: 'http://127.0.0.1:8000/media/home/cafe_snacks.webp',
+};
 // Mock temprano para que el primer renderLanding() ya reciba datos sin backend
 window.eval(js);
 // Sobrescribir ApiClient antes de que las promesas de renderLanding se resuelvan
@@ -79,6 +86,20 @@ async function main() {
   // 1. Initial load => Landing
   ok(!!document.querySelector('.landing'), 'Landing renderizado al cargar sin sesión');
   ok(!!document.querySelector('.lp-hero'), 'Hero presente en Landing');
+  const lpBgStyle = document.querySelector('.lp-bg')?.getAttribute('style') || '';
+  ok(lpBgStyle.includes('http://127.0.0.1:8000/media/home/fododeledificio.png'), 'Fondo del hero desde config (hero_background_url)');
+  ok(!!document.querySelector('.lp-bg-overlay'), 'Capa oscura sobre el hero presente');
+  ok(/\.lp-bg\s*\{[^}]*background-repeat:\s*no-repeat;[^}]*background-position:\s*center center;[^}]*background-size:\s*cover;/s.test(landingCss), 'Fondo centrado, sin repetición y con cover');
+  ok(/\.lp-bg-overlay\s*\{[^}]*rgba\(8,\s*31,\s*36,\s*0\.16\)/s.test(landingCss), 'Overlay uniforme al 16%');
+  ok(/body\.is-landing\s*\{[^}]*overflow:\s*hidden/s.test(landingCss), 'Página sin scrollbar horizontal');
+  const initialBgStyle = document.querySelector('.lp-bg').getAttribute('style');
+  const dots = [...document.querySelectorAll('.lp-dot')];
+  dots.forEach((dot) => dot.dispatchEvent(new window.Event('click', { bubbles: true })));
+  ok(
+    dots.length === document.querySelectorAll('.lp-slide').length
+      && document.querySelector('.lp-bg').getAttribute('style') === initialBgStyle,
+    'Fondo permanece igual al recorrer todos los slides'
+  );
   ok(!document.querySelector('.lp-header'), 'Header/navbar eliminado de Landing');
   ok(!!document.querySelector('.lp-topbar .lp-brand-mark'), 'Logo visible sin header tradicional');
   ok(!!document.querySelector('.lp-topbar [data-lp-login]'), 'Acceder visible en la esquina superior');
@@ -86,6 +107,11 @@ async function main() {
   ok(document.querySelector('link[href*="family=Playfair"]'), 'Playfair Display importada');
   ok(!!document.querySelector('.lp-footer-strip'), 'Footer presente en Landing');
   ok(!!document.getElementById('about'), 'Sección presentación presente');
+  const galleryCards = [...document.querySelectorAll('.lp-g-card')];
+  ok(galleryCards[0]?.querySelector('img')?.src.endsWith('/media/home/barra_atencion.webp'), 'Foto 1 desde CafeConfig en Barra de atención');
+  ok(galleryCards[1]?.querySelector('img')?.src.endsWith('/media/home/espacio_disfrutar.webp'), 'Foto 2 desde CafeConfig en Espacio para disfrutar');
+  ok(galleryCards[2]?.querySelector('img')?.src.endsWith('/media/home/cafe_snacks.webp'), 'Foto 3 desde CafeConfig en Café y snacks');
+  ok(galleryCards.map((card) => card.querySelector('figcaption')?.textContent).join('|') === 'Barra de atención|Espacio para disfrutar|Café y snacks', 'Títulos permanecen como texto HTML separado');
   ok(!!document.getElementById('how'), 'Sección cómo funciona presente');
   ok(!!document.getElementById('hours'), 'Sección horarios presente');
   ok(!!document.getElementById('menu'), 'Sección menú preview presente');
@@ -152,8 +178,24 @@ async function main() {
   ok(!!document.querySelector('.app'), 'Usuario: shell de usuario renderizado');
   ok(!document.body.classList.contains('is-landing'), 'is-landing removido tras iniciar sesión');
 
-  // logout -> landing
+  // OBS-001: sesión por pestaña. Los datos de sesión viven en sessionStorage,
+  // aislado por pestaña, NO en localStorage (compartido entre pestañas).
+  ok(!!window.sessionStorage.getItem('int_session'), 'OBS-001: int_session guardada en sessionStorage');
+  ok(!window.localStorage.getItem('int_session'), 'OBS-001: int_session NO está en localStorage');
+  ok(!!window.sessionStorage.getItem('access_token'), 'OBS-001: access_token guardada en sessionStorage');
+  ok(!!window.sessionStorage.getItem('refresh_token'), 'OBS-001: refresh_token guardada en sessionStorage');
+  ok(!window.localStorage.getItem('access_token') && !window.localStorage.getItem('refresh_token'), 'OBS-001: tokens NO están en localStorage');
+  // Simular otra pestaña escribiendo en localStorage (medio compartido): esta
+  // pestaña no debe verse afectada porque su sesión vive en sessionStorage.
+  window.localStorage.setItem('int_session', JSON.stringify({ id: 99, name: 'Otra Pestaña', role: 'adminbar' }));
+  ok(
+    window.__AUTH.current() && window.__AUTH.current().role === 'user',
+    'OBS-001: escritura de otra pestaña (localStorage) no altera esta sesión'
+  );
   window.localStorage.removeItem('int_session');
+
+  // logout -> landing
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   ok(!!document.querySelector('.landing'), 'Tras logout vuelve al Landing');
@@ -169,7 +211,7 @@ async function main() {
   ok(window.currentUser() && window.currentUser().role === 'adminbar', 'Rol adminbar activo');
 
   // 4. admindev via API mock
-  window.localStorage.removeItem('int_session');
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   clickLogin();
@@ -182,7 +224,7 @@ async function main() {
   ok(window.currentUser() && window.currentUser().role === 'admindev', 'Rol admindev activo');
 
   // 5. Sin sesión, cualquier ruta interna muestra Landing (no rompe rutas)
-  window.localStorage.removeItem('int_session');
+  window.sessionStorage.removeItem('int_session');
   window.__HANDLE();
   await sleep(60);
   ok(!!document.querySelector('.landing'), 'Sin sesión se muestra el Landing público');

@@ -7,11 +7,60 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.config.models import PaymentMethod
-from apps.delivery.models import DeliveryConfig, DeliveryRequest
+from apps.delivery.models import DeliveryRequest
 from apps.payments.models import Payment
 from apps.products.models import Addon, Product
 
 from .models import DeliveryMethod, Order, OrderItem, OrderItemAddon, OrderStatus
+from .services import (
+    cafe_accepts_orders,
+    delivery_accepts_orders,
+    reserve_cafe_capacity,
+    reserve_delivery_capacity,
+)
+
+CAFE_RULES_MESSAGES = {
+    "cafe_closed": "La cafetería está cerrada. Inténtalo cuando abra.",
+    "cafe_hours": "La cafetería está fuera del horario de atención.",
+    "break_active": "La cafetería está en receso en este momento.",
+}
+DELIVERY_RULES_MESSAGES = {
+    "delivery_disabled": "El servicio de delivery está deshabilitado.",
+    "delivery_day": "El delivery no está disponible hoy.",
+    "delivery_hours": "El delivery está fuera del horario permitido.",
+}
+CAPACITY_FULL_CAFE = "La capacidad de preparación está completa. Intenta más tarde."
+CAPACITY_FULL_DELIVERY = "La capacidad de delivery está completa. Intenta más tarde."
+
+VOUCHER_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
+VOUCHER_ALLOWED_MAGIC = (
+    b"\x89PNG\r\n\x1a\n",  # PNG
+    b"\xff\xd8\xff",  # JPEG / JPG
+    b"%PDF-",  # PDF
+)
+VOUCHER_ALLOWED_MIMES = {
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "application/pdf",
+}
+VOUCHER_SIZE_ERROR = "El comprobante no puede superar los 2 MB."
+VOUCHER_FORMAT_ERROR = "Formato de comprobante no permitido. Use PNG, JPG, JPEG o PDF."
+
+
+def _voucher_has_allowed_format(voucher):
+    """Valida por contenido real (mágico al inicio del archivo) y/o MIME,
+    nunca solo por la extensión del nombre."""
+    content_type = (getattr(voucher, "content_type", "") or "").lower()
+    head = b""
+    try:
+        head = voucher.read(12)
+        voucher.seek(0)
+    except Exception:
+        head = b""
+    return content_type in VOUCHER_ALLOWED_MIMES or any(
+        head.startswith(magic) for magic in VOUCHER_ALLOWED_MAGIC
+    )
 
 
 class OrderItemAddonSerializer(serializers.ModelSerializer):
@@ -26,6 +75,7 @@ class OrderItemAddonSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(read_only=True)
+    product_image = serializers.SerializerMethodField()
     addons = OrderItemAddonSerializer(source="item_addons", many=True, read_only=True)
     subtotal = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     line_total = serializers.DecimalField(
@@ -38,6 +88,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "id",
             "product_id",
             "product_name",
+            "product_image",
             "quantity",
             "unit_price",
             "addons",
@@ -46,6 +97,21 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "line_total",
         ]
         read_only_fields = fields
+
+    def get_product_image(self, obj):
+        product = getattr(obj, "product", None)
+        if product and getattr(product, "image", None):
+            try:
+                if product.image:
+                    return product.image.url
+            except Exception:
+                pass
+            # Fallback al nombre del archivo
+            try:
+                return product.image.name and f"/media/{product.image.name}"
+            except Exception:
+                return None
+        return None
 
 
 class AddonSelectionSerializer(serializers.Serializer):
@@ -123,6 +189,15 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_voucher(self, voucher):
+        if voucher is None:
+            return voucher
+        if voucher.size > VOUCHER_MAX_SIZE:
+            raise serializers.ValidationError(VOUCHER_SIZE_ERROR)
+        if not _voucher_has_allowed_format(voucher):
+            raise serializers.ValidationError(VOUCHER_FORMAT_ERROR)
+        return voucher
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         delivery_method = attrs.get("delivery_method", DeliveryMethod.PICKUP)
@@ -130,15 +205,23 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         payment_method = attrs.get("payment_method")
         voucher = attrs.get("voucher")
 
+        # A) Regla de negocio global: la cafeteria debe estar abierta y dentro
+        # del horario/receso configurado para aceptar CUALQUIER pedido nuevo.
+        accepts, rejection_code = cafe_accepts_orders()
+        if not accepts:
+            raise serializers.ValidationError(
+                {"detail": CAFE_RULES_MESSAGES[rejection_code]}
+            )
+
         if delivery_method == DeliveryMethod.DELIVERY:
             if not delivery_info:
                 raise serializers.ValidationError(
                     {"delivery_info": "Piso y aula son obligatorios para delivery."}
                 )
-            config = DeliveryConfig.get_solo()
-            if not config.enabled:
+            accepts, rejection_code = delivery_accepts_orders()
+            if not accepts:
                 raise serializers.ValidationError(
-                    {"delivery_method": "El servicio de delivery esta deshabilitado."}
+                    {"detail": DELIVERY_RULES_MESSAGES[rejection_code]}
                 )
         elif delivery_info:
             raise serializers.ValidationError(
@@ -160,6 +243,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         user = validated_data.pop("user", self.context["request"].user)
 
         with transaction.atomic():
+            # Reserva atomica de capacidad de preparacion (y delivery si aplica),
+            # bajo bloqueo de fila: si esta llena se rechaza y TODO hace rollback
+            # (ni pedido ni stock). La libertad de estos contadores al cancelar o
+            # entregar se gestiona en services.change_order_status.
+            if not reserve_cafe_capacity():
+                raise serializers.ValidationError({"detail": CAPACITY_FULL_CAFE})
+            if validated_data.get("delivery_method") == DeliveryMethod.DELIVERY:
+                if not reserve_delivery_capacity():
+                    raise serializers.ValidationError(
+                        {"detail": CAPACITY_FULL_DELIVERY}
+                    )
+
             order = Order(user=user, **validated_data)
             order.save(changed_by=user)
             total = Decimal("0.00")
@@ -261,11 +356,12 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(source="order_items", many=True, read_only=True)
-    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
-    user_email = serializers.CharField(source="user.email", read_only=True)
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     delivery_info = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -280,6 +376,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivery_method",
             "delivery_info",
             "payment_status",
+            "payment_method",
             "total",
             "estimated_time",
             "note",
@@ -287,6 +384,16 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_user_name(self, obj):
+        if obj.user is None:
+            return ""
+        return obj.user.get_full_name()
+
+    def get_user_email(self, obj):
+        if obj.user is None:
+            return ""
+        return obj.user.email
 
     def get_delivery_info(self, obj):
         delivery = getattr(obj, "delivery_request", None)
@@ -297,6 +404,11 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_payment_status(self, obj):
         payment = getattr(obj, "payment", None)
         return payment.status if payment else None
+
+    def get_payment_method(self, obj):
+        payment = getattr(obj, "payment", None)
+        payment_method = getattr(payment, "payment_method", None)
+        return payment_method.code if payment_method else None
 
 
 class OrderStatusUpdateSerializer(serializers.Serializer):

@@ -1,0 +1,1 @@
+ESLint 9.39.5: OK. Código de salida 0; sin errores ni advertencias.

@@ -1,0 +1,6 @@
+PASS: Compra real DEUNA: dos cafés con leche, total $5.00, comprobante y carrito limpio: OK
+PASS: Inicio de sesión real y validación de contraseña: OK
+PASS: Compra real DEUNA: dos cafés con leche, total $5.00, comprobante y carrito limpio: OK
+PASS: Historial real: 21 pedidos anteriores accesibles: OK
+PASS: Panel bar con API real: 21 ventas pagadas suman $105.00: OK
+PASS: BD real: total 5.00, dos adicionales, comprobante guardado.

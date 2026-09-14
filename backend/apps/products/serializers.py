@@ -3,9 +3,19 @@ Serializadores de la aplicación de productos.
 """
 
 from django.db import transaction
+from pathlib import Path
 from rest_framework import serializers
 
 from .models import Addon, Category, Product
+
+ALLOWED_IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".avif",
+}
+MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2 MB
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -58,6 +68,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
+            "id",
             "name",
             "description",
             "price",
@@ -69,6 +80,21 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             "emoji",
             "category",
         ]
+        read_only_fields = ["id"]
+
+    def validate_image(self, value):
+        if value is None:
+            return value
+        extension = Path(value.name).suffix.lower() if value.name else ""
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            raise serializers.ValidationError(
+                "La imagen debe ser JPG, JPEG, PNG, WEBP o AVIF."
+            )
+        if value.size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(
+                "La imagen no puede superar los 2 MB."
+            )
+        return value
 
     @transaction.atomic
     def create(self, validated_data):

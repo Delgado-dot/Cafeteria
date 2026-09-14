@@ -2,12 +2,16 @@
 Vistas de la aplicación de productos.
 """
 
+from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, permissions
+from rest_framework import filters, generics, parsers, permissions, status
+from rest_framework.response import Response
 
-from apps.accounts.permissions import IsAdminBar
+from apps.accounts.permissions import HasRolePermission
+from apps.audit.services import record_audit
 
 from .models import Category, Product
+from .pagination import ProductsPagination
 from .serializers import (
     CategorySerializer,
     ProductCreateUpdateSerializer,
@@ -16,7 +20,7 @@ from .serializers import (
 
 
 class CategoryListView(generics.ListCreateAPIView):
-    """Listar y crear categorías. GET para todos, POST solo adminbar."""
+    """Listar y crear categorías. GET público, POST requiere products.create."""
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -24,19 +28,22 @@ class CategoryListView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAdminBar()]
+            return [permissions.IsAuthenticated(), HasRolePermission()]
         return [permissions.AllowAny()]
+
+    required_permission = "products.create"
 
 
 class ProductListView(generics.ListCreateAPIView):
     """Listar y crear productos."""
 
     queryset = Product.objects.select_related("category").prefetch_related("addons")
-    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["category", "available"]
     search_fields = ["name", "description"]
     ordering_fields = ["name", "price", "stock", "added_at"]
+    pagination_class = ProductsPagination
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -45,21 +52,105 @@ class ProductListView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAdminBar()]
+            return [permissions.IsAuthenticated(), HasRolePermission()]
         return [permissions.AllowAny()]
+
+    required_permission = "products.create"
+
+    def perform_create(self, serializer):
+        product = serializer.save()
+        record_audit(
+            request=self.request,
+            action="product.create",
+            target=f"product:{product.pk} ({product.name})",
+            details={
+                "name": product.name,
+                "price": str(product.price),
+                "stock": product.stock,
+                "category": product.category_id,
+            },
+        )
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Ver, actualizar o eliminar un producto."""
 
     queryset = Product.objects.select_related("category").prefetch_related("addons")
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
             return ProductCreateUpdateSerializer
         return ProductSerializer
 
+    def _has_image_change(self):
+        """True si la petición adjunta una imagen nueva (no es solo quitar)."""
+        content_type = (getattr(self.request, "content_type", "") or "")
+        if content_type.startswith("multipart/form-data"):
+            if any(self.request.FILES.getlist("image")):
+                return True
+            posted = self.request.POST.get("image", None)
+            return posted is not None and posted not in ("", "null", "undefined", "false")
+        data = getattr(self.request, "data", {})
+        if "image" not in data:
+            return False
+        value = data.get("image")
+        if value is None:
+            return False
+        if hasattr(value, "name") or hasattr(value, "read"):
+            return True
+        return value not in ("", "null", "undefined", "false")
+
     def get_permissions(self):
-        if self.request.method in ("PUT", "PATCH", "DELETE"):
-            return [IsAdminBar()]
+        if self.request.method in ("PUT", "PATCH"):
+            if self._has_image_change():
+                self.required_permission = "products.change_image"
+            else:
+                self.required_permission = "products.edit"
+            return [permissions.IsAuthenticated(), HasRolePermission()]
+        if self.request.method == "DELETE":
+            self.required_permission = "products.delete"
+            return [permissions.IsAuthenticated(), HasRolePermission()]
         return [permissions.AllowAny()]
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        previous_stock = instance.stock
+        previous_available = instance.available
+        product = serializer.save()
+        details = {k: v for k, v in serializer.validated_data.items()}
+        details["stock"] = {"from": previous_stock, "to": product.stock}
+        details["available"] = {"from": previous_available, "to": product.available}
+        record_audit(
+            request=self.request,
+            action="product.update",
+            target=f"product:{product.pk} ({product.name})",
+            details=details,
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        """Elimina un producto respetando la integridad referencial (PROTECT)."""
+        instance = self.get_object()
+        target = f"product:{instance.pk} ({instance.name})"
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            record_audit(
+                request=request,
+                action="product.delete_failed",
+                target=target,
+                details={"reason": "registros relacionados protegidos"},
+            )
+            return Response(
+                {
+                    "detail": "No se puede eliminar el producto porque tiene registros relacionados de stock, pedidos u otros movimientos."
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        record_audit(
+            request=request,
+            action="product.delete",
+            target=target,
+            details={"deleted": True},
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

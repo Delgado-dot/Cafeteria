@@ -17,7 +17,12 @@ class PaymentSerializer(serializers.ModelSerializer):
     )
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     order_number = serializers.CharField(source="order.order_number", read_only=True)
-    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_name = serializers.SerializerMethodField()
+
+    def get_user_name(self, obj):
+        if obj.user is None:
+            return ""
+        return obj.user.get_full_name()
 
     class Meta:
         model = Payment
@@ -77,7 +82,12 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class PaymentReviewSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
-        choices=[PaymentStatus.APPROVED, PaymentStatus.REJECTED, PaymentStatus.REFUNDED]
+        choices=[
+            PaymentStatus.APPROVED,
+            PaymentStatus.PAID,
+            PaymentStatus.REJECTED,
+            PaymentStatus.REFUNDED,
+        ]
     )
 
 

@@ -86,13 +86,12 @@ class UserProfile(models.Model):
         return f"Perfil de {self.user}"
 
 
-# --- Permisos granulares por rol (para que "Roles y permisos" no esté en blanco) ---
-# Catálogo centralizado: ver PERMISSIONS_CATALOG en frontend/js/data.js
-# Se persiste en BD para que los cambios desde el panel admin realmente controlen acceso.
+# --- Permisos granulares por rol ---
+# Catálogo centralizado en backend/apps/accounts/constants.py
 class RolePermission(models.Model):
     """Permiso granular por rol. Permite activar/desactivar cada permiso por rol."""
 
-    role = models.CharField("rol", max_length=50, db_index=True)
+    role = models.CharField("rol", max_length=20, choices=Role.choices, db_index=True)
     code = models.CharField("código de permiso", max_length=80, db_index=True)
     enabled = models.BooleanField("habilitado", default=False)
     updated_at = models.DateTimeField("actualizado", auto_now=True)
